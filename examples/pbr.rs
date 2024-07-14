@@ -83,8 +83,15 @@ impl App {
         pbr_material_index
     }
 
+    fn prepare_skybox(&mut self) {
+        let mut hdr_loader = HDRLoader{};
+        hdr_loader.load("./assets/pbr/hdr/newport_loft.hdr");
+    }
+
     fn init(&mut self, imagic: &mut Imagic) {
         let imagic_context = imagic.context_mut();
+
+        self.prepare_skybox();
 
         self.prepare_lights(imagic_context);
 
