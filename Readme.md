@@ -8,6 +8,10 @@ For the moment, *Imagic* is at the startup stage, which supports only a few feat
 - custom shader
 - integrated UI framework powered by EGUI
 
+*Imagic* has two repositories:
+- [Imagic-gitee](https://gitee.com/computergraphics/imagic)
+- [Imagic-github](https://github.com/cgdog/imagic)
+
 # Supported platform
 - Windows
 - Linux
