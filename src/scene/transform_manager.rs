@@ -14,7 +14,7 @@ impl Default for TransformManager {
 
 impl TransformManager {
     pub fn add_transform(&mut self, transform: Transform) -> usize {
-        let index = self.transforms.len();
+        let index: usize = self.transforms.len();
         self.transforms.push(transform);
         index
     }

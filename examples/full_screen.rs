@@ -50,16 +50,22 @@ impl ImagicAppTrait for App {
     }
 }
 
+fn prepare_hdr_texture(graphics_context: &GraphicsContext) -> Texture {
+    let mut hdr_loader = HDRLoader{};
+    let cwd = std::env::current_dir().unwrap();
+    let hdr_path = cwd.join("examples/assets/pbr/hdr/newport_loft.hdr");
+    let hdr_texture = hdr_loader.load(hdr_path.to_str().unwrap(), graphics_context);
+    hdr_texture
+}
+
 fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     let mut app: App = Default::default();
 
     let img = image::load_from_memory(include_bytes!("./assets/lena.png")).unwrap();
-    // let img = image::io::Reader::open("./assets/lena.png").expect("failed to load img").decode().unwrap();
     let width = img.width() as f64;
     let height = img.height() as f64;
-    let img_rgba = img.to_rgba8();
 
     let mut imagic = Imagic::new();
     let event_loop = imagic.init(ImagicOption::new(width, height, "Imagic Full Screen Demo"));
@@ -69,12 +75,14 @@ fn main() {
     let bind_group_layout = bind_group_layout::create_default_bind_group_layout(graphics_context);
     let render_pipeline = render_pipeline::create_default_render_pipeline(graphics_context, &bind_group_layout);
     
-    use image::GenericImageView;
-    let dimensions = img.dimensions();
-    let texture = Texture::create(graphics_context, dimensions.0, dimensions.1, wgpu::TextureFormat::Rgba8UnormSrgb);
-    texture.fill_content(graphics_context, &img_rgba);
+    // let texture = Texture::create_from_bytes(graphics_context,
+    //     include_bytes!("./assets/lena.png"), wgpu::TextureFormat::Rgba8UnormSrgb);
+    // let texture_view = texture.get_texture_view();
 
-    let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+    
+    let hdr_texture = prepare_hdr_texture(graphics_context);
+    let texture_view = hdr_texture.get_texture_view();
+
     let texture_sampler = graphics_context.get_device().create_sampler(&wgpu::SamplerDescriptor {
         address_mode_u: wgpu::AddressMode::ClampToEdge,
         address_mode_v: wgpu::AddressMode::ClampToEdge,
