@@ -76,14 +76,10 @@ impl App {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
-        let img = image::load_from_memory(include_bytes!("./assets/lena.png")).unwrap();
-        let img_rgba = img.to_rgba8();
-        use image::GenericImageView;
-        let dimensions = img.dimensions();
-        let texture = Texture::create(imagic.context().graphics_context(), dimensions.0, dimensions.1, wgpu::TextureFormat::Rgba8UnormSrgb);
-        texture.fill_content(imagic.context().graphics_context(), &img_rgba);
+        let texture = Texture::create_from_bytes(imagic.context().graphics_context(),
+            include_bytes!("./assets/lena.png"), wgpu::TextureFormat::Rgba8UnormSrgb);
+        let texture_view = texture.get_texture_view();
 
-        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
         let texture_sampler = imagic.context().graphics_context().get_device().create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
@@ -141,12 +137,12 @@ impl App {
                 module: &shader,
                 entry_point: "vs_main",
                 buffers: &[vertex_buffer_layout],
-                // compilation_options: Default::default(),
+                compilation_options: Default::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
                 entry_point: "fs_main",
-                // compilation_options: Default::default(),
+                compilation_options: Default::default(),
                 targets: &[Some(swapchain_format.into())],
             }),
             primitive: wgpu::PrimitiveState {

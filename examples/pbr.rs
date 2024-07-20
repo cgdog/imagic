@@ -79,19 +79,26 @@ impl App {
         let ao_texture = texture_manager.add_texture(ao_texture);
         pbr_material.set_ao_texture(ao_texture);
 
+        // let skybox_texture = self.prepare_skybox(imagic.context_mut());
+        // pbr_material.set_albedo_texture(skybox_texture);
+
         let pbr_material_index = imagic.context_mut().material_manager_mut().add_material(pbr_material);
         pbr_material_index
     }
 
-    fn prepare_skybox(&mut self) {
+    fn prepare_skybox(&mut self, imagic_context: &mut ImagicContext) -> usize {
         let mut hdr_loader = HDRLoader{};
-        hdr_loader.load("./assets/pbr/hdr/newport_loft.hdr");
+        let cwd = std::env::current_dir().unwrap();
+        let hdr_path = cwd.join("examples/assets/pbr/hdr/newport_loft.hdr");
+        let hdr_texture = hdr_loader.load(hdr_path.to_str().unwrap(), imagic_context.graphics_context());
+        let hdr_texture_index = imagic_context.texture_manager_mut().add_texture(hdr_texture);
+        hdr_texture_index
     }
 
     fn init(&mut self, imagic: &mut Imagic) {
         let imagic_context = imagic.context_mut();
 
-        self.prepare_skybox();
+        self.prepare_skybox(imagic_context);
 
         self.prepare_lights(imagic_context);
 

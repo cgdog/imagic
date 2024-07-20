@@ -39,11 +39,16 @@ impl GraphicsContext {
         let adapter_limits = adapter.limits();
         info!("max_bind_groups: {}, max_bindings_per_bind_group: {}", adapter_limits.max_bind_groups, adapter_limits.max_bindings_per_bind_group);
 
+        let features = adapter.features();
+        
+        let required_features = wgpu::Features::TEXTURE_FORMAT_16BIT_NORM | wgpu::Features::FLOAT32_FILTERABLE;
+        assert!(features.contains(required_features), "Adapter does not support required features");
+
         let (device, queue) = adapter
             .request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
-                required_features: wgpu::Features::empty(),
+                required_features: required_features,// wgpu::Features::empty(),
                 required_limits: wgpu::Limits {
                     max_storage_buffers_per_shader_stage: 1,
                     max_storage_buffer_binding_size: 256,

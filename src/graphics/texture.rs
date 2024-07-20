@@ -41,14 +41,23 @@ impl Texture {
         use image::GenericImageView;
         let dimensions = img.dimensions();
         let mut texture = Texture::create(graphics_context, dimensions.0, dimensions.1, format);
-        texture.fill_content(graphics_context, &img_rgba);
+        texture.fill_content(graphics_context, &img_rgba, Some(dimensions.0 * 4));
 
         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
         texture.view = Some(texture_view);
         texture
     }
 
-    pub fn fill_content(&self, graphics_context: &GraphicsContext, content: &[u8]) {
+    pub fn create_hdr_texture(graphics_context: &GraphicsContext, width: u32, height: u32, pixels: &[u8], format: wgpu::TextureFormat) -> Self {
+        let mut texture = Texture::create(graphics_context, width, height, format);
+        texture.fill_content(graphics_context, pixels, Some(width * std::mem::size_of::<[f32; 4]>() as u32));
+
+        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        texture.view = Some(texture_view);
+        texture
+    }
+
+    fn fill_content(&self, graphics_context: &GraphicsContext, content: &[u8], bytes_per_row: Option<u32>) {
         graphics_context.get_queue().write_texture(
             wgpu::ImageCopyTexture {
                 texture: &self.texture,
@@ -59,7 +68,7 @@ impl Texture {
             &content,
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: Some(4 * self.size.width),
+                bytes_per_row,
                 rows_per_image: Some(self.size.height),
             },
             self.size,
