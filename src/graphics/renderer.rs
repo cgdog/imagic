@@ -32,7 +32,7 @@ impl Renderer {
             .create_view(&wgpu::TextureViewDescriptor::default());
 
         let mut encoder = context.graphics_context()
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("imagic encoder desc") });
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("imagic render command encoder desc") });
         // Render scene
         {
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

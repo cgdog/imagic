@@ -129,31 +129,6 @@ impl Sphere {
         (vertex_buffer_id, index_buffer_id, index_count)
     }
 
-    pub fn vertex_buffer_layout() -> wgpu::VertexBufferLayout<'static> {
-        let vertex_size = std::mem::size_of::<Vertex>();
-        wgpu::VertexBufferLayout {
-            array_stride: vertex_size as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x3,
-                    offset: 0,
-                    shader_location: 0,
-                },
-                wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x3,
-                    offset: 4 * 3,
-                    shader_location: 1,
-                },
-                wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x2,
-                    offset: 4 * 6,
-                    shader_location: 2,
-                },
-            ],
-        }
-    }
-
     fn index_buffer_format() -> wgpu::IndexFormat {
         wgpu::IndexFormat::Uint32
     }

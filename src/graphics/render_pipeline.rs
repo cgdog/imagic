@@ -78,6 +78,7 @@ impl RenderPipelineManager {
             }),
             primitive: wgpu::PrimitiveState {
                 cull_mode: Some(wgpu::Face::Back),
+                // front_face: wgpu::FrontFace::Ccw,
                 ..Default::default()
             },
             depth_stencil: None,

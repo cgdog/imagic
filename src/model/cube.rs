@@ -1,19 +1,17 @@
-use bytemuck::{Pod, Zeroable};
+use std::usize;
+
 use wgpu::util::DeviceExt;
 
-#[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable)]
-struct Vertex {
-    _pos: [f32; 3],
-    _normal: [f32; 3],
-    _tex_coord: [f32; 2],
-}
+use crate::{prelude::{RenderItem, VertexOrIndexCount}, scene::{SceneObject, Transform, TransformManager}, Imagic};
+
+use super::Vertex;
+
 
 fn vertex(pos: [i8; 3], tc: [i8; 2]) -> Vertex {
     Vertex {
-        _pos: [pos[0] as f32, pos[1] as f32, pos[2] as f32],
-        _normal: [pos[0] as f32, pos[1] as f32, pos[2] as f32], // TODO: change to real normal.
-        _tex_coord: [tc[0] as f32, tc[1] as f32],
+        pos: [pos[0] as f32, pos[1] as f32, pos[2] as f32],
+        normal: [pos[0] as f32, pos[1] as f32, pos[2] as f32], // TODO: change to real normal.
+        uv: [tc[0] as f32, tc[1] as f32],
     }
 }
 
@@ -63,12 +61,77 @@ fn create_cube_vertices() -> (Vec<Vertex>, Vec<u16>) {
     (vertex_data.to_vec(), index_data.to_vec())
 }
 
+
 pub struct Cube {
+    pub width: f32,
+    pub height: f32,
+    pub depth: f32,
+    pub transform: usize,
+
+    pub width_segments: u32,
+    pub height_segments: u32,
+    pub depth_segments: u32,
+
+    render_item_id: usize,
+}
+
+impl Default for Cube {
+    fn default() -> Self {
+        Self {
+            width: 1.0,
+            height: 1.0,
+            depth: 1.0,
+            width_segments: 1,
+            height_segments: 1,
+            depth_segments: 1,
+            transform: usize::MAX,
+            render_item_id: usize::MAX,
+        }
+    }
+}
+
+impl SceneObject for Cube {
+    fn transform(&self) -> &usize {
+        &self.transform
+    }
 }
 
 impl Cube {
-    pub fn create_buffer(device: &wgpu::Device) -> (wgpu::Buffer, wgpu::Buffer, u32) {
+
+    pub fn new(width: f32, height: f32, depth: f32, width_segments: u32, height_segments: u32, depth_segments: u32) -> Self {
+        Self {
+            width,
+            height,
+            depth,
+            width_segments,
+            height_segments,
+            depth_segments,
+            ..Default::default()
+        }
+    }
+
+    pub fn render_item_id(&self) -> usize {
+        self.render_item_id
+    }
+
+    pub fn init(&mut self, imagic: &mut Imagic, material_index: usize) {
+        let transform_manager: &mut TransformManager = imagic.context_mut().transform_manager_mut();
+        let transform = Transform::default();
+        let transform_index = transform_manager.add_transform(transform);
+        self.transform = transform_index;
+
+        let (vertex_buffer_id, index_buffer_id, index_count) = self.create_buffer(imagic);
+        let mut cube_item = RenderItem::new(
+            VertexOrIndexCount::IndexCount { index_count, base_vertex: 0, instance_count: 1, index_format: Cube::index_buffer_format() },
+            vertex_buffer_id, index_buffer_id, transform_index, true);
+        cube_item.set_material_id(material_index);
+        self.render_item_id = imagic.context_mut().render_item_manager_mut().add_render_item(cube_item);
+    
+    }
+
+    pub fn create_buffer(&mut self, imagic: &mut Imagic) -> (usize, usize, u32) {
         let (vertex_data, index_data) = create_cube_vertices();
+        let device = imagic.context().graphics_context().get_device();
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Cube Vertex Buffer"),
             contents: bytemuck::cast_slice(&vertex_data),
@@ -81,32 +144,12 @@ impl Cube {
             usage: wgpu::BufferUsages::INDEX,
         });
 
-        (vertex_buffer, index_buffer, index_data.len().try_into().unwrap())
-    }
-
-    pub fn vertex_buffer_layout() -> wgpu::VertexBufferLayout<'static> {
-        let vertex_size = std::mem::size_of::<Vertex>();
-        wgpu::VertexBufferLayout {
-            array_stride: vertex_size as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x3,
-                    offset: 0,
-                    shader_location: 0,
-                },
-                wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x3,
-                    offset: 4 * 3,
-                    shader_location: 1,
-                },
-                wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x2,
-                    offset: 4 * 6,
-                    shader_location: 2,
-                },
-            ],
-        }
+        let buffer_manager = imagic.context_mut().buffer_manager_mut();
+        let vertex_buffer_id = buffer_manager.add_buffer(vertex_buffer);
+        
+        let index_buffer_id = buffer_manager.add_buffer(index_buffer);
+        let index_count = index_data.len().try_into().unwrap();
+        (vertex_buffer_id, index_buffer_id, index_count)
     }
 
     pub fn index_buffer_format() -> wgpu::IndexFormat {

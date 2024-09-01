@@ -1,4 +1,6 @@
-use crate::prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, GraphicsContext, ImagicContext, SceneObject, Transform, TransformManager};
+use std::usize;
+
+use crate::prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, buffer::GPUBufferManager, GraphicsContext, ImagicContext, SceneObject, Transform, TransformManager};
 
 pub enum CameraMode {
     Perspective,
@@ -18,6 +20,10 @@ pub struct Camera {
 
     bind_group_id: usize,
     // bind_group_layout_id: usize,
+
+    // TODO: merge buffers
+    vertex_uniform_buffer_id: usize,
+    fragment_uniform_buffer_id: usize,
 }
 
 impl Default for Camera {
@@ -33,6 +39,8 @@ impl Default for Camera {
             transform: usize::MAX,
             bind_group_id: usize::MAX,
             // bind_group_layout_id: usize::MAX,
+            vertex_uniform_buffer_id: usize::MAX,
+            fragment_uniform_buffer_id: usize::MAX,
         }
     }
 }
@@ -46,8 +54,8 @@ impl SceneObject for Camera {
 impl Camera {
 
     pub fn init_after_app(&mut self, graphics_context: &GraphicsContext, bind_group_manager: &mut BindGroupManager
-        , bind_group_layout_manager: &mut BindGroupLayoutManager, transform_manager: &TransformManager) {
-        self.create_bind_group(graphics_context, bind_group_manager, bind_group_layout_manager, transform_manager);
+        , bind_group_layout_manager: &mut BindGroupLayoutManager, transform_manager: &TransformManager, buffer_manager: &mut GPUBufferManager) {
+        self.create_bind_group(graphics_context, bind_group_manager, bind_group_layout_manager, transform_manager, buffer_manager);
     }
 
     pub fn get_bind_group_id(&self) -> usize {
@@ -55,7 +63,7 @@ impl Camera {
     }
 
     fn create_bind_group(&mut self, graphics_context: &GraphicsContext, bind_group_manager: &mut BindGroupManager
-        , bind_group_layout_manager: &mut BindGroupLayoutManager, transform_manager: &TransformManager) -> usize {
+        , bind_group_layout_manager: &mut BindGroupLayoutManager, transform_manager: &TransformManager, buffer_manager: &mut GPUBufferManager) -> usize {
         let projection_matrix = self.get_projection_matrix();
         let view_matrix = self.get_view_matrix(transform_manager);
         let mut mx_ref: [f32; 16 * 2] = [0.0; 16 * 2];
@@ -92,6 +100,9 @@ impl Camera {
                 },
             ]
         });
+
+        self.vertex_uniform_buffer_id = buffer_manager.add_buffer(camera_vertex_uniform_buf);
+        self.fragment_uniform_buffer_id = buffer_manager.add_buffer(fragment_uniform_buffer);
         let bind_group_id = bind_group_manager.add_bind_group(bind_group);
         self.bind_group_id = bind_group_id;
         bind_group_id
@@ -134,6 +145,23 @@ impl Camera {
             self.up,
         );
         view
+    }
+
+    pub fn update_uniform_buffers(&self, graphics_context: &GraphicsContext, transform_manager: &TransformManager, buffer_manager: &GPUBufferManager) {
+        let projection_matrix = self.get_projection_matrix();
+        let view_matrix = self.get_view_matrix(transform_manager);
+        let mut mx_ref: [f32; 16 * 2] = [0.0; 16 * 2];
+        mx_ref[..16].copy_from_slice(view_matrix.as_ref());
+        mx_ref[16..32].copy_from_slice(projection_matrix.as_ref());
+
+        let camera_vertex_uniform_buf = buffer_manager.get_buffer(self.vertex_uniform_buffer_id);
+        graphics_context.get_queue().write_buffer(camera_vertex_uniform_buf, 0, bytemuck::cast_slice(&mx_ref));
+
+        let camera_pos = transform_manager.get_transform(self.transform).get_position();
+        let camera_fragment_uniforms = [camera_pos[0], camera_pos[1], camera_pos[2], 1.0];
+
+        let fragment_uniform_buffer = buffer_manager.get_buffer(self.fragment_uniform_buffer_id);
+        graphics_context.get_queue().write_buffer(fragment_uniform_buffer, 0, bytemuck::cast_slice(&[camera_fragment_uniforms]));
     }
 
     pub fn get_camera_mode(&self) -> &CameraMode {

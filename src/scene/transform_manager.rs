@@ -22,4 +22,8 @@ impl TransformManager {
     pub fn get_transform(&self, index: usize) -> &Transform {
         &self.transforms[index]
     }
+
+    pub fn get_transform_mut(&mut self, index: usize) -> &mut Transform {
+        &mut self.transforms[index]
+    }
 }

@@ -4,7 +4,7 @@ use log::info;
 use imagic::prelude::*;
 
 pub struct App {
-    cube: Cube,
+    plane: Plane,
     camera: usize,
     window_size: (f64, f64),
 }
@@ -12,7 +12,7 @@ pub struct App {
 impl Default for App {
     fn default() -> Self {
         Self {
-            cube: Cube::new(1.0, 1.0, 1.0, 1, 1, 1),
+            plane: Plane::default(),
             camera: usize::MAX,
             window_size: (500.0, 500.0),
         }
@@ -44,6 +44,7 @@ impl App {
         let albedo_index = self._prepare_albedo(imagic.context_mut());
         skybox_material.set_skybox_map(albedo_index);
         
+
         let material_index = imagic.context_mut().material_manager_mut().add_material(skybox_material);
         material_index
     }
@@ -51,11 +52,11 @@ impl App {
     fn init(&mut self, imagic: &mut Imagic) {
         let imagic_context = imagic.context_mut();
         // self.prepare_lights(imagic_context);
-        self.camera = Camera::new(glam::Vec3::new(0.0, 5.0, 10.0), consts::FRAC_PI_4
+        self.camera = Camera::new(glam::Vec3::new(0.0, 0.0, 5.0), consts::FRAC_PI_4
             , (self.window_size.0 / self.window_size.1) as f32, 1.0, 100.0, imagic_context);
 
         let material_index = self.prepare_material(imagic);
-        self.cube.init(imagic, material_index);
+        self.plane.init(imagic, material_index);
     }
     
     pub fn run(mut self) {
@@ -81,7 +82,7 @@ impl ImagicAppTrait for App {
 
 fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
-    info!("cube main.");
+    info!("plane example main.");
     let app: App = Default::default();
     app.run();
 }

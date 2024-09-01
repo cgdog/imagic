@@ -48,12 +48,12 @@ impl MaterialTrait for PBRMaterial {
     fn init(&mut self, graphics_context: &GraphicsContext, bind_group_layout_manager: &mut BindGroupLayoutManager) {
         self.create_texture_sampler(graphics_context);
 
-        PBRMaterial::try_create_bind_group_layout_id(graphics_context, bind_group_layout_manager);
+        PBRMaterial::try_create_bind_group_layout(graphics_context, bind_group_layout_manager);
     }
 
     fn create_shader_module(&self, graphics_context: &GraphicsContext) -> wgpu::ShaderModule {
         let shader = graphics_context.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: None,
+            label: Some("crate PBR shader module"),
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../shaders/pbr.wgsl"))),
         });
         shader
@@ -140,7 +140,7 @@ impl PBRMaterial {
         unsafe { LAYOUT_ID }
     }
 
-    fn try_create_bind_group_layout_id(graphics_context: &GraphicsContext, bind_group_layout_manager: &mut BindGroupLayoutManager) {
+    fn try_create_bind_group_layout(graphics_context: &GraphicsContext, bind_group_layout_manager: &mut BindGroupLayoutManager) {
         let layout_id = PBRMaterial::internal_bind_group_layout_id(usize::MAX);
         if layout_id == usize::MAX {
             let bind_group_layout = PBRMaterial::create_bind_group_layout(graphics_context);

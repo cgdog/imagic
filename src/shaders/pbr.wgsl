@@ -10,7 +10,7 @@ struct VSOutput {
     @location(1) world_normal: vec3f,
     @location(2) uv0: vec2f,
     @builtin(position) position: vec4f,
-};
+}
 
 // struct MVP {
 //     model: mat4x4f,

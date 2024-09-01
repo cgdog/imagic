@@ -33,7 +33,7 @@ impl RenderItemManager {
                 let model_vertex_bind_group_layout = bind_group_layout_manager.default_model_vertex_bind_group_layout();
                 let bind_group = graphics_context.create_bind_group(&wgpu::BindGroupDescriptor{
                     layout: model_vertex_bind_group_layout,
-                    label: Some("Camera bind group"),
+                    label: Some("Vertex uniform buffer bind group"),
                     entries: &[
                         wgpu::BindGroupEntry {
                             binding: 0,
