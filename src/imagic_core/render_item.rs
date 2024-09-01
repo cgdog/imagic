@@ -1,3 +1,5 @@
+use std::usize;
+
 pub mod render_item_manager;
 
 pub enum VertexOrIndexCount {
@@ -7,7 +9,8 @@ pub enum VertexOrIndexCount {
 
 pub struct RenderItem {
     pipeline_id: usize,
-    bind_group_ids: Vec<usize>,
+    // model matrix bind group
+    item_bind_group_id: usize,
     vertex_buffer_id: usize,
     index_buffer_id: usize,
     material_id: usize,
@@ -20,7 +23,7 @@ impl Default for RenderItem {
     fn default() -> Self {
         Self {
             pipeline_id: usize::MAX,
-            bind_group_ids: Vec::new(),
+            item_bind_group_id: usize::MAX,
             vertex_buffer_id: usize::MAX,
             index_buffer_id: usize::MAX,
             material_id: usize::MAX,
@@ -62,12 +65,12 @@ impl RenderItem {
         self.pipeline_id
     }
 
-    pub fn set_bind_groups(&mut self, bind_group_ids: Vec<usize>) {
-        self.bind_group_ids = bind_group_ids;
+    pub fn set_item_bind_group_id(&mut self, bind_group_id: usize) {
+        self.item_bind_group_id = bind_group_id;
     }
 
-    pub fn get_bind_group(&self) -> &Vec<usize> {
-        &self.bind_group_ids
+    pub fn get_item_bind_group_id(&self) -> usize {
+        self.item_bind_group_id
     }
 
     pub fn set_vertex_buffer_id(&mut self, vertex_buffer_id: usize) {

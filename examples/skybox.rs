@@ -84,8 +84,8 @@ impl App {
 }
 
 impl ImagicAppTrait for App {
-    fn on_update(&mut self, imagic_context: &mut ImagicContext, _ui_renderer: &mut UIRenderer) {
-        self._rotate_camera(imagic_context);
+    fn on_update(&mut self, _imagic_context: &mut ImagicContext, _ui_renderer: &mut UIRenderer) {
+        self._rotate_camera(_imagic_context);
     }
 
     fn on_render_ui(&mut self, _ctx: &egui::Context) {

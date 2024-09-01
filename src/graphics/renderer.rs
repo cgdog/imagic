@@ -1,6 +1,6 @@
 use winit::window::Window as WindowWinit;
 
-use crate::{imagic_core::imagic_context::ImagicContext, prelude::VertexOrIndexCount, ui::ui_renderer::UIRenderer};
+use crate::{camera::Camera, imagic_core::imagic_context::ImagicContext, prelude::VertexOrIndexCount, ui::ui_renderer::UIRenderer};
 
 pub struct Renderer {
     clear_color: wgpu::Color,
@@ -25,7 +25,16 @@ impl Renderer {
         self.ui_renderer.as_mut().expect("ui_renderer is None.")
     }
 
-    pub fn render(&mut self, context: &mut ImagicContext, window: &WindowWinit) {
+    pub fn render(&mut self, context: & ImagicContext, _window: &WindowWinit) {
+        let cameras = context.camera_manager().get_cameras();
+        for camera in cameras {
+            self.render_with_camera(context, camera);
+        }
+
+        // self.render_ui(context, _window);
+    }
+
+    pub fn render_with_camera(&mut self, context: & ImagicContext, camera: &Camera) {
         let surface_texture = context.graphics_context().get_surface().get_current_texture();
         let surface_texture_view = surface_texture
             .texture
@@ -50,12 +59,19 @@ impl Renderer {
                 occlusion_query_set: None,
             });
 
+            let camera_bind_group_id = camera.get_bind_group_id();
+
             let render_items = context.render_item_manager().render_items();
             for item in render_items.iter() {
                 if item.is_visible {
                     let render_pipeline = context.pipeline_manager().get_render_pipeline(item.get_pipeline());
-                    let item_bind_groups = item.get_bind_group();
-                    // let bind_group = context.bind_group_manager().get_bind_group();
+
+                    let material = context.material_manager().get_material(item.get_material_id());
+                    let material_bind_group_id = material.get_bind_group_id();
+                    let lighting_bind_group_id = context.light_manager().get_bind_group_id();
+                    let item_bind_groups = [item.get_item_bind_group_id(), camera_bind_group_id,
+                        material_bind_group_id, lighting_bind_group_id];
+
                     rpass.set_pipeline(render_pipeline);
                     for (index, bind_group_index) in item_bind_groups.iter().enumerate() {
                         let bind_group = context.bind_group_manager().get_bind_group(*bind_group_index);
@@ -78,15 +94,27 @@ impl Renderer {
                 }
             }
         }
-        // UI
-        {
-            self.ui_renderer().draw(
-                context.graphics_context(),
-                &mut encoder,
-                &window,
-                &surface_texture_view,
-            );
-        }
+        
+        context.graphics_context().submit(Some(encoder.finish()));
+        surface_texture.present();
+    }
+
+    pub fn render_ui(&mut self, context: & ImagicContext, window: &WindowWinit) {
+        let surface_texture = context.graphics_context().get_surface().get_current_texture();
+        let surface_texture_view = surface_texture
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
+        let mut encoder = context.graphics_context()
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("imagic render ui command encoder desc") });
+        
+        self.ui_renderer().draw(
+            context.graphics_context(),
+            &mut encoder,
+            &window,
+            &surface_texture_view,
+        );
+
         context.graphics_context().submit(Some(encoder.finish()));
         surface_texture.present();
     }

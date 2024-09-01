@@ -103,7 +103,7 @@ fn main() {
         let bind_group_id = context.bind_group_manager_mut().add_bind_group(bind_group);
 
         let mut render_item = RenderItem::new_thinly(pipeline_id, VertexOrIndexCount::VertexCount { vertex_count: 3, instance_count: 1 });
-        render_item.set_bind_groups(vec![bind_group_id]);
+        render_item.set_item_bind_group_id(bind_group_id);
         let render_item_index = context.render_item_manager_mut().add_render_item(render_item);
         app.full_screen_item_index = render_item_index;
     }

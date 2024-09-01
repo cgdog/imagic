@@ -1,4 +1,4 @@
-use crate::prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, render_pipeline::RenderPipelineManager, CameraManager, GraphicsContext, LightManager, MaterialManager, TransformManager};
+use crate::prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, render_pipeline::RenderPipelineManager, GraphicsContext, MaterialManager, TransformManager};
 
 use super::RenderItem;
 
@@ -16,9 +16,9 @@ impl Default for RenderItemManager {
 
 impl RenderItemManager {
     pub fn init_after_app(&mut self, graphics_context: &GraphicsContext, bind_group_manager: &mut BindGroupManager, bind_group_layout_manager: &BindGroupLayoutManager,
-        material_manager: &MaterialManager, light_manager: &LightManager, camera_manager: &CameraManager, transform_manager: &TransformManager, render_pipeline_manager: &mut RenderPipelineManager) {
+        material_manager: &MaterialManager, transform_manager: &TransformManager, render_pipeline_manager: &mut RenderPipelineManager) {
         for item in self.render_items.iter_mut() {
-            if item.get_bind_group().len() == 0 {
+            if item.get_item_bind_group_id() == usize::MAX {
                 let transform = transform_manager.get_transform(item.get_transform_id());
                 let model_matrix = transform.trs_matrix();
                 let mut mx_ref: [f32; 16] = [0.0; 16];
@@ -41,14 +41,8 @@ impl RenderItemManager {
                         },
                     ]
                 });
-                let model_vertex_bind_group_id = bind_group_manager.add_bind_group(bind_group);
-                let camera = camera_manager.get_camera(0);
-                let material = material_manager.get_material(item.get_material_id());
-                let camera_bind_group_id = camera.get_bind_group_id();
-                let material_bind_group_id = material.get_bind_group_id();
-                let lighting_bind_group_id = light_manager.get_bind_group_id();
-                let bind_group_ids: Vec<usize> = vec![model_vertex_bind_group_id, camera_bind_group_id, material_bind_group_id, lighting_bind_group_id];
-                item.set_bind_groups(bind_group_ids);
+                let item_bind_group_id = bind_group_manager.add_bind_group(bind_group);
+                item.set_item_bind_group_id(item_bind_group_id);
             }
 
             if item.pipeline_id == usize::MAX {

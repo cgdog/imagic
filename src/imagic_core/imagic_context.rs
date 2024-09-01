@@ -31,7 +31,7 @@ impl ImagicContext {
         self.light_manager.init_after_app(&self.graphics_context, &mut self.bind_group_manager, &mut self.bind_group_layout_manager, &self.transform_manager);
         self.material_manager.init_after_app(&self.graphics_context, &mut self.bind_group_manager, &mut self.bind_group_layout_manager, &self.texture_manager);
         self.render_item_manager.init_after_app(&self.graphics_context, &mut self.bind_group_manager
-            , &mut self.bind_group_layout_manager, &self.material_manager, &self.light_manager, &self.camera_manager, &self.transform_manager, &mut self.pipeline_manager);
+            , &mut self.bind_group_layout_manager, &self.material_manager, &self.transform_manager, &mut self.pipeline_manager);
     }
 
     pub fn graphics_context_mut(&mut self) -> &mut GraphicsContext {
