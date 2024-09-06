@@ -1,2 +1,4 @@
 pub mod window_core;
-pub use window_core::Window;
+pub mod window_size;
+pub use window_core::*;
+pub use window_size::*;

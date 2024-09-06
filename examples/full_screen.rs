@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
-use imagic::prelude::*;
+use imagic::{prelude::*, window::WindowSize};
 use log::info;
 
 pub struct App {
@@ -64,11 +64,12 @@ fn main() {
     let mut app: App = Default::default();
 
     let img = image::load_from_memory(include_bytes!("./assets/lena.png")).unwrap();
-    let width = img.width() as f64;
-    let height = img.height() as f64;
+    let width = img.width() as f32;
+    let height = img.height() as f32;
+    let window_size = WindowSize::new(width, height);
 
     let mut imagic = Imagic::new();
-    let event_loop = imagic.init(ImagicOption::new(width, height, "Imagic Full Screen Demo"));
+    let event_loop = imagic.init(ImagicOption::new(window_size, "Imagic Full Screen Demo"));
 
     let graphics_context = imagic.context().graphics_context();
 

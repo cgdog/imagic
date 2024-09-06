@@ -3,20 +3,19 @@ use std::{cell::RefCell, rc::Rc};
 use log::info;
 use winit::event_loop::{ControlFlow, EventLoop};
 
-use crate::{graphics, ui::ui_renderer::UIRenderer, window::Window};
+use crate::{graphics, ui::ui_renderer::UIRenderer, window::{Window, WindowSize}};
 use super::{imagic_app::ImagicAppTrait, imagic_context::ImagicContext};
 
 pub struct ImagicOption {
-    pub window_width: f64,
-    pub window_height: f64,
+    // window logical size.
+    pub window_size: WindowSize,
     pub window_title: &'static str,
 }
 
 impl ImagicOption {
-    pub fn new(window_width: f64, window_height: f64, window_title: &'static str) -> Self {
+    pub fn new(window_size: WindowSize, window_title: &'static str) -> Self {
         Self {
-            window_width,
-            window_height,
+            window_size,
             window_title,
         }
     }
@@ -48,7 +47,7 @@ impl Imagic {
     pub fn init(&mut self, imagic_option: ImagicOption) -> EventLoop<()> {
         info!("Imagic init() begin.");
         let event_loop = EventLoop::new().unwrap();
-        self.window.init(&event_loop, imagic_option.window_width, imagic_option.window_height, imagic_option.window_title);
+        self.window.init(&event_loop, imagic_option.window_size, imagic_option.window_title);
         pollster::block_on(self.context.graphics_context_mut().init(&self.window));
 
         self.context.init();
@@ -64,7 +63,7 @@ impl Imagic {
     }
 
     fn init_after_app(&mut self) {
-        self.context.init_after_app();
+        self.context.init_after_app(&self.window);
     }
 
     pub fn run(&mut self, event_loop: EventLoop<()>, app: Rc<RefCell<Box<dyn ImagicAppTrait>>>) {

@@ -1,12 +1,12 @@
 use std::{cell::RefCell, f32::consts, rc::Rc};
 
 use log::info;
-use imagic::prelude::*;
+use imagic::{prelude::*, window::WindowSize};
 
 pub struct App {
     plane: Plane,
     camera: usize,
-    window_size: (f64, f64),
+    window_size: WindowSize,
 }
 
 impl Default for App {
@@ -14,7 +14,7 @@ impl Default for App {
         Self {
             plane: Plane::default(),
             camera: usize::MAX,
-            window_size: (500.0, 500.0),
+            window_size: WindowSize::new(500.0, 500.0),
         }
     }
 }
@@ -53,7 +53,7 @@ impl App {
         let imagic_context = imagic.context_mut();
         // self.prepare_lights(imagic_context);
         self.camera = Camera::new(glam::Vec3::new(0.0, 0.0, 5.0), consts::FRAC_PI_4
-            , (self.window_size.0 / self.window_size.1) as f32, 1.0, 100.0, imagic_context);
+            , self.window_size.get_aspect(), 1.0, 100.0, imagic_context);
 
         let material_index = self.prepare_material(imagic);
         self.plane.init(imagic, material_index);
@@ -61,7 +61,7 @@ impl App {
     
     pub fn run(mut self) {
         let mut imagic = Imagic::new();
-        let event_loop = imagic.init(ImagicOption::new(self.window_size.0, self.window_size.1, "Cube Demo"));
+        let event_loop = imagic.init(ImagicOption::new(self.window_size, "Cube Demo"));
 
         self.init(&mut imagic);
 

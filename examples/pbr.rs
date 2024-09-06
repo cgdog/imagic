@@ -1,12 +1,12 @@
 use std::{cell::RefCell, f32::consts, rc::Rc};
 
 use log::info;
-use imagic::prelude::*;
+use imagic::{prelude::*, window::WindowSize};
 
 pub struct App {
     sphere: Sphere,
     camera: usize,
-    window_size: (f64, f64),
+    window_size: WindowSize,
 }
 
 impl Default for App {
@@ -14,7 +14,7 @@ impl Default for App {
         Self {
             sphere: Sphere::new(1.0, 256, 256),
             camera: usize::MAX,
-            window_size: (500.0, 500.0),
+            window_size: WindowSize::new(500.0, 500.0),
         }
     }
 }
@@ -103,7 +103,7 @@ impl App {
         self.prepare_lights(imagic_context);
 
         self.camera = Camera::new(glam::Vec3::new(0.0, 1.0, 4.0), consts::FRAC_PI_4
-            , (self.window_size.0 / self.window_size.1) as f32, 1.0, 10.0, imagic_context);
+            , self.window_size.get_aspect() as f32, 1.0, 10.0, imagic_context);
 
         let pbr_material_index = self.prepare_material(imagic);
         self.sphere.init(imagic, pbr_material_index);
@@ -111,7 +111,7 @@ impl App {
 
     pub fn run(mut self) {
         let mut imagic = Imagic::new();
-        let event_loop = imagic.init(ImagicOption::new(self.window_size.0, self.window_size.1, "PBR Demo"));
+        let event_loop = imagic.init(ImagicOption::new(self.window_size, "PBR Demo"));
 
         self.init(&mut imagic);
 

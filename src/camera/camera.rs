@@ -1,6 +1,8 @@
 use std::usize;
 
-use crate::prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, buffer::GPUBufferManager, GraphicsContext, ImagicContext, SceneObject, Transform, TransformManager};
+use log::info;
+
+use crate::{prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, buffer::GPUBufferManager, GraphicsContext, ImagicContext, SceneObject, Transform, TransformManager}, window::Window};
 
 pub enum CameraMode {
     Perspective,
@@ -15,6 +17,11 @@ pub struct Camera {
     far: f32,
     target_pos: glam::Vec3,
     up: glam::Vec3,
+
+    view_port: glam::Vec4,
+    physical_view_port: glam::Vec4,
+
+    clear_color: glam::Vec4,
 
     transform: usize,
 
@@ -36,6 +43,9 @@ impl Default for Camera {
             far: 500.0,
             target_pos: glam::Vec3::ZERO,
             up: glam::Vec3::Y,
+            view_port: glam::Vec4::new(0.0, 0.0, 1.0, 1.0),
+            physical_view_port: glam::Vec4::new(0.0, 0.0, 100.0, 100.0),
+            clear_color: glam::Vec4::new(0.1, 0.2, 0.3, 1.0),
             transform: usize::MAX,
             bind_group_id: usize::MAX,
             // bind_group_layout_id: usize::MAX,
@@ -53,8 +63,10 @@ impl SceneObject for Camera {
 
 impl Camera {
 
-    pub fn init_after_app(&mut self, graphics_context: &GraphicsContext, bind_group_manager: &mut BindGroupManager
+    pub fn init_after_app(&mut self, window: &Window, graphics_context: &GraphicsContext, bind_group_manager: &mut BindGroupManager
         , bind_group_layout_manager: &mut BindGroupLayoutManager, transform_manager: &TransformManager, buffer_manager: &mut GPUBufferManager) {
+        
+        self._compute_physical_viewport_from_window(window);
         self.create_bind_group(graphics_context, bind_group_manager, bind_group_layout_manager, transform_manager, buffer_manager);
     }
 
@@ -202,5 +214,41 @@ impl Camera {
 
     pub fn set_far(&mut self, new_far: f32) {
         self.far = new_far;
+    }
+
+    pub fn set_viewport(&mut self, view_port: glam::Vec4) {
+        self.view_port = view_port;
+    }
+
+    pub fn get_viewport(&self) -> &glam::Vec4 {
+        &self.view_port
+    }
+
+    pub fn set_physical_viewport(&mut self, physical_view_port: glam::Vec4) {
+        self.physical_view_port = physical_view_port;
+    }
+
+    /// get the real view port used by render pass 
+    pub fn get_physical_viewport(&self) -> &glam::Vec4 {
+        &self.physical_view_port
+    }
+
+    /// compute the real view port used by render pass
+    fn _compute_physical_viewport_from_window(&mut self, window: &Window) {
+        let (physical_widht, physical_heigt) = window.get_physical_size().get();
+        self.physical_view_port.x = self.view_port.x * physical_widht;
+        self.physical_view_port.y = self.view_port.y * physical_heigt;
+        self.physical_view_port.z = self.view_port.z * physical_widht;
+        self.physical_view_port.w = self.view_port.w * physical_heigt;
+
+        info!("physical_view_port: {}", self.physical_view_port);
+    }
+
+    pub fn get_clear_color(&self) -> &glam::Vec4 {
+        &self.clear_color
+    }
+
+    pub fn set_clear_color(&mut self, clear_color: glam::Vec4) {
+        self.clear_color = clear_color;
     }
 }

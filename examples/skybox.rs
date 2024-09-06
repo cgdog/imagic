@@ -1,13 +1,14 @@
 use std::{cell::RefCell, f32::consts, rc::Rc};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use imagic::window::WindowSize;
 use log::info;
 use imagic::prelude::*;
 
 pub struct App {
     cube: Cube,
     camera: usize,
-    window_size: (f64, f64),
+    window_size: WindowSize,
     camera_z: f32,
 }
 
@@ -16,7 +17,7 @@ impl Default for App {
         Self {
             cube: Cube::new(1.0, 1.0, 1.0, 1, 1, 1),
             camera: usize::MAX,
-            window_size: (500.0, 500.0),
+            window_size: WindowSize::new(500.0, 500.0),
             camera_z: 8.0,
         }
     }
@@ -55,7 +56,11 @@ impl App {
         let imagic_context = imagic.context_mut();
         // self.prepare_lights(imagic_context);
         self.camera = Camera::new(glam::Vec3::new(0.0, 0.0, self.camera_z), consts::FRAC_PI_4
-            , (self.window_size.0 / self.window_size.1) as f32, 1.0, 100.0, imagic_context);
+            , (self.window_size.get_half_width() / self.window_size.get_height()) as f32, 1.0, 100.0, imagic_context);
+        
+        let camera = imagic.context_mut().camera_manager_mut().get_camera_mut(self.camera);
+        camera.set_viewport(glam::Vec4::new(0.0, 0.0, 0.5, 1.0));
+        camera.set_clear_color(glam::Vec4::new(0.1, 0.1, 0.1, 1.0));
 
         let material_index = self.prepare_material(imagic);
         self.cube.init(imagic, material_index);
@@ -63,7 +68,7 @@ impl App {
     
     pub fn run(mut self) {
         let mut imagic = Imagic::new();
-        let event_loop = imagic.init(ImagicOption::new(self.window_size.0, self.window_size.1, "Cube Demo"));
+        let event_loop = imagic.init(ImagicOption::new(self.window_size, "Cube Demo"));
 
         self.init(&mut imagic);
 
