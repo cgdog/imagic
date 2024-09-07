@@ -1,3 +1,4 @@
+use wgpu::TextureView;
 use winit::window::Window as WindowWinit;
 
 use crate::{camera::Camera, imagic_core::imagic_context::ImagicContext, prelude::VertexOrIndexCount, ui::ui_renderer::UIRenderer};
@@ -24,20 +25,21 @@ impl Renderer {
     }
 
     pub fn render(&mut self, context: & ImagicContext, _window: &WindowWinit) {
-        let cameras = context.camera_manager().get_cameras();
-        for camera in cameras {
-            self.render_with_camera(context, camera);
-        }
-
-        // self.render_ui(context, _window);
-    }
-
-    pub fn render_with_camera(&mut self, context: & ImagicContext, camera: &Camera) {
         let surface_texture = context.graphics_context().get_surface().get_current_texture();
         let surface_texture_view = surface_texture
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
+        let cameras = context.camera_manager().get_cameras();
+        for camera in cameras {
+            self.render_with_camera(context, camera, &surface_texture_view);
+        }
+
+        self.render_ui(context, _window, &surface_texture_view);
+        surface_texture.present();
+    }
+
+    pub fn render_with_camera(&mut self, context: & ImagicContext, camera: &Camera, surface_texture_view: &TextureView) {
         let mut encoder = context.graphics_context()
             .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("imagic render command encoder desc") });
         // Render scene
@@ -53,7 +55,7 @@ impl Renderer {
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("imagic render pass desc"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &surface_texture_view,
+                    view: surface_texture_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(clear_color),
@@ -105,14 +107,9 @@ impl Renderer {
         }
         
         context.graphics_context().submit(Some(encoder.finish()));
-        surface_texture.present();
     }
 
-    pub fn render_ui(&mut self, context: & ImagicContext, window: &WindowWinit) {
-        let surface_texture = context.graphics_context().get_surface().get_current_texture();
-        let surface_texture_view = surface_texture
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
+    pub fn render_ui(&mut self, context: & ImagicContext, window: &WindowWinit, surface_texture_view: &TextureView) {
 
         let mut encoder = context.graphics_context()
             .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("imagic render ui command encoder desc") });
@@ -121,10 +118,9 @@ impl Renderer {
             context.graphics_context(),
             &mut encoder,
             &window,
-            &surface_texture_view,
+            surface_texture_view,
         );
 
         context.graphics_context().submit(Some(encoder.finish()));
-        surface_texture.present();
     }
 }

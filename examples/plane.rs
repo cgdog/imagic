@@ -7,6 +7,7 @@ pub struct App {
     plane: Plane,
     camera: usize,
     window_size: WindowSize,
+    pub is_show_image: bool,
 }
 
 impl Default for App {
@@ -15,6 +16,7 @@ impl Default for App {
             plane: Plane::default(),
             camera: usize::MAX,
             window_size: WindowSize::new(500.0, 500.0),
+            is_show_image: true,
         }
     }
 }
@@ -72,11 +74,32 @@ impl App {
 
 impl ImagicAppTrait for App {
     fn on_update(&mut self, _imagic_context: &mut ImagicContext, _ui_renderer: &mut UIRenderer) {
-        // todo!()
+        let render_item = _imagic_context.render_item_manager_mut().get_render_item_mut(self.plane.render_item_id());
+        render_item.is_visible = self.is_show_image;
     }
 
-    fn on_render_ui(&mut self, _ctx: &egui::Context) {
-        // todo!()
+    fn on_render_ui(&mut self, ctx: &egui::Context) {
+        egui::Window::new("Imagic - plane")
+        .resizable(true)
+        .vscroll(true)
+        .default_open(false)
+        .show(&ctx, |ui| {
+            ui.label("You can drag the UI window title to move the UI window!");
+            if self.is_show_image {
+                if ui.button("Hide image").clicked() {
+                    info!("Hide image.");
+                    self.is_show_image = !self.is_show_image;
+                }
+            } else {
+                if ui.button("Show image").clicked() {
+                    info!("Show image.");
+                    self.is_show_image = !self.is_show_image;
+                }
+            }
+
+            ui.separator();
+            ui.label("This simple demo powered by wgpu renders full screen with a big triangle and a texture without Vertex buffer");
+        });
     }
 }
 

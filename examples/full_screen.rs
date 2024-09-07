@@ -76,13 +76,13 @@ fn main() {
     let bind_group_layout = bind_group_layout::create_default_bind_group_layout(graphics_context);
     let render_pipeline = render_pipeline::create_default_render_pipeline(graphics_context, &bind_group_layout);
     
-    // let texture = Texture::create_from_bytes(graphics_context,
-    //     include_bytes!("./assets/lena.png"), wgpu::TextureFormat::Rgba8UnormSrgb);
-    // let texture_view = texture.get_texture_view();
+    let texture = Texture::create_from_bytes(graphics_context,
+        include_bytes!("./assets/lena.png"), wgpu::TextureFormat::Rgba8UnormSrgb);
+    let texture_view = texture.get_texture_view();
 
     
-    let hdr_texture = prepare_hdr_texture(graphics_context);
-    let texture_view = hdr_texture.get_texture_view();
+    // let hdr_texture = prepare_hdr_texture(graphics_context);
+    // let texture_view = hdr_texture.get_texture_view();
 
     let texture_sampler = graphics_context.get_device().create_sampler(&wgpu::SamplerDescriptor {
         address_mode_u: wgpu::AddressMode::ClampToEdge,
