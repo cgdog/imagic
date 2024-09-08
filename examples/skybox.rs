@@ -8,6 +8,7 @@ use imagic::prelude::*;
 
 pub struct App {
     cube: Cube,
+    sphere: Sphere,
     first_camera_id: usize,
     second_camera_id: usize,
     window_size: WindowSize,
@@ -19,6 +20,7 @@ impl Default for App {
     fn default() -> Self {
         Self {
             cube: Cube::new(1.0, 1.0, 1.0, 1, 1, 1),
+            sphere: Sphere::new(1.0, 256, 256),
             first_camera_id: usize::MAX,
             second_camera_id: usize::MAX,
             window_size: WindowSize::new(800.0, 500.0),
@@ -29,6 +31,69 @@ impl Default for App {
 }
 
 impl App {
+
+    fn prepare_lights(&mut self, imagic_context: &mut ImagicContext) {
+
+        let transform_manager = imagic_context.transform_manager_mut();
+        let point_light_0 = PointLight::new(
+            glam::Vec3::new(-10.0,  10.0, 10.0),
+            glam::Vec3::new(300.0, 300.0, 300.0),
+            transform_manager
+        );
+        let point_light_1 = PointLight::new(
+            glam::Vec3::new(10.0,  10.0, 10.0),
+            glam::Vec3::new(300.0, 300.0, 300.0),
+            transform_manager
+        );
+        let point_light_2 = PointLight::new(
+            glam::Vec3::new(-10.0,  -10.0, 10.0),
+            glam::Vec3::new(300.0, 300.0, 300.0),
+            transform_manager
+        );
+        let point_light_3 = PointLight::new(
+            glam::Vec3::new(10.0,  -10.0, 10.0),
+            glam::Vec3::new(300.0, 300.0, 300.0),
+            transform_manager
+        );
+
+        let light_manager = imagic_context.light_manager_mut();
+        light_manager.add_point_light(point_light_0);
+        light_manager.add_point_light(point_light_1);
+        light_manager.add_point_light(point_light_2);
+        light_manager.add_point_light(point_light_3);
+    }
+
+    fn prepare_pbr_material(&mut self, imagic: &mut Imagic) -> usize {
+        let graphics_context = imagic.context().graphics_context();
+        let mut pbr_material = Box::new(PBRMaterial::new(glam::Vec4::new(1.0, 1.0, 1.0, 1.0), 1.0, 1.0, 1.0));
+        let albedo_texture = Texture::create_from_bytes(graphics_context,
+            include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_basecolor.png"), wgpu::TextureFormat::Rgba8UnormSrgb);
+        let normal_texture = Texture::create_from_bytes(graphics_context,
+            include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_normal.png"), wgpu::TextureFormat::Rgba8Unorm);
+        let metallic_texture = Texture::create_from_bytes(graphics_context,
+            include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_metallic.png"), wgpu::TextureFormat::Rgba8Unorm);
+        let roughness_texture = Texture::create_from_bytes(graphics_context,
+            include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_roughness.png"), wgpu::TextureFormat::Rgba8Unorm);
+        let ao_texture = Texture::create_from_bytes(graphics_context,
+            include_bytes!("./assets/pbr/rustediron1-alt2-bl/ao.png"), wgpu::TextureFormat::Rgba8Unorm);
+        
+        let texture_manager = imagic.context_mut().texture_manager_mut();
+
+        let albedo_texture = texture_manager.add_texture(albedo_texture);
+        pbr_material.set_albedo_texture(albedo_texture);
+        let normal_texture = texture_manager.add_texture(normal_texture);
+        pbr_material.set_normal_texture(normal_texture);
+        let metallic_texture = texture_manager.add_texture(metallic_texture);
+        pbr_material.set_metallic_texture(metallic_texture);
+        let roughness_texture = texture_manager.add_texture(roughness_texture);
+        pbr_material.set_roughness_texture(roughness_texture);
+        let ao_texture = texture_manager.add_texture(ao_texture);
+        pbr_material.set_ao_texture(ao_texture);
+
+        let pbr_material_index = imagic.context_mut().material_manager_mut().add_material(pbr_material);
+        pbr_material_index
+    }
+
 
     fn prepare_skybox(&mut self, imagic_context: &mut ImagicContext) -> usize {
         let mut hdr_loader = HDRLoader{};
@@ -46,7 +111,7 @@ impl App {
         albedo_texture_index
     }
 
-    fn prepare_material(&mut self, imagic: &mut Imagic) -> usize {
+    fn prepare_equirect_to_cube_material(&mut self, imagic: &mut Imagic) -> usize {
         let mut equirectangular_to_cube_material = Box::new(EquirectangularToCubeMaterial::new());
         let skybox_texture = self.prepare_skybox(imagic.context_mut());
         equirectangular_to_cube_material.set_equirectangular_map(skybox_texture);
@@ -80,8 +145,14 @@ impl App {
         let second_camera_pos = glam::Vec3::new(0.0, 0.0, self.camera_z);
         self.second_camera_id = self.add_camera(imagic, second_camera_pos, second_viewport, second_clear_color);
 
-        let material_index = self.prepare_material(imagic);
-        self.cube.init(imagic, material_index);
+        let equirect_to_cube_material_index = self.prepare_equirect_to_cube_material(imagic);
+        self.cube.init(imagic, equirect_to_cube_material_index);
+
+        self.prepare_lights(imagic.context_mut());
+
+        let pbr_material_index = self.prepare_pbr_material(imagic);
+        self.sphere.init(imagic, pbr_material_index);
+        
     }
     
     pub fn run(mut self) {

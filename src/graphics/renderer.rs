@@ -45,6 +45,8 @@ impl Renderer {
         // Render scene
         {
             let camera_clear_color = camera.get_clear_color();
+            let camera_depth_textue = camera.get_depth_texture();
+            let dpeth_texture_view = context.texture_manager().get_texture_view(camera_depth_textue);
 
             let mut load_op = wgpu::LoadOp::Load;
             if camera_index == 0 {
@@ -68,7 +70,15 @@ impl Renderer {
                         store: wgpu::StoreOp::Store,
                     },
                 })],
-                depth_stencil_attachment: None,
+                // depth_stencil_attachment: None,
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: dpeth_texture_view,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: wgpu::StoreOp::Store,
+                    }),
+                    stencil_ops: None,
+                }),
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });

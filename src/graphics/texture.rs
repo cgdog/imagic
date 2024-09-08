@@ -1,4 +1,4 @@
-use wgpu::{TextureView, TextureViewDescriptor};
+use wgpu::{TextureFormat, TextureView, TextureViewDescriptor};
 
 use super::GraphicsContext;
 
@@ -9,7 +9,7 @@ pub struct Texture {
 }
 
 impl Texture {
-    pub fn create(graphics_context: &GraphicsContext, width: u32, height: u32, format: wgpu::TextureFormat) -> Self {
+    pub fn create(graphics_context: &GraphicsContext, width: u32, height: u32, format: wgpu::TextureFormat, usage: wgpu::TextureUsages) -> Self {
         let size = wgpu::Extent3d {
             width,
             height,
@@ -22,7 +22,7 @@ impl Texture {
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
                 format,
-                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                usage,
                 label: Some("imagic_texture"),
                 view_formats: &[],
             }
@@ -40,7 +40,7 @@ impl Texture {
         let img_rgba = img.to_rgba8();
         use image::GenericImageView;
         let dimensions = img.dimensions();
-        let mut texture = Texture::create(graphics_context, dimensions.0, dimensions.1, format);
+        let mut texture = Texture::create(graphics_context, dimensions.0, dimensions.1, format, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST);
         texture.fill_content(graphics_context, &img_rgba, Some(dimensions.0 * 4));
 
         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
@@ -49,12 +49,21 @@ impl Texture {
     }
 
     pub fn create_hdr_texture(graphics_context: &GraphicsContext, width: u32, height: u32, pixels: &[u8], format: wgpu::TextureFormat) -> Self {
-        let mut texture = Texture::create(graphics_context, width, height, format);
+        let mut texture = Texture::create(graphics_context, width, height, format, wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST);
         texture.fill_content(graphics_context, pixels, Some(width * std::mem::size_of::<[f32; 4]>() as u32));
 
         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
         texture.view = Some(texture_view);
         texture
+    }
+
+    pub fn create_depth_texture(graphics_context: &GraphicsContext, width: u32, height: u32, format: TextureFormat) -> Self {
+        let usage = wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING;
+        let mut dpeth_texture =  Texture::create(graphics_context, width, height, format, usage);
+
+        let texture_view = dpeth_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        dpeth_texture.view = Some(texture_view);
+        dpeth_texture
     }
 
     fn fill_content(&self, graphics_context: &GraphicsContext, content: &[u8], bytes_per_row: Option<u32>) {

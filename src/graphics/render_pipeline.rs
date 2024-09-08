@@ -44,6 +44,7 @@ impl RenderPipelineManager {
 
     pub fn create_pipeline(&mut self, graphics_context: &GraphicsContext, bind_group_layout_manager: &BindGroupLayoutManager, material: &Box<dyn MaterialTrait>) -> usize {
         // let bind_group_layout = bind_group_layout_manager.default_pbr_bind_group_layout();
+        const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth24PlusStencil8;
         let bind_group_layouts = [
             bind_group_layout_manager.default_model_vertex_bind_group_layout(),
             bind_group_layout_manager.get_camera_bind_group_layout(),
@@ -81,7 +82,14 @@ impl RenderPipelineManager {
                 // front_face: wgpu::FrontFace::Ccw,
                 ..Default::default()
             },
-            depth_stencil: None,
+            // depth_stencil: None,
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: DEPTH_FORMAT,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less,
+                stencil: wgpu::StencilState::default(),
+                bias: wgpu::DepthBiasState::default(),
+            }),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
             // cache: None,

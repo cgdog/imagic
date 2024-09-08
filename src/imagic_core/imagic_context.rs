@@ -27,7 +27,7 @@ impl ImagicContext {
     }
 
     pub fn init_after_app(&mut self, window: &Window) {
-        self.camera_manager.init_after_app(window, &self.graphics_context, &mut self.bind_group_manager, &mut self.bind_group_layout_manager, &self.transform_manager, &mut self.buffer_manager);
+        self.camera_manager.init_after_app(window, &self.graphics_context, &mut self.bind_group_manager, &mut self.bind_group_layout_manager, &self.transform_manager, &mut self.buffer_manager, &mut self.texture_manager);
         self.light_manager.init_after_app(&self.graphics_context, &mut self.bind_group_manager, &mut self.bind_group_layout_manager, &self.transform_manager);
         self.material_manager.init_after_app(&self.graphics_context, &mut self.bind_group_manager, &mut self.bind_group_layout_manager, &self.texture_manager);
         self.render_item_manager.init_after_app(&self.graphics_context, &mut self.bind_group_manager

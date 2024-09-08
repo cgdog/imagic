@@ -1,4 +1,4 @@
-use crate::{prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, buffer::GPUBufferManager, GraphicsContext, TransformManager}, window::Window};
+use crate::{prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, buffer::GPUBufferManager, texture_manager::TextureManager, GraphicsContext, TransformManager}, window::Window};
 
 use super::camera::Camera;
 
@@ -34,9 +34,9 @@ impl CameraManager {
     }
 
     pub fn init_after_app(&mut self, window: &Window, graphics_context: &GraphicsContext, bind_group_manager: &mut BindGroupManager
-        , bind_group_layout_manager: &mut BindGroupLayoutManager, transform_manager: &TransformManager, buffer_manager: &mut GPUBufferManager) {
+        , bind_group_layout_manager: &mut BindGroupLayoutManager, transform_manager: &TransformManager, buffer_manager: &mut GPUBufferManager, texture_manager: &mut TextureManager) {
         for camera in self.cameras.iter_mut() {
-            camera.init_after_app(window, graphics_context, bind_group_manager, bind_group_layout_manager, transform_manager, buffer_manager);
+            camera.init_after_app(window, graphics_context, bind_group_manager, bind_group_layout_manager, transform_manager, buffer_manager, texture_manager);
         }
     }
 }

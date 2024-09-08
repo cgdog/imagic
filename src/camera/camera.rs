@@ -2,7 +2,7 @@ use std::usize;
 
 use log::info;
 
-use crate::{prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, buffer::GPUBufferManager, GraphicsContext, ImagicContext, SceneObject, Transform, TransformManager}, window::Window};
+use crate::{prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, buffer::GPUBufferManager, texture_manager::TextureManager, GraphicsContext, ImagicContext, SceneObject, Texture, Transform, TransformManager}, window::Window};
 
 pub enum CameraMode {
     Perspective,
@@ -31,6 +31,8 @@ pub struct Camera {
     // TODO: merge buffers
     vertex_uniform_buffer_id: usize,
     fragment_uniform_buffer_id: usize,
+
+    depth_texture: usize,
 }
 
 impl Default for Camera {
@@ -51,6 +53,8 @@ impl Default for Camera {
             // bind_group_layout_id: usize::MAX,
             vertex_uniform_buffer_id: usize::MAX,
             fragment_uniform_buffer_id: usize::MAX,
+
+            depth_texture: usize::MAX,
         }
     }
 }
@@ -64,9 +68,10 @@ impl SceneObject for Camera {
 impl Camera {
 
     pub fn init_after_app(&mut self, window: &Window, graphics_context: &GraphicsContext, bind_group_manager: &mut BindGroupManager
-        , bind_group_layout_manager: &mut BindGroupLayoutManager, transform_manager: &TransformManager, buffer_manager: &mut GPUBufferManager) {
+        , bind_group_layout_manager: &mut BindGroupLayoutManager, transform_manager: &TransformManager, buffer_manager: &mut GPUBufferManager, texture_manager: &mut TextureManager) {
         
         self._compute_physical_viewport_from_window(window);
+        self.create_depth_texture(graphics_context, texture_manager, window);
         self.create_bind_group(graphics_context, bind_group_manager, bind_group_layout_manager, transform_manager, buffer_manager);
     }
 
@@ -250,5 +255,21 @@ impl Camera {
 
     pub fn set_clear_color(&mut self, clear_color: glam::Vec4) {
         self.clear_color = clear_color;
+    }
+
+    fn create_depth_texture(&mut self, graphics_context: &GraphicsContext, texture_manager: &mut TextureManager, window: &Window) {
+        const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth24PlusStencil8;
+        let window_physical_size = window.get_physical_size();
+        // let width = self.physical_view_port.z as u32;
+        // let height = self.physical_view_port.w as u32;
+        let width = window_physical_size.get_width() as u32;
+        let height = window_physical_size.get_height() as u32;
+
+        let dpeth_texture = Texture::create_depth_texture(graphics_context, width, height, DEPTH_FORMAT);
+        self.depth_texture = texture_manager.add_texture(dpeth_texture);
+    }
+
+    pub fn get_depth_texture(&self) -> usize {
+        self.depth_texture
     }
 }
