@@ -10,6 +10,7 @@ pub struct App {
     camera: usize,
     window_size: WindowSize,
     camera_z: f32,
+    rotate_camera: bool,
 }
 
 impl Default for App {
@@ -17,8 +18,9 @@ impl Default for App {
         Self {
             cube: Cube::new(1.0, 1.0, 1.0, 1, 1, 1),
             camera: usize::MAX,
-            window_size: WindowSize::new(500.0, 500.0),
+            window_size: WindowSize::new(800.0, 500.0),
             camera_z: 8.0,
+            rotate_camera: true,
         }
     }
 }
@@ -56,7 +58,7 @@ impl App {
         let imagic_context = imagic.context_mut();
         // self.prepare_lights(imagic_context);
         self.camera = Camera::new(glam::Vec3::new(0.0, 0.0, self.camera_z), consts::FRAC_PI_4
-            , (self.window_size.get_half_width() / self.window_size.get_height()) as f32, 1.0, 100.0, imagic_context);
+            , self.window_size.get_half_width() / self.window_size.get_height(), 0.01, 500.0, imagic_context);
         
         let camera = imagic.context_mut().camera_manager_mut().get_camera_mut(self.camera);
         camera.set_viewport(glam::Vec4::new(0.0, 0.0, 0.5, 1.0));
@@ -90,11 +92,29 @@ impl App {
 
 impl ImagicAppTrait for App {
     fn on_update(&mut self, _imagic_context: &mut ImagicContext, _ui_renderer: &mut UIRenderer) {
-        self._rotate_camera(_imagic_context);
+        if self.rotate_camera {
+            self._rotate_camera(_imagic_context);
+        }
     }
 
-    fn on_render_ui(&mut self, _ctx: &egui::Context) {
-        // todo!()
+    fn on_render_ui(&mut self, ctx: &egui::Context) {
+        egui::Window::new("Imagic - plane")
+        .resizable(true)
+        .vscroll(true)
+        .default_open(false)
+        .show(&ctx, |ui| {
+            if self.rotate_camera {
+                if ui.button("Stop Rotate").clicked() {
+                    info!("Stop Rotate");
+                    self.rotate_camera = !self.rotate_camera;
+                }
+            } else {
+                if ui.button("Rotate").clicked() {
+                    info!("Rotate.");
+                    self.rotate_camera = !self.rotate_camera;
+                }
+            }
+        });
     }
 }
 

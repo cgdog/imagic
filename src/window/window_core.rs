@@ -14,7 +14,7 @@ use crate::graphics;
 use crate::imagic_core::imagic_app::ImagicAppTrait;
 use crate::imagic_core::imagic_context::ImagicContext;
 
-use super::WindowSize;
+use super::{WindowInputProcessor, WindowSize};
 
 pub struct Window {
     window: Option<Arc<WindowWinit>>,
@@ -97,9 +97,10 @@ impl Window {
                         renderer.render(context, &self.get());
                         self.get().request_redraw();
                     }
-                    _ => (),
+                    others => {
+                        WindowInputProcessor::process_window_input(others, elwt);
+                    },
                 }
-                
             }
             
             _ => (),
