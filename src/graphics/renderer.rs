@@ -31,26 +31,31 @@ impl Renderer {
             .create_view(&wgpu::TextureViewDescriptor::default());
 
         let cameras = context.camera_manager().get_cameras();
-        for camera in cameras {
-            self.render_with_camera(context, camera, &surface_texture_view);
+        for (index, camera) in cameras.iter().enumerate() {
+            self.render_with_camera(context, camera, index, &surface_texture_view);
         }
 
         self.render_ui(context, _window, &surface_texture_view);
         surface_texture.present();
     }
 
-    pub fn render_with_camera(&mut self, context: & ImagicContext, camera: &Camera, surface_texture_view: &TextureView) {
+    pub fn render_with_camera(&mut self, context: & ImagicContext, camera: &Camera, camera_index: usize, surface_texture_view: &TextureView) {
         let mut encoder = context.graphics_context()
             .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("imagic render command encoder desc") });
         // Render scene
         {
             let camera_clear_color = camera.get_clear_color();
-            let clear_color = wgpu::Color {
-                r: camera_clear_color.x as f64,
-                g: camera_clear_color.y as f64,
-                b: camera_clear_color.z as f64,
-                a: camera_clear_color.w as f64
-            };
+
+            let mut load_op = wgpu::LoadOp::Load;
+            if camera_index == 0 {
+                let clear_color = wgpu::Color {
+                    r: camera_clear_color.x as f64,
+                    g: camera_clear_color.y as f64,
+                    b: camera_clear_color.z as f64,
+                    a: camera_clear_color.w as f64
+                };
+                load_op = wgpu::LoadOp::Clear(clear_color);
+            }
 
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("imagic render pass desc"),
@@ -58,7 +63,8 @@ impl Renderer {
                     view: surface_texture_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(clear_color),
+                        // load: wgpu::LoadOp::Clear(clear_color),
+                        load: load_op,
                         store: wgpu::StoreOp::Store,
                     },
                 })],

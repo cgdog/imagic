@@ -1,3 +1,4 @@
+use std::usize;
 use std::{cell::RefCell, f32::consts, rc::Rc};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -7,7 +8,8 @@ use imagic::prelude::*;
 
 pub struct App {
     cube: Cube,
-    camera: usize,
+    first_camera_id: usize,
+    second_camera_id: usize,
     window_size: WindowSize,
     camera_z: f32,
     rotate_camera: bool,
@@ -17,7 +19,8 @@ impl Default for App {
     fn default() -> Self {
         Self {
             cube: Cube::new(1.0, 1.0, 1.0, 1, 1, 1),
-            camera: usize::MAX,
+            first_camera_id: usize::MAX,
+            second_camera_id: usize::MAX,
             window_size: WindowSize::new(800.0, 500.0),
             camera_z: 8.0,
             rotate_camera: true,
@@ -54,15 +57,28 @@ impl App {
         material_index
     }
 
-    fn init(&mut self, imagic: &mut Imagic) {
+    fn add_camera(&mut self, imagic: &mut Imagic, camera_pos: glam::Vec3, viewport: glam::Vec4, clear_color: glam::Vec4) -> usize {
         let imagic_context = imagic.context_mut();
-        // self.prepare_lights(imagic_context);
-        self.camera = Camera::new(glam::Vec3::new(0.0, 0.0, self.camera_z), consts::FRAC_PI_4
+        let camera_id = Camera::new(camera_pos, consts::FRAC_PI_4
             , self.window_size.get_half_width() / self.window_size.get_height(), 0.01, 500.0, imagic_context);
         
-        let camera = imagic.context_mut().camera_manager_mut().get_camera_mut(self.camera);
-        camera.set_viewport(glam::Vec4::new(0.0, 0.0, 0.5, 1.0));
-        camera.set_clear_color(glam::Vec4::new(0.1, 0.1, 0.1, 1.0));
+        let first_camera = imagic.context_mut().camera_manager_mut().get_camera_mut(camera_id);
+        first_camera.set_viewport(viewport);
+        first_camera.set_clear_color(clear_color);
+        camera_id
+    }
+
+    fn init(&mut self, imagic: &mut Imagic) {
+        // first camera
+        let first_viewport = glam::Vec4::new(0.0, 0.0, 0.5, 1.0);
+        let first_clear_color = glam::Vec4::new(0.1, 0.1, 0.1, 1.0);
+        let first_camera_pos = glam::Vec3::new(0.0, 0.0, self.camera_z);
+        self.first_camera_id = self.add_camera(imagic, first_camera_pos, first_viewport, first_clear_color);
+
+        let second_viewport = glam::Vec4::new(0.5, 0.0, 0.5, 1.0);
+        let second_clear_color = glam::Vec4::new(0.1, 0.2, 0.3, 1.0);
+        let second_camera_pos = glam::Vec3::new(0.0, 0.0, self.camera_z);
+        self.second_camera_id = self.add_camera(imagic, second_camera_pos, second_viewport, second_clear_color);
 
         let material_index = self.prepare_material(imagic);
         self.cube.init(imagic, material_index);
@@ -79,13 +95,13 @@ impl App {
     }
 
     fn _rotate_camera(&mut self, imagic_context: &mut ImagicContext) {
-        let camera_transform = *imagic_context.camera_manager().get_camera(self.camera).transform();
+        let camera_transform = *imagic_context.camera_manager().get_camera(self.first_camera_id).transform();
         // let cur_camera_pos = imagic_context.transform_manager().get_transform(camera_transform).get_position();
         let cur_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs_f64();
         // info!("cur_time: {}", cur_time);
         let camera_new_pos = glam::Vec3::new(self.camera_z * cur_time.cos() as f32, 4.5, self.camera_z * cur_time.sin() as f32);
         imagic_context.transform_manager_mut().get_transform_mut(camera_transform).set_position(camera_new_pos);
-        let camera = imagic_context.camera_manager().get_camera(self.camera);
+        let camera = imagic_context.camera_manager().get_camera(self.first_camera_id);
         camera.update_uniform_buffers(imagic_context.graphics_context(), imagic_context.transform_manager(), imagic_context.buffer_manager());
     }
 }
