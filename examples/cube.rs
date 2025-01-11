@@ -2,6 +2,7 @@ use std::{cell::RefCell, f32::consts, rc::Rc};
 
 use log::info;
 use imagic::{prelude::*, window::WindowSize};
+use math::Vec3;
 
 pub struct App {
     cube: Cube,
@@ -51,7 +52,7 @@ impl App {
     fn init(&mut self, imagic: &mut Imagic) {
         let imagic_context = imagic.context_mut();
         // self.prepare_lights(imagic_context);
-        self.camera = Camera::new(glam::Vec3::new(0.0, 5.0, 10.0), consts::FRAC_PI_4
+        self.camera = Camera::new(Vec3::new(0.0, 5.0, 10.0), consts::FRAC_PI_4
             , self.window_size.get_aspect(), 1.0, 100.0, imagic_context);
 
         let material_index = self.prepare_material(imagic);

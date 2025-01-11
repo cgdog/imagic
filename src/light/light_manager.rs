@@ -1,4 +1,4 @@
-use crate::prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, GraphicsContext, SceneObject, TransformManager, INVALID_ID};
+use crate::{math::{UVec4, Vec4}, prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, GraphicsContext, SceneObject, TransformManager, INVALID_ID}};
 
 use super::point_light::PointLight;
 
@@ -40,17 +40,17 @@ impl LightManager {
     }
 
     fn create_light_buffer(&mut self, graphics_context: &GraphicsContext, transform_manager: &TransformManager) {
-        let light_count = glam::UVec4::new(0, self.point_lights.len() as u32, 0, 0);
+        let light_count = UVec4::new(0, self.point_lights.len() as u32, 0, 0);
         let light_count_arr = light_count.to_array();
 
         let light_count_ref: &[u8] = bytemuck::cast_slice(&light_count_arr);
         let mut lights_storage_data: Vec<f32> = Vec::new();
         for light in self.point_lights.iter() {
             let light_pos = transform_manager.get_transform(*light.transform()).get_position();
-            let position = glam::Vec4::new(light_pos.x, light_pos.y, light_pos.z, 1.0);
+            let position = Vec4::new(light_pos.x, light_pos.y, light_pos.z, 1.0);
             lights_storage_data.extend_from_slice(position.as_ref());
             let c = light.get_color();
-            let color = glam::Vec4::new(c.x, c.y, c.z, 1.0);
+            let color = Vec4::new(c.x, c.y, c.z, 1.0);
             lights_storage_data.extend_from_slice(color.as_ref());
         }
         

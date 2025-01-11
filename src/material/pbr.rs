@@ -1,9 +1,9 @@
 use std::borrow::Cow;
 
-use crate::prelude::{
+use crate::{math::Vec4, prelude::{
     bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
     texture_manager::TextureManager, GraphicsContext, INVALID_ID,
-};
+}};
 
 use super::material::MaterialTrait;
 
@@ -15,8 +15,8 @@ struct PBRFragmentUniforms {
 }
 
 pub struct PBRMaterial {
-    albedo_color: glam::Vec4,
-    metallic_roughness_ao: glam::Vec4,
+    albedo_color: Vec4,
+    metallic_roughness_ao: Vec4,
 
     albedo_texture: usize,
     normal_textue: usize,
@@ -32,8 +32,8 @@ pub struct PBRMaterial {
 impl Default for PBRMaterial {
     fn default() -> Self {
         Self {
-            albedo_color: glam::Vec4::ONE,
-            metallic_roughness_ao: glam::Vec4::ONE,
+            albedo_color: Vec4::ONE,
+            metallic_roughness_ao: Vec4::ONE,
             albedo_texture: INVALID_ID,
             normal_textue: INVALID_ID,
             metallic_texture: INVALID_ID,
@@ -150,10 +150,10 @@ impl MaterialTrait for PBRMaterial {
 }
 
 impl PBRMaterial {
-    pub fn new(albedo_color: glam::Vec4, metallic: f32, roughness: f32, ao: f32) -> Self {
+    pub fn new(albedo_color: Vec4, metallic: f32, roughness: f32, ao: f32) -> Self {
         Self {
             albedo_color,
-            metallic_roughness_ao: glam::Vec4::new(metallic, roughness, ao, 1.0),
+            metallic_roughness_ao: Vec4::new(metallic, roughness, ao, 1.0),
             ..Default::default()
         }
     }
@@ -282,11 +282,11 @@ impl PBRMaterial {
         }
     }
 
-    pub fn set_albedo_color(&mut self, albedo_color: glam::Vec4) {
+    pub fn set_albedo_color(&mut self, albedo_color: Vec4) {
         self.albedo_color = albedo_color;
     }
 
-    pub fn get_albedo_color(&self) -> glam::Vec4 {
+    pub fn get_albedo_color(&self) -> Vec4 {
         self.albedo_color
     }
 
@@ -314,7 +314,7 @@ impl PBRMaterial {
         self.metallic_roughness_ao.z
     }
 
-    pub fn get_metallic_roughness_ao(&self) -> glam::Vec4 {
+    pub fn get_metallic_roughness_ao(&self) -> Vec4 {
         self.metallic_roughness_ao
     }
 

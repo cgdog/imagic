@@ -2,6 +2,7 @@ use std::{cell::RefCell, f32::consts, rc::Rc};
 
 use log::info;
 use imagic::{prelude::*, window::WindowSize};
+use math::{Vec3, Vec4};
 
 pub struct App {
     sphere: Sphere,
@@ -25,23 +26,23 @@ impl App {
 
         let transform_manager = imagic_context.transform_manager_mut();
         let point_light_0 = PointLight::new(
-            glam::Vec3::new(-10.0,  10.0, 10.0),
-            glam::Vec3::new(300.0, 300.0, 300.0),
+            Vec3::new(-10.0,  10.0, 10.0),
+            Vec3::new(300.0, 300.0, 300.0),
             transform_manager
         );
         let point_light_1 = PointLight::new(
-            glam::Vec3::new(10.0,  10.0, 10.0),
-            glam::Vec3::new(300.0, 300.0, 300.0),
+            Vec3::new(10.0,  10.0, 10.0),
+            Vec3::new(300.0, 300.0, 300.0),
             transform_manager
         );
         let point_light_2 = PointLight::new(
-            glam::Vec3::new(-10.0,  -10.0, 10.0),
-            glam::Vec3::new(300.0, 300.0, 300.0),
+            Vec3::new(-10.0,  -10.0, 10.0),
+            Vec3::new(300.0, 300.0, 300.0),
             transform_manager
         );
         let point_light_3 = PointLight::new(
-            glam::Vec3::new(10.0,  -10.0, 10.0),
-            glam::Vec3::new(300.0, 300.0, 300.0),
+            Vec3::new(10.0,  -10.0, 10.0),
+            Vec3::new(300.0, 300.0, 300.0),
             transform_manager
         );
 
@@ -54,7 +55,7 @@ impl App {
 
     fn prepare_material(&mut self, imagic: &mut Imagic) -> usize {
         let graphics_context = imagic.context().graphics_context();
-        let mut pbr_material = Box::new(PBRMaterial::new(glam::Vec4::new(1.0, 1.0, 1.0, 1.0), 1.0, 1.0, 1.0));
+        let mut pbr_material = Box::new(PBRMaterial::new(Vec4::new(1.0, 1.0, 1.0, 1.0), 1.0, 1.0, 1.0));
         let albedo_texture = Texture::create_from_bytes(graphics_context,
             include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_basecolor.png"), wgpu::TextureFormat::Rgba8UnormSrgb);
         let normal_texture = Texture::create_from_bytes(graphics_context,
@@ -102,7 +103,7 @@ impl App {
 
         self.prepare_lights(imagic_context);
 
-        self.camera = Camera::new(glam::Vec3::new(0.0, 1.0, 4.0), consts::FRAC_PI_4
+        self.camera = Camera::new(Vec3::new(0.0, 1.0, 4.0), consts::FRAC_PI_4
             , self.window_size.get_aspect() as f32, 1.0, 10.0, imagic_context);
 
         let pbr_material_index = self.prepare_material(imagic);

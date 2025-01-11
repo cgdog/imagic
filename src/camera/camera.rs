@@ -3,13 +3,12 @@ use std::usize;
 use log::info;
 
 use crate::{
-    prelude::{
+    math::{Mat4, Vec3, Vec4}, prelude::{
         bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
         buffer::GPUBufferManager, render_item_manager::RenderItemManager,
         texture_manager::TextureManager, GraphicsContext, ImagicContext, SceneObject, Texture,
         Transform, TransformManager, INVALID_ID,
-    },
-    window::Window,
+    }, window::Window
 };
 
 use super::{Layer, LayerMask};
@@ -25,13 +24,13 @@ pub struct Camera {
     aspect: f32,
     near: f32,
     far: f32,
-    target_pos: glam::Vec3,
-    up: glam::Vec3,
+    target_pos: Vec3,
+    up: Vec3,
 
-    view_port: glam::Vec4,
-    physical_view_port: glam::Vec4,
+    view_port: Vec4,
+    physical_view_port: Vec4,
 
-    clear_color: glam::Vec4,
+    clear_color: Vec4,
 
     transform: usize,
 
@@ -56,11 +55,11 @@ impl Default for Camera {
             aspect: 1.0,
             near: 0.1,
             far: 500.0,
-            target_pos: glam::Vec3::ZERO,
-            up: glam::Vec3::Y,
-            view_port: glam::Vec4::new(0.0, 0.0, 1.0, 1.0),
-            physical_view_port: glam::Vec4::new(0.0, 0.0, 100.0, 100.0),
-            clear_color: glam::Vec4::new(0.1, 0.2, 0.3, 1.0),
+            target_pos: Vec3::ZERO,
+            up: Vec3::Y,
+            view_port: Vec4::new(0.0, 0.0, 1.0, 1.0),
+            physical_view_port: Vec4::new(0.0, 0.0, 100.0, 100.0),
+            clear_color: Vec4::new(0.1, 0.2, 0.3, 1.0),
             transform: INVALID_ID,
             bind_group_id: INVALID_ID,
             // bind_group_layout_id: INVALID_ID,
@@ -173,7 +172,7 @@ impl Camera {
     }
 
     pub fn new(
-        pos: glam::Vec3,
+        pos: Vec3,
         fov: f32,
         aspect: f32,
         near: f32,
@@ -202,16 +201,16 @@ impl Camera {
         camera_index
     }
 
-    pub fn get_projection_matrix(&self) -> glam::Mat4 {
-        let projection = glam::Mat4::perspective_rh(self.fov, self.aspect, self.near, self.far);
+    pub fn get_projection_matrix(&self) -> Mat4 {
+        let projection = Mat4::perspective_rh(self.fov, self.aspect, self.near, self.far);
         projection
     }
 
-    pub fn get_view_matrix(&self, transform_manager: &TransformManager) -> glam::Mat4 {
+    pub fn get_view_matrix(&self, transform_manager: &TransformManager) -> Mat4 {
         let pos = transform_manager
             .get_transform(self.transform)
             .get_position();
-        let view = glam::Mat4::look_at_rh(*pos, self.target_pos, self.up);
+        let view = Mat4::look_at_rh(*pos, self.target_pos, self.up);
         view
     }
 
@@ -287,20 +286,20 @@ impl Camera {
         self.far = new_far;
     }
 
-    pub fn set_viewport(&mut self, view_port: glam::Vec4) {
+    pub fn set_viewport(&mut self, view_port: Vec4) {
         self.view_port = view_port;
     }
 
-    pub fn get_viewport(&self) -> &glam::Vec4 {
+    pub fn get_viewport(&self) -> &Vec4 {
         &self.view_port
     }
 
-    pub fn set_physical_viewport(&mut self, physical_view_port: glam::Vec4) {
+    pub fn set_physical_viewport(&mut self, physical_view_port: Vec4) {
         self.physical_view_port = physical_view_port;
     }
 
     /// get the real view port used by render pass
-    pub fn get_physical_viewport(&self) -> &glam::Vec4 {
+    pub fn get_physical_viewport(&self) -> &Vec4 {
         &self.physical_view_port
     }
 
@@ -315,11 +314,11 @@ impl Camera {
         info!("physical_view_port: {}", self.physical_view_port);
     }
 
-    pub fn get_clear_color(&self) -> &glam::Vec4 {
+    pub fn get_clear_color(&self) -> &Vec4 {
         &self.clear_color
     }
 
-    pub fn set_clear_color(&mut self, clear_color: glam::Vec4) {
+    pub fn set_clear_color(&mut self, clear_color: Vec4) {
         self.clear_color = clear_color;
     }
 

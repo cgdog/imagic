@@ -18,35 +18,35 @@ pub trait SceneObject {
     //     INVALID_ID
     // }
 
-    // fn get_position(&self) -> &glam::Vec3 {
+    // fn get_position(&self) -> &Vec3 {
     //     self.transform().get_position()
     // }
 
-    // fn set_position(&mut self, new_pos: glam::Vec3) {
+    // fn set_position(&mut self, new_pos: Vec3) {
     //     self.transform_mut().set_position(new_pos);
     // }
 
-    // fn get_rotation_euler(&self) -> &glam::Vec3 {
+    // fn get_rotation_euler(&self) -> &Vec3 {
     //     self.transform().get_rotation_euler()
     // }
 
-    // fn get_rotation_quat(&self) -> &glam::Quat {
+    // fn get_rotation_quat(&self) -> &Quat {
     //     self.transform().get_rotation_quat()
     // }
 
-    // fn set_rotation_euler(&mut self, new_rot: glam::Vec3) {
+    // fn set_rotation_euler(&mut self, new_rot: Vec3) {
     //     self.transform_mut().set_rotation_euler(new_rot);
     // }
 
-    // fn get_scale(&self) -> &glam::Vec3 {
+    // fn get_scale(&self) -> &Vec3 {
     //     self.transform().get_scale()
     // }
 
-    // fn set_scale(&mut self, new_scale: glam::Vec3) {
+    // fn set_scale(&mut self, new_scale: Vec3) {
     //     self.transform_mut().set_scale(new_scale);
     // }
 
-    // fn trs_matrix(&self) -> glam::Mat4 {
+    // fn trs_matrix(&self) -> Mat4 {
     //     self.transform().trs_matrix()
     // }
 }

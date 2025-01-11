@@ -5,6 +5,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use imagic::window::WindowSize;
 use log::info;
 use imagic::prelude::*;
+use math::{Vec3, Vec4};
 
 pub struct App {
     cube: Cube,
@@ -36,23 +37,23 @@ impl App {
 
         let transform_manager = imagic_context.transform_manager_mut();
         let point_light_0 = PointLight::new(
-            glam::Vec3::new(-10.0,  10.0, 10.0),
-            glam::Vec3::new(300.0, 300.0, 300.0),
+            Vec3::new(-10.0,  10.0, 10.0),
+            Vec3::new(300.0, 300.0, 300.0),
             transform_manager
         );
         let point_light_1 = PointLight::new(
-            glam::Vec3::new(10.0,  10.0, 10.0),
-            glam::Vec3::new(300.0, 300.0, 300.0),
+            Vec3::new(10.0,  10.0, 10.0),
+            Vec3::new(300.0, 300.0, 300.0),
             transform_manager
         );
         let point_light_2 = PointLight::new(
-            glam::Vec3::new(-10.0,  -10.0, 10.0),
-            glam::Vec3::new(300.0, 300.0, 300.0),
+            Vec3::new(-10.0,  -10.0, 10.0),
+            Vec3::new(300.0, 300.0, 300.0),
             transform_manager
         );
         let point_light_3 = PointLight::new(
-            glam::Vec3::new(10.0,  -10.0, 10.0),
-            glam::Vec3::new(300.0, 300.0, 300.0),
+            Vec3::new(10.0,  -10.0, 10.0),
+            Vec3::new(300.0, 300.0, 300.0),
             transform_manager
         );
 
@@ -65,7 +66,7 @@ impl App {
 
     fn prepare_pbr_material(&mut self, imagic: &mut Imagic) -> usize {
         let graphics_context = imagic.context().graphics_context();
-        let mut pbr_material = Box::new(PBRMaterial::new(glam::Vec4::new(1.0, 1.0, 1.0, 1.0), 1.0, 1.0, 1.0));
+        let mut pbr_material = Box::new(PBRMaterial::new(Vec4::new(1.0, 1.0, 1.0, 1.0), 1.0, 1.0, 1.0));
         let albedo_texture = Texture::create_from_bytes(graphics_context,
             include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_basecolor.png"), wgpu::TextureFormat::Rgba8UnormSrgb);
         let normal_texture = Texture::create_from_bytes(graphics_context,
@@ -122,7 +123,7 @@ impl App {
         material_index
     }
 
-    fn add_camera(&mut self, imagic: &mut Imagic, camera_pos: glam::Vec3, viewport: glam::Vec4, clear_color: glam::Vec4, layer_mask: LayerMask) -> usize {
+    fn add_camera(&mut self, imagic: &mut Imagic, camera_pos: Vec3, viewport: Vec4, clear_color: Vec4, layer_mask: LayerMask) -> usize {
         let imagic_context = imagic.context_mut();
         let camera_id = Camera::new(camera_pos, consts::FRAC_PI_4
             , self.window_size.get_half_width() / self.window_size.get_height(), 0.01, 500.0, imagic_context);
@@ -136,15 +137,15 @@ impl App {
 
     fn init(&mut self, imagic: &mut Imagic) {
         // first camera
-        let first_viewport = glam::Vec4::new(0.0, 0.0, 0.5, 1.0);
-        let first_clear_color = glam::Vec4::new(0.1, 0.1, 0.1, 1.0);
-        let first_camera_pos = glam::Vec3::new(0.0, 0.0, self.camera_z);
+        let first_viewport = Vec4::new(0.0, 0.0, 0.5, 1.0);
+        let first_clear_color = Vec4::new(0.1, 0.1, 0.1, 1.0);
+        let first_camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
         let first_camera_layer_mask = LayerMask::new(Layer::Default.into());
         self.first_camera_id = self.add_camera(imagic, first_camera_pos, first_viewport, first_clear_color, first_camera_layer_mask);
 
-        let second_viewport = glam::Vec4::new(0.5, 0.0, 0.5, 1.0);
-        let second_clear_color = glam::Vec4::new(0.1, 0.2, 0.3, 1.0);
-        let second_camera_pos = glam::Vec3::new(0.0, 0.0, self.camera_z);
+        let second_viewport = Vec4::new(0.5, 0.0, 0.5, 1.0);
+        let second_clear_color = Vec4::new(0.1, 0.2, 0.3, 1.0);
+        let second_camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
         let second_camera_layer_mask = LayerMask::new(Layer::RenderTarget.into());
         self.second_camera_id = self.add_camera(imagic, second_camera_pos, second_viewport, second_clear_color, second_camera_layer_mask);
 
@@ -175,7 +176,7 @@ impl App {
         // let cur_camera_pos = imagic_context.transform_manager().get_transform(camera_transform).get_position();
         let cur_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs_f64();
         // info!("cur_time: {}", cur_time);
-        let camera_new_pos = glam::Vec3::new(self.camera_z * cur_time.cos() as f32, 4.5, self.camera_z * cur_time.sin() as f32);
+        let camera_new_pos = Vec3::new(self.camera_z * cur_time.cos() as f32, 4.5, self.camera_z * cur_time.sin() as f32);
         imagic_context.transform_manager_mut().get_transform_mut(camera_transform).set_position(camera_new_pos);
         let camera = imagic_context.camera_manager().get_camera(self.first_camera_id);
         camera.update_uniform_buffers(imagic_context.graphics_context(), imagic_context.transform_manager(), imagic_context.buffer_manager());

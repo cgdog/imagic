@@ -1,13 +1,12 @@
 use crate::{
-    camera::Layer,
-    prelude::{
+    camera::Layer, math::Vec3, prelude::{
         render_item_manager::RenderItemManager, SceneObject, Transform, TransformManager,
         INVALID_ID,
-    },
+    }
 };
 
 pub struct PointLight {
-    color: glam::Vec3,
+    color: Vec3,
     intensity: f32,
     transform: usize,
 
@@ -17,7 +16,7 @@ pub struct PointLight {
 impl Default for PointLight {
     fn default() -> Self {
         Self {
-            color: glam::Vec3::ONE,
+            color: Vec3::ONE,
             intensity: 1.0,
             transform: INVALID_ID,
             layer: Layer::Default,
@@ -46,8 +45,8 @@ impl SceneObject for PointLight {
 
 impl PointLight {
     pub fn new(
-        pos: glam::Vec3,
-        color: glam::Vec3,
+        pos: Vec3,
+        color: Vec3,
         transform_manager: &mut TransformManager,
     ) -> Self {
         let mut transform = Transform::default();
@@ -62,11 +61,11 @@ impl PointLight {
         }
     }
 
-    pub fn get_color(&self) -> &glam::Vec3 {
+    pub fn get_color(&self) -> &Vec3 {
         &self.color
     }
 
-    pub fn set_color(&mut self, color: glam::Vec3) {
+    pub fn set_color(&mut self, color: Vec3) {
         self.color = color;
     }
 
