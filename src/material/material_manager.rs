@@ -1,4 +1,4 @@
-use crate::prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, texture_manager::TextureManager, GraphicsContext};
+use crate::{prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, texture_manager::TextureManager, GraphicsContext}, types::ID};
 
 use super::material::MaterialTrait;
 
@@ -16,7 +16,7 @@ impl Default for MaterialManager {
 }
 
 impl MaterialManager {
-    pub fn add_material(&mut self, material: Box<dyn MaterialTrait>) -> usize {
+    pub fn add_material(&mut self, material: Box<dyn MaterialTrait>) -> ID {
         let index = self.materials.len();
         self.materials.push(material);
         index

@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use wgpu::BindGroupLayout;
-use crate::prelude::{MaterialTrait, Vertex, INVALID_ID};
+use crate::{prelude::{MaterialTrait, Vertex, INVALID_ID}, types::ID};
 
 use super::{bind_group_layout::BindGroupLayoutManager, graphics_context::GraphicsContext};
 
@@ -19,7 +19,7 @@ impl Default for RenderPipelineManager {
 }
 
 impl RenderPipelineManager {
-    pub fn add_render_pipeline(&mut self, render_pipeline: wgpu::RenderPipeline) -> usize {
+    pub fn add_render_pipeline(&mut self, render_pipeline: wgpu::RenderPipeline) -> ID {
         let id = self.render_pipelines.len();
         self.render_pipelines.push(render_pipeline);
         id
@@ -32,7 +32,7 @@ impl RenderPipelineManager {
         &self.render_pipelines[index]
     }
 
-    pub fn default_pbr_render_pipeline(&self) -> usize {
+    pub fn default_pbr_render_pipeline(&self) -> ID {
         self.default_pbr_pipeline
     }
 
@@ -42,7 +42,7 @@ impl RenderPipelineManager {
         // self.default_pbr_pipeline = default_pbr;
     }
 
-    pub fn create_pipeline(&mut self, graphics_context: &GraphicsContext, bind_group_layout_manager: &BindGroupLayoutManager, material: &Box<dyn MaterialTrait>) -> usize {
+    pub fn create_pipeline(&mut self, graphics_context: &GraphicsContext, bind_group_layout_manager: &BindGroupLayoutManager, material: &Box<dyn MaterialTrait>) -> ID {
         // let bind_group_layout = bind_group_layout_manager.default_pbr_bind_group_layout();
         const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth24PlusStencil8;
         let bind_group_layouts = [

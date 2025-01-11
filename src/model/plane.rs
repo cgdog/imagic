@@ -3,10 +3,7 @@ use std::usize;
 use wgpu::util::DeviceExt;
 
 use crate::{
-    camera::Layer,
-    prelude::{render_item_manager::RenderItemManager, RenderItem, VertexOrIndexCount, INVALID_ID},
-    scene::{SceneObject, Transform, TransformManager},
-    Imagic,
+    camera::Layer, prelude::{render_item_manager::RenderItemManager, RenderItem, VertexOrIndexCount, INVALID_ID}, scene::{SceneObject, Transform, TransformManager}, types::ID, Imagic
 };
 
 use super::Vertex;
@@ -68,7 +65,7 @@ impl Plane {
         }
     }
 
-    pub fn render_item_id(&self) -> usize {
+    pub fn render_item_id(&self) -> ID {
         self.render_item_id
     }
 

@@ -1,6 +1,6 @@
 use std::{borrow::Cow, usize};
 
-use crate::prelude::{bind_group_layout::BindGroupLayoutManager, GraphicsContext, INVALID_ID};
+use crate::{prelude::{bind_group_layout::BindGroupLayoutManager, GraphicsContext, INVALID_ID}, types::ID};
 
 use super::MaterialTrait;
 
@@ -27,7 +27,7 @@ impl MaterialTrait for SkyboxMaterial {
     }
 
     fn create_bind_group(&mut self, graphics_context: &crate::prelude::GraphicsContext, bind_group_manager: &mut crate::prelude::bind_group::BindGroupManager,
-        bind_group_layout_manager: &mut crate::prelude::bind_group_layout::BindGroupLayoutManager, texture_manager: &crate::prelude::texture_manager::TextureManager) -> usize {
+        bind_group_layout_manager: &mut crate::prelude::bind_group_layout::BindGroupLayoutManager, texture_manager: &crate::prelude::texture_manager::TextureManager) -> ID {
         let bind_group_layout = bind_group_layout_manager.get_bind_group_layout(self.get_bind_group_layout_id());
         let bind_group = graphics_context.create_bind_group(&wgpu::BindGroupDescriptor{
             layout: bind_group_layout,
@@ -49,11 +49,11 @@ impl MaterialTrait for SkyboxMaterial {
         self.bind_group_id
     }
 
-    fn get_bind_group_layout_id(&self) -> usize {
+    fn get_bind_group_layout_id(&self) -> ID {
         SkyboxMaterial::internal_bind_group_layout_id(INVALID_ID)
     }
 
-    fn get_bind_group_id(&self) -> usize {
+    fn get_bind_group_id(&self) -> ID {
         self.bind_group_id
     }
 
@@ -87,7 +87,7 @@ impl SkyboxMaterial {
         }
     }
 
-    fn internal_bind_group_layout_id(new_id: usize) -> usize {
+    fn internal_bind_group_layout_id(new_id: usize) -> ID {
         // All SkyboxMaterial instances share the same bind group layout.
         static mut LAYOUT_ID: usize = INVALID_ID;
         if new_id != INVALID_ID {
@@ -137,7 +137,7 @@ impl SkyboxMaterial {
         self.skybox_map = skybox_map;
     }
 
-    pub fn get_skybox_map(&self) -> usize {
+    pub fn get_skybox_map(&self) -> ID {
         self.skybox_map
     }
 

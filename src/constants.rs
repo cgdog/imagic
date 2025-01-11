@@ -1,1 +1,3 @@
-pub const INVALID_ID: usize = usize::MAX;
+use crate::types::ID;
+
+pub const INVALID_ID: ID = ID::MAX;

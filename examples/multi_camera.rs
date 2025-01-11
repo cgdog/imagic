@@ -5,7 +5,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use imagic::window::WindowSize;
 use log::info;
 use imagic::prelude::*;
-use math::{Vec3, Vec4};
 
 pub struct App {
     cube: Cube,
@@ -31,7 +30,7 @@ impl Default for App {
 
 impl App {
 
-    fn prepare_skybox(&mut self, imagic_context: &mut ImagicContext) -> usize {
+    fn prepare_skybox(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let mut hdr_loader = HDRLoader{};
         let cwd = std::env::current_dir().unwrap();
         let hdr_path = cwd.join("examples/assets/pbr/hdr/newport_loft.hdr");
@@ -40,14 +39,14 @@ impl App {
         hdr_texture_index
     }
 
-    fn _prepare_albedo(&mut self, imagic_context: &mut ImagicContext) -> usize {
+    fn _prepare_albedo(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let albedo_texture = Texture::create_from_bytes(imagic_context.graphics_context(),
             include_bytes!("./assets/lena.png"), wgpu::TextureFormat::Rgba8UnormSrgb);
         let albedo_texture_index = imagic_context.texture_manager_mut().add_texture(albedo_texture);
         albedo_texture_index
     }
 
-    fn prepare_material(&mut self, imagic: &mut Imagic) -> usize {
+    fn prepare_material(&mut self, imagic: &mut Imagic) -> ID {
         let mut equirectangular_to_cube_material = Box::new(EquirectangularToCubeMaterial::new());
         let skybox_texture = self.prepare_skybox(imagic.context_mut());
         equirectangular_to_cube_material.set_equirectangular_map(skybox_texture);
@@ -58,7 +57,7 @@ impl App {
         material_index
     }
 
-    fn add_camera(&mut self, imagic: &mut Imagic, camera_pos: Vec3, viewport: Vec4, clear_color: Vec4) -> usize {
+    fn add_camera(&mut self, imagic: &mut Imagic, camera_pos: Vec3, viewport: Vec4, clear_color: Vec4) -> ID {
         let imagic_context = imagic.context_mut();
         let camera_id = Camera::new(camera_pos, consts::FRAC_PI_4
             , self.window_size.get_half_width() / self.window_size.get_height(), 0.01, 500.0, imagic_context);

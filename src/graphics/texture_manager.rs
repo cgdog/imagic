@@ -1,3 +1,5 @@
+use crate::types::ID;
+
 use super::texture::Texture;
 
 pub struct TextureManager {
@@ -17,7 +19,7 @@ impl TextureManager {
         Default::default()
     }
 
-    pub fn add_texture(&mut self, texture: Texture) -> usize {
+    pub fn add_texture(&mut self, texture: Texture) -> ID {
         let id = self.textures.len();
         self.textures.push(texture);
         id

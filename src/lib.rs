@@ -11,6 +11,7 @@ pub mod light;
 pub mod asset_loader;
 pub mod constants;
 pub mod math;
+pub mod types;
 
 pub mod prelude {
     pub use crate::graphics::*;
@@ -28,5 +29,6 @@ pub mod prelude {
     pub use crate::light::*;
     pub use crate::asset_loader::*;
     pub use crate::constants::*;
-    pub use crate::math;
+    pub use crate::math::*;
+    pub use crate::types::*;
 }

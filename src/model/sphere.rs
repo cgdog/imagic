@@ -1,7 +1,7 @@
 use std::f32::consts::{PI, TAU};
 use wgpu::util::DeviceExt;
 
-use crate::{camera::Layer, prelude::{render_item_manager::RenderItemManager, RenderItem, TransformManager, VertexOrIndexCount, INVALID_ID}, scene::{scene_object::SceneObject, transform::Transform}, Imagic};
+use crate::{camera::Layer, prelude::{render_item_manager::RenderItemManager, RenderItem, TransformManager, VertexOrIndexCount, INVALID_ID}, scene::{scene_object::SceneObject, transform::Transform}, types::ID, Imagic};
 
 use super::vertex_attribute::Vertex;
 
@@ -99,7 +99,7 @@ impl Sphere {
         }
     }
 
-    pub fn render_item_id(&self) -> usize {
+    pub fn render_item_id(&self) -> ID {
         self.render_item_id
     }
 

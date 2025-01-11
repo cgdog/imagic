@@ -1,3 +1,5 @@
+use crate::types::ID;
+
 pub struct GPUBufferManager {
     buffers: Vec<wgpu::Buffer>,
 }
@@ -13,7 +15,7 @@ impl GPUBufferManager {
         Default::default()
     }
 
-    pub fn add_buffer(&mut self, buffer: wgpu::Buffer) -> usize {
+    pub fn add_buffer(&mut self, buffer: wgpu::Buffer) -> ID {
         let index = self.buffers.len();
         self.buffers.push(buffer);
         index

@@ -1,5 +1,3 @@
-use std::usize;
-
 use log::info;
 
 use crate::{
@@ -8,7 +6,7 @@ use crate::{
         buffer::GPUBufferManager, render_item_manager::RenderItemManager,
         texture_manager::TextureManager, GraphicsContext, ImagicContext, SceneObject, Texture,
         Transform, TransformManager, INVALID_ID,
-    }, window::Window
+    }, types::ID, window::Window
 };
 
 use super::{Layer, LayerMask};
@@ -32,16 +30,16 @@ pub struct Camera {
 
     clear_color: Vec4,
 
-    transform: usize,
+    transform: ID,
 
-    bind_group_id: usize,
-    // bind_group_layout_id: usize,
+    bind_group_id: ID,
+    // bind_group_layout_id: ID,
 
     // TODO: merge buffers
-    vertex_uniform_buffer_id: usize,
-    fragment_uniform_buffer_id: usize,
+    vertex_uniform_buffer_id: ID,
+    fragment_uniform_buffer_id: ID,
 
-    depth_texture: usize,
+    depth_texture: ID,
 
     layer: Layer,
     pub layer_mask: LayerMask,
@@ -75,7 +73,7 @@ impl Default for Camera {
 }
 
 impl SceneObject for Camera {
-    fn transform(&self) -> &usize {
+    fn transform(&self) -> &ID {
         &self.transform
     }
 
@@ -111,7 +109,7 @@ impl Camera {
         );
     }
 
-    pub fn get_bind_group_id(&self) -> usize {
+    pub fn get_bind_group_id(&self) -> ID {
         self.bind_group_id
     }
 
@@ -122,7 +120,7 @@ impl Camera {
         bind_group_layout_manager: &mut BindGroupLayoutManager,
         transform_manager: &TransformManager,
         buffer_manager: &mut GPUBufferManager,
-    ) -> usize {
+    ) -> ID {
         let projection_matrix = self.get_projection_matrix();
         let view_matrix = self.get_view_matrix(transform_manager);
         let mut mx_ref: [f32; 16 * 2] = [0.0; 16 * 2];
@@ -178,7 +176,7 @@ impl Camera {
         near: f32,
         far: f32,
         imagic_context: &mut ImagicContext,
-    ) -> usize {
+    ) -> ID {
         let transform_manager = imagic_context.transform_manager_mut();
 
         let mut transform = Transform::default();
@@ -340,7 +338,7 @@ impl Camera {
         self.depth_texture = texture_manager.add_texture(dpeth_texture);
     }
 
-    pub fn get_depth_texture(&self) -> usize {
+    pub fn get_depth_texture(&self) -> ID {
         self.depth_texture
     }
 }

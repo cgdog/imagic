@@ -1,3 +1,5 @@
+use crate::types::ID;
+
 use super::transform::Transform;
 
 pub struct TransformManager {
@@ -13,17 +15,17 @@ impl Default for TransformManager {
 }
 
 impl TransformManager {
-    pub fn add_transform(&mut self, transform: Transform) -> usize {
-        let index: usize = self.transforms.len();
+    pub fn add_transform(&mut self, transform: Transform) -> ID {
+        let index: ID = self.transforms.len();
         self.transforms.push(transform);
         index
     }
 
-    pub fn get_transform(&self, index: usize) -> &Transform {
+    pub fn get_transform(&self, index: ID) -> &Transform {
         &self.transforms[index]
     }
 
-    pub fn get_transform_mut(&mut self, index: usize) -> &mut Transform {
+    pub fn get_transform_mut(&mut self, index: ID) -> &mut Transform {
         &mut self.transforms[index]
     }
 }

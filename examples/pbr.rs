@@ -2,7 +2,6 @@ use std::{cell::RefCell, f32::consts, rc::Rc};
 
 use log::info;
 use imagic::{prelude::*, window::WindowSize};
-use math::{Vec3, Vec4};
 
 pub struct App {
     sphere: Sphere,
@@ -53,7 +52,7 @@ impl App {
         light_manager.add_point_light(point_light_3);
     }
 
-    fn prepare_material(&mut self, imagic: &mut Imagic) -> usize {
+    fn prepare_material(&mut self, imagic: &mut Imagic) -> ID {
         let graphics_context = imagic.context().graphics_context();
         let mut pbr_material = Box::new(PBRMaterial::new(Vec4::new(1.0, 1.0, 1.0, 1.0), 1.0, 1.0, 1.0));
         let albedo_texture = Texture::create_from_bytes(graphics_context,
@@ -87,7 +86,7 @@ impl App {
         pbr_material_index
     }
 
-    fn prepare_skybox(&mut self, imagic_context: &mut ImagicContext) -> usize {
+    fn prepare_skybox(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let mut hdr_loader = HDRLoader{};
         let cwd = std::env::current_dir().unwrap();
         let hdr_path = cwd.join("examples/assets/pbr/hdr/newport_loft.hdr");

@@ -2,7 +2,6 @@ use std::{cell::RefCell, f32::consts, rc::Rc};
 
 use log::info;
 use imagic::{prelude::*, window::WindowSize};
-use math::Vec3;
 
 pub struct App {
     cube: Cube,
@@ -22,7 +21,7 @@ impl Default for App {
 
 impl App {
 
-    fn _prepare_skybox(&mut self, imagic_context: &mut ImagicContext) -> usize {
+    fn _prepare_skybox(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let mut hdr_loader = HDRLoader{};
         let cwd = std::env::current_dir().unwrap();
         let hdr_path = cwd.join("examples/assets/pbr/hdr/newport_loft.hdr");
@@ -31,14 +30,14 @@ impl App {
         hdr_texture_index
     }
 
-    fn _prepare_albedo(&mut self, imagic_context: &mut ImagicContext) -> usize {
+    fn _prepare_albedo(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let albedo_texture = Texture::create_from_bytes(imagic_context.graphics_context(),
             include_bytes!("./assets/lena.png"), wgpu::TextureFormat::Rgba8UnormSrgb);
         let albedo_texture_index = imagic_context.texture_manager_mut().add_texture(albedo_texture);
         albedo_texture_index
     }
 
-    fn prepare_material(&mut self, imagic: &mut Imagic) -> usize {
+    fn prepare_material(&mut self, imagic: &mut Imagic) -> ID {
         let mut skybox_material = Box::new(SkyboxMaterial::new());
         // let skybox_texture = self._prepare_skybox(imagic.context_mut());
         // skybox_material.set_skybox_map(skybox_texture);

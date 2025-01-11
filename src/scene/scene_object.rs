@@ -14,7 +14,7 @@ pub trait SceneObject {
     //     self.get_render_item_id() != INVALID_ID
     // }
 
-    // fn get_render_item_id(&self) -> usize {
+    // fn get_render_item_id(&self) -> ID {
     //     INVALID_ID
     // }
 

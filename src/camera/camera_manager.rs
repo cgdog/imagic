@@ -1,4 +1,4 @@
-use crate::{prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, buffer::GPUBufferManager, texture_manager::TextureManager, GraphicsContext, TransformManager}, window::Window};
+use crate::{prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, buffer::GPUBufferManager, texture_manager::TextureManager, GraphicsContext, TransformManager}, types::ID, window::Window};
 
 use super::camera::Camera;
 
@@ -15,7 +15,7 @@ impl Default for CameraManager {
 }
 
 impl CameraManager {
-    pub fn add_camera(&mut self, camera: Camera) -> usize {
+    pub fn add_camera(&mut self, camera: Camera) -> ID {
         let index = self.cameras.len();
         self.cameras.push(camera);
         index
@@ -25,7 +25,7 @@ impl CameraManager {
         &self.cameras[index]
     }
 
-    pub fn get_camera_mut(&mut self, index: usize) -> &mut Camera {
+    pub fn get_camera_mut(&mut self, index: ID) -> &mut Camera {
         &mut self.cameras[index]
     }
 

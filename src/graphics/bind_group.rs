@@ -1,4 +1,4 @@
-use crate::graphics::GraphicsContext;
+use crate::{graphics::GraphicsContext, types::ID};
 
 pub struct BindGroupManager {
     bind_groups: Vec<wgpu::BindGroup>,
@@ -13,7 +13,7 @@ impl Default for BindGroupManager {
 }
 
 impl BindGroupManager {
-    pub fn add_bind_group(&mut self, bind_group: wgpu::BindGroup) -> usize {
+    pub fn add_bind_group(&mut self, bind_group: wgpu::BindGroup) -> ID {
         let id = self.bind_groups.len();
         self.bind_groups.push(bind_group);
         id

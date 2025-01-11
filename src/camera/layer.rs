@@ -4,6 +4,7 @@ use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign};
 pub enum Layer {
     Default = 1 << 0,
     UI = 1 << 1,
+    Gizmo = 1 << 2,
     RenderTarget = 1 << 3,
     Custom1 = 1 << 4,
     Custom2 = 1 << 5,

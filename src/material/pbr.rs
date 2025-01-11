@@ -1,9 +1,9 @@
 use std::borrow::Cow;
 
-use crate::{math::Vec4, prelude::{
+use crate::{math::{Color, Vec4}, prelude::{
     bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
     texture_manager::TextureManager, GraphicsContext, INVALID_ID,
-}};
+}, types::ID};
 
 use super::material::MaterialTrait;
 
@@ -15,18 +15,18 @@ struct PBRFragmentUniforms {
 }
 
 pub struct PBRMaterial {
-    albedo_color: Vec4,
+    albedo_color: Color,
     metallic_roughness_ao: Vec4,
 
-    albedo_texture: usize,
-    normal_textue: usize,
-    metallic_texture: usize,
-    roughness_texture: usize,
-    ao_texture: usize,
+    albedo_texture: ID,
+    normal_textue: ID,
+    metallic_texture: ID,
+    roughness_texture: ID,
+    ao_texture: ID,
 
     texture2d_sampler: Option<wgpu::Sampler>,
 
-    bind_group_id: usize,
+    bind_group_id: ID,
 }
 
 impl Default for PBRMaterial {
@@ -71,7 +71,7 @@ impl MaterialTrait for PBRMaterial {
         bind_group_manager: &mut BindGroupManager,
         bind_group_layout_manager: &mut BindGroupLayoutManager,
         texture_manager: &TextureManager,
-    ) -> usize {
+    ) -> ID {
         let fragment_uniforms = PBRFragmentUniforms {
             albedo: self.albedo_color.to_array(),
             metallic_roughness_ao: self.metallic_roughness_ao.to_array(),
@@ -140,17 +140,17 @@ impl MaterialTrait for PBRMaterial {
         self.bind_group_id
     }
 
-    fn get_bind_group_id(&self) -> usize {
+    fn get_bind_group_id(&self) -> ID {
         self.bind_group_id
     }
 
-    fn get_bind_group_layout_id(&self) -> usize {
+    fn get_bind_group_layout_id(&self) -> ID {
         PBRMaterial::internal_bind_group_layout_id(INVALID_ID)
     }
 }
 
 impl PBRMaterial {
-    pub fn new(albedo_color: Vec4, metallic: f32, roughness: f32, ao: f32) -> Self {
+    pub fn new(albedo_color: Color, metallic: f32, roughness: f32, ao: f32) -> Self {
         Self {
             albedo_color,
             metallic_roughness_ao: Vec4::new(metallic, roughness, ao, 1.0),
@@ -158,9 +158,9 @@ impl PBRMaterial {
         }
     }
 
-    fn internal_bind_group_layout_id(new_id: usize) -> usize {
+    fn internal_bind_group_layout_id(new_id: ID) -> ID {
         // All PBRMaterial instances share the same bind group layout.
-        static mut LAYOUT_ID: usize = INVALID_ID;
+        static mut LAYOUT_ID: ID = INVALID_ID;
         if new_id != INVALID_ID {
             unsafe { LAYOUT_ID = new_id };
         }
@@ -318,43 +318,43 @@ impl PBRMaterial {
         self.metallic_roughness_ao
     }
 
-    pub fn set_albedo_texture(&mut self, albedo_texture: usize) {
+    pub fn set_albedo_texture(&mut self, albedo_texture: ID) {
         self.albedo_texture = albedo_texture;
     }
 
-    pub fn get_albedo_texture(&self) -> usize {
+    pub fn get_albedo_texture(&self) -> ID {
         self.albedo_texture
     }
 
-    pub fn set_normal_texture(&mut self, normal_texture: usize) {
+    pub fn set_normal_texture(&mut self, normal_texture: ID) {
         self.normal_textue = normal_texture;
     }
 
-    pub fn get_normal_texture(&self) -> usize {
+    pub fn get_normal_texture(&self) -> ID {
         self.normal_textue
     }
 
-    pub fn set_metallic_texture(&mut self, metallic_texture: usize) {
+    pub fn set_metallic_texture(&mut self, metallic_texture: ID) {
         self.metallic_texture = metallic_texture;
     }
 
-    pub fn get_metallic_texture(&self) -> usize {
+    pub fn get_metallic_texture(&self) -> ID {
         self.metallic_texture
     }
 
-    pub fn set_roughness_texture(&mut self, roughness_texture: usize) {
+    pub fn set_roughness_texture(&mut self, roughness_texture: ID) {
         self.roughness_texture = roughness_texture;
     }
 
-    pub fn get_roughness_texture(&self) -> usize {
+    pub fn get_roughness_texture(&self) -> ID {
         self.roughness_texture
     }
 
-    pub fn set_ao_texture(&mut self, ao_texture: usize) {
+    pub fn set_ao_texture(&mut self, ao_texture: ID) {
         self.ao_texture = ao_texture;
     }
 
-    pub fn get_ao_texture(&self) -> usize {
+    pub fn get_ao_texture(&self) -> ID {
         self.ao_texture
     }
 

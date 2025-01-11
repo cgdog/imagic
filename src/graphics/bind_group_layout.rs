@@ -1,5 +1,5 @@
 use wgpu::BindGroupLayout;
-use crate::{graphics::GraphicsContext, prelude::INVALID_ID};
+use crate::{graphics::GraphicsContext, prelude::INVALID_ID, types::ID};
 
 pub struct BindGroupLayoutManager {
     bind_group_layouts: Vec<wgpu::BindGroupLayout>,
@@ -22,7 +22,7 @@ impl Default for BindGroupLayoutManager {
 }
 
 impl BindGroupLayoutManager {
-    pub fn add_bind_group_layout(&mut self, bind_group_layout: wgpu::BindGroupLayout) -> usize {
+    pub fn add_bind_group_layout(&mut self, bind_group_layout: wgpu::BindGroupLayout) -> ID {
         let index = self.bind_group_layouts.len();
         self.bind_group_layouts.push(bind_group_layout);
         index

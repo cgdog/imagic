@@ -1,8 +1,8 @@
-use crate::prelude::{
+use crate::{prelude::{
     bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
     render_pipeline::RenderPipelineManager, GraphicsContext, MaterialManager, TransformManager,
     INVALID_ID,
-};
+}, types::ID};
 
 use super::RenderItem;
 
@@ -68,7 +68,7 @@ impl RenderItemManager {
         }
     }
 
-    pub fn add_render_item(&mut self, render_item: RenderItem) -> usize {
+    pub fn add_render_item(&mut self, render_item: RenderItem) -> ID {
         let index = self.render_items.len();
         self.render_items.push(render_item);
         index

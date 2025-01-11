@@ -5,7 +5,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use imagic::window::WindowSize;
 use log::info;
 use imagic::prelude::*;
-use math::{Vec3, Vec4};
 
 pub struct App {
     cube: Cube,
@@ -38,22 +37,22 @@ impl App {
         let transform_manager = imagic_context.transform_manager_mut();
         let point_light_0 = PointLight::new(
             Vec3::new(-10.0,  10.0, 10.0),
-            Vec3::new(300.0, 300.0, 300.0),
+            ColorRGB::new(300.0, 300.0, 300.0),
             transform_manager
         );
         let point_light_1 = PointLight::new(
             Vec3::new(10.0,  10.0, 10.0),
-            Vec3::new(300.0, 300.0, 300.0),
+            ColorRGB::new(300.0, 300.0, 300.0),
             transform_manager
         );
         let point_light_2 = PointLight::new(
             Vec3::new(-10.0,  -10.0, 10.0),
-            Vec3::new(300.0, 300.0, 300.0),
+            ColorRGB::new(300.0, 300.0, 300.0),
             transform_manager
         );
         let point_light_3 = PointLight::new(
             Vec3::new(10.0,  -10.0, 10.0),
-            Vec3::new(300.0, 300.0, 300.0),
+            ColorRGB::new(300.0, 300.0, 300.0),
             transform_manager
         );
 
@@ -64,7 +63,7 @@ impl App {
         light_manager.add_point_light(point_light_3);
     }
 
-    fn prepare_pbr_material(&mut self, imagic: &mut Imagic) -> usize {
+    fn prepare_pbr_material(&mut self, imagic: &mut Imagic) -> ID {
         let graphics_context = imagic.context().graphics_context();
         let mut pbr_material = Box::new(PBRMaterial::new(Vec4::new(1.0, 1.0, 1.0, 1.0), 1.0, 1.0, 1.0));
         let albedo_texture = Texture::create_from_bytes(graphics_context,
@@ -96,7 +95,7 @@ impl App {
     }
 
 
-    fn prepare_skybox(&mut self, imagic_context: &mut ImagicContext) -> usize {
+    fn prepare_skybox(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let mut hdr_loader = HDRLoader{};
         let cwd = std::env::current_dir().unwrap();
         let hdr_path = cwd.join("examples/assets/pbr/hdr/newport_loft.hdr");
@@ -105,14 +104,14 @@ impl App {
         hdr_texture_index
     }
 
-    fn _prepare_albedo(&mut self, imagic_context: &mut ImagicContext) -> usize {
+    fn _prepare_albedo(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let albedo_texture = Texture::create_from_bytes(imagic_context.graphics_context(),
             include_bytes!("./assets/lena.png"), wgpu::TextureFormat::Rgba8UnormSrgb);
         let albedo_texture_index = imagic_context.texture_manager_mut().add_texture(albedo_texture);
         albedo_texture_index
     }
 
-    fn prepare_equirect_to_cube_material(&mut self, imagic: &mut Imagic) -> usize {
+    fn prepare_equirect_to_cube_material(&mut self, imagic: &mut Imagic) -> ID {
         let mut equirectangular_to_cube_material = Box::new(EquirectangularToCubeMaterial::new());
         let skybox_texture = self.prepare_skybox(imagic.context_mut());
         equirectangular_to_cube_material.set_equirectangular_map(skybox_texture);
@@ -123,7 +122,7 @@ impl App {
         material_index
     }
 
-    fn add_camera(&mut self, imagic: &mut Imagic, camera_pos: Vec3, viewport: Vec4, clear_color: Vec4, layer_mask: LayerMask) -> usize {
+    fn add_camera(&mut self, imagic: &mut Imagic, camera_pos: Vec3, viewport: Vec4, clear_color: Vec4, layer_mask: LayerMask) -> ID {
         let imagic_context = imagic.context_mut();
         let camera_id = Camera::new(camera_pos, consts::FRAC_PI_4
             , self.window_size.get_half_width() / self.window_size.get_height(), 0.01, 500.0, imagic_context);
@@ -138,13 +137,13 @@ impl App {
     fn init(&mut self, imagic: &mut Imagic) {
         // first camera
         let first_viewport = Vec4::new(0.0, 0.0, 0.5, 1.0);
-        let first_clear_color = Vec4::new(0.1, 0.1, 0.1, 1.0);
+        let first_clear_color = Color::new(0.1, 0.1, 0.1, 1.0);
         let first_camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
         let first_camera_layer_mask = LayerMask::new(Layer::Default.into());
         self.first_camera_id = self.add_camera(imagic, first_camera_pos, first_viewport, first_clear_color, first_camera_layer_mask);
 
         let second_viewport = Vec4::new(0.5, 0.0, 0.5, 1.0);
-        let second_clear_color = Vec4::new(0.1, 0.2, 0.3, 1.0);
+        let second_clear_color = Color::new(0.1, 0.2, 0.3, 1.0);
         let second_camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
         let second_camera_layer_mask = LayerMask::new(Layer::RenderTarget.into());
         self.second_camera_id = self.add_camera(imagic, second_camera_pos, second_viewport, second_clear_color, second_camera_layer_mask);
@@ -191,10 +190,11 @@ impl ImagicAppTrait for App {
     }
 
     fn on_render_ui(&mut self, ctx: &egui::Context) {
-        egui::Window::new("Imagic - plane")
+        egui::Window::new("Imagic - Skybox")
         .resizable(true)
         .vscroll(true)
         .default_open(false)
+        .default_size([100.0, 5.0])
         .show(&ctx, |ui| {
             if self.rotate_camera {
                 if ui.button("Stop Rotate").clicked() {

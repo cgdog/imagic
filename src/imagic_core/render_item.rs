@@ -1,6 +1,6 @@
 use std::usize;
 
-use crate::{camera::Layer, prelude::INVALID_ID};
+use crate::{camera::Layer, prelude::INVALID_ID, types::ID};
 
 pub mod render_item_manager;
 
@@ -65,7 +65,7 @@ impl RenderItem {
         self.pipeline_id = pipeline_id;
     }
 
-    pub fn get_pipeline(&self) -> usize {
+    pub fn get_pipeline(&self) -> ID {
         self.pipeline_id
     }
 
@@ -73,7 +73,7 @@ impl RenderItem {
         self.item_bind_group_id = bind_group_id;
     }
 
-    pub fn get_item_bind_group_id(&self) -> usize {
+    pub fn get_item_bind_group_id(&self) -> ID {
         self.item_bind_group_id
     }
 
@@ -81,7 +81,7 @@ impl RenderItem {
         self.vertex_buffer_id = vertex_buffer_id;
     }
 
-    pub fn get_vertex_buffer_id(&self) -> usize {
+    pub fn get_vertex_buffer_id(&self) -> ID {
         self.vertex_buffer_id
     }
 
@@ -89,7 +89,7 @@ impl RenderItem {
         self.index_buffer_id = index_buffer_id;
     }
 
-    pub fn get_index_buffer_id(&self) -> usize {
+    pub fn get_index_buffer_id(&self) -> ID {
         self.index_buffer_id
     }
 
@@ -97,7 +97,7 @@ impl RenderItem {
         self.material_id = material_id;
     }
 
-    pub fn get_material_id(&self) -> usize {
+    pub fn get_material_id(&self) -> ID {
         self.material_id
     }
 
@@ -113,7 +113,7 @@ impl RenderItem {
         self.transform_id = transform_id;
     }
 
-    pub fn get_transform_id(&self) -> usize {
+    pub fn get_transform_id(&self) -> ID {
         self.transform_id
     }
 
