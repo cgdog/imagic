@@ -1,5 +1,7 @@
 use std::usize;
 
+use crate::{camera::Layer, prelude::INVALID_ID};
+
 pub mod render_item_manager;
 
 pub enum VertexOrIndexCount {
@@ -17,19 +19,21 @@ pub struct RenderItem {
     transform_id: usize,
     vertex_or_index_count: VertexOrIndexCount,
     pub is_visible: bool,
+    pub layer: Layer,
 }
 
 impl Default for RenderItem {
     fn default() -> Self {
         Self {
-            pipeline_id: usize::MAX,
-            item_bind_group_id: usize::MAX,
-            vertex_buffer_id: usize::MAX,
-            index_buffer_id: usize::MAX,
-            material_id: usize::MAX,
-            transform_id: usize::MAX,
+            pipeline_id: INVALID_ID,
+            item_bind_group_id: INVALID_ID,
+            vertex_buffer_id: INVALID_ID,
+            index_buffer_id: INVALID_ID,
+            material_id: INVALID_ID,
+            transform_id: INVALID_ID,
             vertex_or_index_count: VertexOrIndexCount::VertexCount{vertex_count: 0, instance_count: 1},
             is_visible: true,
+            layer: Layer::Default,
         }
     }
 }
@@ -40,7 +44,7 @@ impl RenderItem {
         Self {
             vertex_buffer_id,
             index_buffer_id,
-            material_id: usize::MAX,
+            material_id: INVALID_ID,
             transform_id,
             vertex_or_index_count: vertex_or_index_count,
             is_visible,

@@ -16,3 +16,6 @@ egui = { version = "0.28.1"}
 egui-wgpu = { version = "0.28.1",features = ["winit"] }
 egui-winit = { version = "0.28.1"}
 bytemuck = { version = "1.16.1", features = ["derive"] }
+
+[profile.release]
+strip = true

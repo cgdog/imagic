@@ -1,6 +1,6 @@
 use std::{borrow::Cow, usize};
 
-use crate::prelude::{bind_group_layout::BindGroupLayoutManager, GraphicsContext};
+use crate::prelude::{bind_group_layout::BindGroupLayoutManager, GraphicsContext, INVALID_ID};
 
 use super::MaterialTrait;
 
@@ -13,9 +13,9 @@ pub struct SkyboxMaterial {
 impl Default for SkyboxMaterial {
     fn default() -> Self {
         Self {
-            skybox_map: usize::MAX,
+            skybox_map: INVALID_ID,
             texture2d_sampler: None,
-            bind_group_id: usize::MAX,
+            bind_group_id: INVALID_ID,
         }
     }
 }
@@ -50,7 +50,7 @@ impl MaterialTrait for SkyboxMaterial {
     }
 
     fn get_bind_group_layout_id(&self) -> usize {
-        SkyboxMaterial::internal_bind_group_layout_id(usize::MAX)
+        SkyboxMaterial::internal_bind_group_layout_id(INVALID_ID)
     }
 
     fn get_bind_group_id(&self) -> usize {
@@ -89,16 +89,16 @@ impl SkyboxMaterial {
 
     fn internal_bind_group_layout_id(new_id: usize) -> usize {
         // All SkyboxMaterial instances share the same bind group layout.
-        static mut LAYOUT_ID: usize = usize::MAX;
-        if new_id != usize::MAX {
+        static mut LAYOUT_ID: usize = INVALID_ID;
+        if new_id != INVALID_ID {
             unsafe { LAYOUT_ID = new_id };
         }
         unsafe { LAYOUT_ID }
     }
 
     fn try_create_bind_group_layout(graphics_context: &GraphicsContext, bind_group_layout_manager: &mut BindGroupLayoutManager) {
-        let layout_id = SkyboxMaterial::internal_bind_group_layout_id(usize::MAX);
-        if layout_id == usize::MAX {
+        let layout_id = SkyboxMaterial::internal_bind_group_layout_id(INVALID_ID);
+        if layout_id == INVALID_ID {
             let bind_group_layout = SkyboxMaterial::create_bind_group_layout(graphics_context);
             let layout_id = bind_group_layout_manager.add_bind_group_layout(bind_group_layout);
             SkyboxMaterial::internal_bind_group_layout_id(layout_id);

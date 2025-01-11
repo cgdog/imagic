@@ -14,7 +14,7 @@ impl Default for App {
     fn default() -> Self {
         Self {
             plane: Plane::default(),
-            camera: usize::MAX,
+            camera: INVALID_ID,
             window_size: WindowSize::new(500.0, 500.0),
             is_show_image: true,
         }

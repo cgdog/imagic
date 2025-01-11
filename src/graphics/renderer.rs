@@ -47,6 +47,7 @@ impl Renderer {
             let camera_clear_color = camera.get_clear_color();
             let camera_depth_textue = camera.get_depth_texture();
             let dpeth_texture_view = context.texture_manager().get_texture_view(camera_depth_textue);
+            let camera_layer_mask = camera.layer_mask;
 
             let mut load_op = wgpu::LoadOp::Load;
             if camera_index == 0 {
@@ -90,7 +91,7 @@ impl Renderer {
 
             let render_items = context.render_item_manager().render_items();
             for item in render_items.iter() {
-                if item.is_visible {
+                if item.is_visible && camera_layer_mask.contains(item.layer) {
                     let render_pipeline = context.pipeline_manager().get_render_pipeline(item.get_pipeline());
 
                     let material = context.material_manager().get_material(item.get_material_id());

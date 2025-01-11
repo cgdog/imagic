@@ -1,0 +1,1 @@
+pub const INVALID_ID: usize = usize::MAX;

@@ -11,7 +11,7 @@ pub struct App {
 impl Default for App {
     fn default() -> Self {
         Self {
-            full_screen_item_index: usize::MAX,
+            full_screen_item_index: INVALID_ID,
             is_show_image: true,
         }
     }
@@ -50,6 +50,7 @@ impl ImagicAppTrait for App {
     }
 }
 
+#[allow(dead_code)]
 fn prepare_hdr_texture(graphics_context: &GraphicsContext) -> Texture {
     let mut hdr_loader = HDRLoader{};
     let cwd = std::env::current_dir().unwrap();

@@ -2,7 +2,7 @@ use std::usize;
 
 use wgpu::util::DeviceExt;
 
-use crate::{prelude::{RenderItem, VertexOrIndexCount}, scene::{SceneObject, Transform, TransformManager}, Imagic};
+use crate::{camera::Layer, prelude::{render_item_manager::RenderItemManager, RenderItem, VertexOrIndexCount, INVALID_ID}, scene::{SceneObject, Transform, TransformManager}, Imagic};
 
 use super::Vertex;
 
@@ -71,8 +71,10 @@ pub struct Cube {
     pub width_segments: u32,
     pub height_segments: u32,
     pub depth_segments: u32,
-
+    
     render_item_id: usize,
+    
+    layer: Layer,
 }
 
 impl Default for Cube {
@@ -84,8 +86,9 @@ impl Default for Cube {
             width_segments: 1,
             height_segments: 1,
             depth_segments: 1,
-            transform: usize::MAX,
-            render_item_id: usize::MAX,
+            transform: INVALID_ID,
+            render_item_id: INVALID_ID,
+            layer: Layer::Default,
         }
     }
 }
@@ -93,6 +96,15 @@ impl Default for Cube {
 impl SceneObject for Cube {
     fn transform(&self) -> &usize {
         &self.transform
+    }
+    
+    fn get_layer(&self) -> Layer {
+        self.layer
+    }
+    
+    fn set_layer(&mut self, layer: Layer, render_item_manager: &mut RenderItemManager) {
+        self.layer = layer;
+        render_item_manager.get_render_item_mut(self.render_item_id).layer = layer;
     }
 }
 

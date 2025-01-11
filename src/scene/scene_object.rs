@@ -1,15 +1,21 @@
 // use super::transform::Transform;
 
+use crate::{camera::Layer, prelude::render_item_manager::RenderItemManager};
+
 pub trait SceneObject {
     fn transform(&self) -> &usize;
+    
+    fn get_layer(&self) -> Layer;
+    fn set_layer(&mut self, layer: Layer, render_item_manager: &mut RenderItemManager);
+
     // fn transform_mut(&mut self) -> &mut Transform;
 
     // fn is_renderable(&self) -> bool {
-    //     self.get_render_item_id() != usize::MAX
+    //     self.get_render_item_id() != INVALID_ID
     // }
 
     // fn get_render_item_id(&self) -> usize {
-    //     usize::MAX
+    //     INVALID_ID
     // }
 
     // fn get_position(&self) -> &glam::Vec3 {

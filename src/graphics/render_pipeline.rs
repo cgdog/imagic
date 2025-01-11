@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use wgpu::BindGroupLayout;
-use crate::prelude::{MaterialTrait, Vertex};
+use crate::prelude::{MaterialTrait, Vertex, INVALID_ID};
 
 use super::{bind_group_layout::BindGroupLayoutManager, graphics_context::GraphicsContext};
 
@@ -13,7 +13,7 @@ impl Default for RenderPipelineManager {
     fn default() -> Self {
         Self {
             render_pipelines: Vec::new(),
-            default_pbr_pipeline: usize::MAX,
+            default_pbr_pipeline: INVALID_ID,
         }
     }
 }

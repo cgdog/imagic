@@ -13,7 +13,7 @@ impl Default for App {
     fn default() -> Self {
         Self {
             cube: Cube::new(1.0, 1.0, 1.0, 1, 1, 1),
-            camera: usize::MAX,
+            camera: INVALID_ID,
             window_size: WindowSize::new(500.0, 500.0),
         }
     }

@@ -1,5 +1,5 @@
 use wgpu::BindGroupLayout;
-use crate::graphics::GraphicsContext;
+use crate::{graphics::GraphicsContext, prelude::INVALID_ID};
 
 pub struct BindGroupLayoutManager {
     bind_group_layouts: Vec<wgpu::BindGroupLayout>,
@@ -13,10 +13,10 @@ impl Default for BindGroupLayoutManager {
     fn default() -> Self {
         Self {
             bind_group_layouts: Vec::new(),
-            default_pbr_bind_group_layout: usize::MAX,
-            model_vertex_bind_group_layout: usize::MAX,
-            camera_bind_group_layout: usize::MAX,
-            lighting_bind_group_layout: usize::MAX,
+            default_pbr_bind_group_layout: INVALID_ID,
+            model_vertex_bind_group_layout: INVALID_ID,
+            camera_bind_group_layout: INVALID_ID,
+            lighting_bind_group_layout: INVALID_ID,
         }
     }
 }

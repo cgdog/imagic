@@ -1,4 +1,4 @@
-use crate::prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, GraphicsContext, SceneObject, TransformManager};
+use crate::prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, GraphicsContext, SceneObject, TransformManager, INVALID_ID};
 
 use super::point_light::PointLight;
 
@@ -15,8 +15,8 @@ impl Default for LightManager {
         Self {
             point_lights: Vec::new(),
             light_buffer: None,
-            // bind_group_layout_id: usize::MAX,
-            bind_group_id: usize::MAX,
+            // bind_group_layout_id: INVALID_ID,
+            bind_group_id: INVALID_ID,
         }
     }
 }

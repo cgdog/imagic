@@ -9,6 +9,7 @@ pub mod camera;
 pub mod material;
 pub mod light;
 pub mod asset_loader;
+pub mod constants;
 
 pub mod prelude {
     pub use crate::graphics::*;
@@ -25,4 +26,5 @@ pub mod prelude {
     pub use crate::material::*;
     pub use crate::light::*;
     pub use crate::asset_loader::*;
+    pub use crate::constants::*;
 }

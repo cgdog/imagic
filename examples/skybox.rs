@@ -21,8 +21,8 @@ impl Default for App {
         Self {
             cube: Cube::new(1.0, 1.0, 1.0, 1, 1, 1),
             sphere: Sphere::new(1.0, 256, 256),
-            first_camera_id: usize::MAX,
-            second_camera_id: usize::MAX,
+            first_camera_id: INVALID_ID,
+            second_camera_id: INVALID_ID,
             window_size: WindowSize::new(800.0, 500.0),
             camera_z: 8.0,
             rotate_camera: true,
@@ -122,14 +122,15 @@ impl App {
         material_index
     }
 
-    fn add_camera(&mut self, imagic: &mut Imagic, camera_pos: glam::Vec3, viewport: glam::Vec4, clear_color: glam::Vec4) -> usize {
+    fn add_camera(&mut self, imagic: &mut Imagic, camera_pos: glam::Vec3, viewport: glam::Vec4, clear_color: glam::Vec4, layer_mask: LayerMask) -> usize {
         let imagic_context = imagic.context_mut();
         let camera_id = Camera::new(camera_pos, consts::FRAC_PI_4
             , self.window_size.get_half_width() / self.window_size.get_height(), 0.01, 500.0, imagic_context);
         
-        let first_camera = imagic.context_mut().camera_manager_mut().get_camera_mut(camera_id);
-        first_camera.set_viewport(viewport);
-        first_camera.set_clear_color(clear_color);
+        let camera = imagic.context_mut().camera_manager_mut().get_camera_mut(camera_id);
+        camera.set_viewport(viewport);
+        camera.set_clear_color(clear_color);
+        camera.layer_mask = layer_mask;
         camera_id
     }
 
@@ -138,26 +139,30 @@ impl App {
         let first_viewport = glam::Vec4::new(0.0, 0.0, 0.5, 1.0);
         let first_clear_color = glam::Vec4::new(0.1, 0.1, 0.1, 1.0);
         let first_camera_pos = glam::Vec3::new(0.0, 0.0, self.camera_z);
-        self.first_camera_id = self.add_camera(imagic, first_camera_pos, first_viewport, first_clear_color);
+        let first_camera_layer_mask = LayerMask::new(Layer::Default.into());
+        self.first_camera_id = self.add_camera(imagic, first_camera_pos, first_viewport, first_clear_color, first_camera_layer_mask);
 
         let second_viewport = glam::Vec4::new(0.5, 0.0, 0.5, 1.0);
         let second_clear_color = glam::Vec4::new(0.1, 0.2, 0.3, 1.0);
         let second_camera_pos = glam::Vec3::new(0.0, 0.0, self.camera_z);
-        self.second_camera_id = self.add_camera(imagic, second_camera_pos, second_viewport, second_clear_color);
+        let second_camera_layer_mask = LayerMask::new(Layer::RenderTarget.into());
+        self.second_camera_id = self.add_camera(imagic, second_camera_pos, second_viewport, second_clear_color, second_camera_layer_mask);
 
         let equirect_to_cube_material_index = self.prepare_equirect_to_cube_material(imagic);
         self.cube.init(imagic, equirect_to_cube_material_index);
+        self.cube.set_layer(Layer::RenderTarget, imagic.context_mut().render_item_manager_mut());
 
         self.prepare_lights(imagic.context_mut());
 
         let pbr_material_index = self.prepare_pbr_material(imagic);
         self.sphere.init(imagic, pbr_material_index);
+        // self.sphere.set_layer(Layer::Custom1, imagic.context_mut().render_item_manager_mut());
         
     }
     
     pub fn run(mut self) {
         let mut imagic = Imagic::new();
-        let event_loop = imagic.init(ImagicOption::new(self.window_size, "Cube Demo"));
+        let event_loop = imagic.init(ImagicOption::new(self.window_size, "Skybox Demo"));
 
         self.init(&mut imagic);
 

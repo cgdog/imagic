@@ -19,8 +19,8 @@ impl Default for App {
     fn default() -> Self {
         Self {
             cube: Cube::new(1.0, 1.0, 1.0, 1, 1, 1),
-            first_camera_id: usize::MAX,
-            second_camera_id: usize::MAX,
+            first_camera_id: INVALID_ID,
+            second_camera_id: INVALID_ID,
             window_size: WindowSize::new(800.0, 500.0),
             camera_z: 8.0,
             rotate_camera: true,

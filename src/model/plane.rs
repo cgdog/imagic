@@ -2,7 +2,12 @@ use std::usize;
 
 use wgpu::util::DeviceExt;
 
-use crate::{prelude::{RenderItem, VertexOrIndexCount}, scene::{SceneObject, Transform, TransformManager}, Imagic};
+use crate::{
+    camera::Layer,
+    prelude::{render_item_manager::RenderItemManager, RenderItem, VertexOrIndexCount, INVALID_ID},
+    scene::{SceneObject, Transform, TransformManager},
+    Imagic,
+};
 
 use super::Vertex;
 
@@ -15,6 +20,8 @@ pub struct Plane {
     pub transform: usize,
 
     render_item_id: usize,
+
+    layer: Layer,
 }
 
 impl Default for Plane {
@@ -25,8 +32,10 @@ impl Default for Plane {
             width_segments: 1,
             height_segments: 1,
 
-            transform: usize::MAX,
-            render_item_id: usize::MAX,
+            transform: INVALID_ID,
+            render_item_id: INVALID_ID,
+
+            layer: Layer::Default,
         }
     }
 }
@@ -34,6 +43,17 @@ impl Default for Plane {
 impl SceneObject for Plane {
     fn transform(&self) -> &usize {
         &self.transform
+    }
+
+    fn get_layer(&self) -> Layer {
+        self.layer
+    }
+
+    fn set_layer(&mut self, layer: Layer, render_item_manager: &mut RenderItemManager) {
+        self.layer = layer;
+        render_item_manager
+            .get_render_item_mut(self.render_item_id)
+            .layer = layer;
     }
 }
 
@@ -60,10 +80,22 @@ impl Plane {
 
         let (vertex_buffer_id, index_buffer_id, index_count) = self.create_buffer(imagic);
         let mut plane_item = RenderItem::new(
-            VertexOrIndexCount::IndexCount { index_count, base_vertex: 0, instance_count: 1, index_format: Plane::index_buffer_format() },
-            vertex_buffer_id, index_buffer_id, transform_index, true);
+            VertexOrIndexCount::IndexCount {
+                index_count,
+                base_vertex: 0,
+                instance_count: 1,
+                index_format: Plane::index_buffer_format(),
+            },
+            vertex_buffer_id,
+            index_buffer_id,
+            transform_index,
+            true,
+        );
         plane_item.set_material_id(material_index);
-        self.render_item_id = imagic.context_mut().render_item_manager_mut().add_render_item(plane_item);
+        self.render_item_id = imagic
+            .context_mut()
+            .render_item_manager_mut()
+            .add_render_item(plane_item);
     }
 
     fn create_vertices_data(&self) -> (Vec<Vertex>, Vec<u16>) {
@@ -74,10 +106,7 @@ impl Plane {
             Vertex::new([-1.0, -1.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0]),
         ];
         // ccw
-        let indices: Vec<u16> = vec![
-            0, 3, 1,
-            1, 3, 2,
-        ];
+        let indices: Vec<u16> = vec![0, 3, 1, 1, 3, 2];
 
         (vertices, indices)
     }
@@ -99,15 +128,13 @@ impl Plane {
 
         let buffer_manager = imagic.context_mut().buffer_manager_mut();
         let vertex_buffer_id = buffer_manager.add_buffer(vertex_buffer);
-        
+
         let index_buffer_id = buffer_manager.add_buffer(index_buffer);
         let index_count = index_data.len().try_into().unwrap();
         (vertex_buffer_id, index_buffer_id, index_count)
     }
 
-
     fn index_buffer_format() -> wgpu::IndexFormat {
         wgpu::IndexFormat::Uint16
     }
 }
-

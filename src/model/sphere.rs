@@ -1,7 +1,7 @@
 use std::f32::consts::{PI, TAU};
 use wgpu::util::DeviceExt;
 
-use crate::{prelude::{RenderItem, TransformManager, VertexOrIndexCount}, scene::{scene_object::SceneObject, transform::Transform}, Imagic};
+use crate::{camera::Layer, prelude::{render_item_manager::RenderItemManager, RenderItem, TransformManager, VertexOrIndexCount, INVALID_ID}, scene::{scene_object::SceneObject, transform::Transform}, Imagic};
 
 use super::vertex_attribute::Vertex;
 
@@ -56,6 +56,8 @@ pub struct Sphere {
     pub transform: usize,
 
     render_item_id: usize,
+
+    layer: Layer,
 }
 
 impl Default for Sphere {
@@ -64,8 +66,9 @@ impl Default for Sphere {
             radius: 1.0,
             x_segments: 64,
             y_segments: 64,
-            transform: usize::MAX,
-            render_item_id: usize::MAX,
+            transform: INVALID_ID,
+            render_item_id: INVALID_ID,
+            layer: Layer::Default,
         }
     }
 }
@@ -73,6 +76,15 @@ impl Default for Sphere {
 impl SceneObject for Sphere {
     fn transform(&self) -> &usize {
         &self.transform
+    }
+    
+    fn get_layer(&self) -> Layer {
+        self.layer
+    }
+    
+    fn set_layer(&mut self, layer: Layer, render_item_manager: &mut RenderItemManager) {
+        self.layer = layer;
+        render_item_manager.get_render_item_mut(self.render_item_id).layer = layer;
     }
 }
 

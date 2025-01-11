@@ -13,7 +13,7 @@ impl Default for App {
     fn default() -> Self {
         Self {
             sphere: Sphere::new(1.0, 256, 256),
-            camera: usize::MAX,
+            camera: INVALID_ID,
             window_size: WindowSize::new(500.0, 500.0),
         }
     }
