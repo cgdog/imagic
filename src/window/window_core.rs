@@ -2,17 +2,17 @@ use log::info;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
+use winit::dpi::Size;
 
-use winit::{dpi::LogicalSize, event_loop::EventLoopWindowTarget};
-use winit::event::Event;
-use winit::event_loop::EventLoop;
 use winit::event::WindowEvent;
+use winit::{dpi::LogicalSize, event_loop::ActiveEventLoop};
 
 use winit::window::Window as WindowWinit;
 
 use crate::graphics;
 use crate::imagic_core::imagic_app::ImagicAppTrait;
 use crate::imagic_core::imagic_context::ImagicContext;
+use crate::input::InputManager;
 
 use super::{WindowInputProcessor, WindowSize};
 
@@ -20,6 +20,8 @@ pub struct Window {
     window: Option<Arc<WindowWinit>>,
     logical_size: WindowSize,
     physical_size: WindowSize,
+    /// see https://docs.rs/dpi/0.1.1/dpi/index.html
+    dpi: f64,
 }
 
 impl Default for Window {
@@ -28,6 +30,7 @@ impl Default for Window {
             window: None,
             logical_size: WindowSize::default(),
             physical_size: WindowSize::default(),
+            dpi: 1.0,
         }
     }
 }
@@ -40,7 +43,7 @@ impl Window {
     pub fn get(&self) -> Arc<WindowWinit> {
         match &self.window {
             Some(window) => window.clone(),
-            None => panic!("Now window is None.")
+            None => panic!("Now window is None."),
         }
     }
 
@@ -60,51 +63,67 @@ impl Window {
         self.logical_size.set(width, height);
     }
 
-    pub fn init(&mut self, event_loop: &EventLoop<()>, window_size: WindowSize, window_title: &'static str) {
-        let builder = winit::window::WindowBuilder::new()
-            .with_title(window_title);
-        let window = builder.build(&event_loop).unwrap();
+    pub fn init(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        window_size: WindowSize,
+        window_title: &'static str,
+    ) {
+        // create the window.
+        let logical_size = LogicalSize::new(
+            window_size.get_width() as f64,
+            window_size.get_height() as f64,
+        );
+        let window_attributes = WindowWinit::default_attributes()
+            .with_title(window_title)
+            .with_inner_size(Size::Logical(logical_size));
+
+        let window = event_loop.create_window(window_attributes).unwrap();
+        self.dpi = window.scale_factor();
+        info!("window dpi: {0}", self.dpi);
         let window = Arc::new(window);
 
-        let _ = window.request_inner_size(LogicalSize::new(window_size.get_width(), window_size.get_height()));
         // let scale_factor = window.scale_factor();
         let physical_size = window.inner_size();
         self.set_physical_size(physical_size.width as f32, physical_size.height as f32);
         self.window = Some(window);
-
-        // info!("Window is inited. scale_factor: {}", scale_factor);
     }
 
-    pub fn process_window_event(&mut self, event: Event<()>, elwt: &EventLoopWindowTarget<()>,
-        renderer: &mut graphics::Renderer, context: &mut ImagicContext, app: &Option<Rc<RefCell<Box<dyn ImagicAppTrait>>>>) {
-        
+    pub fn process_window_event(
+        &mut self,
+        event_loop: &winit::event_loop::ActiveEventLoop,
+        event: winit::event::WindowEvent,
+        renderer: &mut graphics::Renderer,
+        context: &mut ImagicContext,
+        app: &Option<Rc<RefCell<Box<dyn ImagicAppTrait>>>>,
+        input_manager: &mut InputManager,
+    ) {
+        renderer.ui_renderer().handle_input(&self.get(), &event);
         match event {
-            Event::WindowEvent { event , ..} => {
-                renderer.ui_renderer().handle_input(&self.get(), &event);
-                match event {
-                    WindowEvent::CloseRequested => {
-                        elwt.exit();
-                    }
-                    WindowEvent::Resized(new_size) => {
-                        context.graphics_context_mut().on_resize(new_size);
-                        self.get().request_redraw();
-                    }
-                    WindowEvent::RedrawRequested => {
-                        match app {
-                            Some(app) => app.borrow_mut().on_update(context, renderer.ui_renderer()),
-                            None => info!("No app supplied."),
-                        }
-                        renderer.render(context, &self.get());
-                        self.get().request_redraw();
-                    }
-                    others => {
-                        WindowInputProcessor::process_window_input(others, elwt);
-                    },
-                }
+            WindowEvent::CloseRequested => {
+                event_loop.exit();
             }
-            
-            _ => (),
+            WindowEvent::Resized(new_size) => {
+                context.on_resize(new_size);
+                self.get().request_redraw();
+            }
+            WindowEvent::ScaleFactorChanged {
+                scale_factor,
+                inner_size_writer: _,
+            } => {
+                self.dpi = scale_factor;
+            }
+            WindowEvent::RedrawRequested => {
+                match app {
+                    Some(app) => app.borrow_mut().on_update(context),
+                    None => info!("No app supplied."),
+                }
+                renderer.render(context, &self.get());
+                self.get().request_redraw();
+            }
+            others => {
+                WindowInputProcessor::process_window_input(others, event_loop, self.dpi, input_manager);
+            }
         }
     }
-
 }

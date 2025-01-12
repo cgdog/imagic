@@ -1,7 +1,6 @@
 use std::io::Cursor;
 
-use image::codecs::hdr::HdrDecoder;
-use log::info;
+use image::{DynamicImage, ImageReader};
 
 use crate::prelude::{GraphicsContext, Texture};
 
@@ -11,30 +10,37 @@ pub struct HDRLoader {
 
 impl HDRLoader {
     pub fn load(&mut self, path: &str, graphics_context: &GraphicsContext) -> Texture {
-        info!("path: {}", path);
+        // info!("path: {}", path);
         let hdr_file_data = std::fs::read(path).expect("Failed to load hdr file.");
-        let hdr_decoder = HdrDecoder::new(Cursor::new(hdr_file_data)).unwrap();
-        // let bytes_size = hdr_decoder.total_bytes() as usize;
-        // let (width, height) = hdr_decoder.dimensions();
-        // let mut hdr_pixels = vec![0u8; bytes_size];
-        // hdr_decoder.read_image(&mut hdr_pixels).expect("Failed to parse .hdr file");
+        let img = ImageReader::new(Cursor::new(hdr_file_data)).with_guessed_format().unwrap().decode().unwrap();
+        if let DynamicImage::ImageRgb32F(rgb_image) = img {
+            // vec![0.0; pixels1.len() * 3];
+            // for pixel in rgb_image.pixels() {
+            //     let r = pixel[0]; // 红色通道
+            //     let g = pixel[1]; // 绿色通道
+            //     let b = pixel[2]; // 蓝色通道
+            //     if r > 1.0 || g > 1.0 || b > 1.0 { // for debug
+            //         println!("Pixel: ({}, {}, {})", r, g, b);
+            //     }
+            // }
 
-        let meta = hdr_decoder.metadata();
+             // 将像素数据展平为 Vec<f32>
+             let pixels: Vec<f32> = rgb_image.pixels()
+             .flat_map(|pixel| vec![pixel[0], pixel[1], pixel[2], 1.0])
+             .collect();
+            
+            let flat_data: &[u8] = bytemuck::cast_slice(&pixels);
 
-        let mut hdr_pixels = vec![[0.0, 0.0, 0.0, 0.0]; meta.width as usize * meta.height as usize];
-        hdr_decoder.read_image_transform(
-            |pix| {
-                let rgb = pix.to_hdr();
-                [rgb.0[0], rgb.0[1], rgb.0[2], 1.0f32]
-            },
-            &mut hdr_pixels[..],
-        ).expect("Failed to read hdr pixels");
-
-
-
-        // info!("hdr_pixels: {:?}", hdr_pixels);
-
-        let hdr_texture = Texture::create_hdr_texture(graphics_context, meta.width, meta.height, bytemuck::cast_slice(&hdr_pixels), wgpu::TextureFormat::Rgba32Float);
-        hdr_texture
+            let hdr_texture = Texture::create_hdr_texture(
+                graphics_context, 
+                rgb_image.width(), 
+                rgb_image.height(), 
+                flat_data, 
+                wgpu::TextureFormat::Rgba32Float
+            );
+            return hdr_texture;
+        } else {
+            panic!("Failed to load hdr image: {path}");
+        }
     }
 }

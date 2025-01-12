@@ -23,26 +23,26 @@ impl App {
     
     fn prepare_lights(&mut self, imagic_context: &mut ImagicContext) {
 
-        let transform_manager = imagic_context.transform_manager_mut();
+        let transform_manager = imagic_context.transform_manager();
         let point_light_0 = PointLight::new(
             Vec3::new(-10.0,  10.0, 10.0),
             Vec3::new(300.0, 300.0, 300.0),
-            transform_manager
+            &mut transform_manager.borrow_mut()
         );
         let point_light_1 = PointLight::new(
             Vec3::new(10.0,  10.0, 10.0),
             Vec3::new(300.0, 300.0, 300.0),
-            transform_manager
+            &mut transform_manager.borrow_mut()
         );
         let point_light_2 = PointLight::new(
             Vec3::new(-10.0,  -10.0, 10.0),
             Vec3::new(300.0, 300.0, 300.0),
-            transform_manager
+            &mut transform_manager.borrow_mut()
         );
         let point_light_3 = PointLight::new(
             Vec3::new(10.0,  -10.0, 10.0),
             Vec3::new(300.0, 300.0, 300.0),
-            transform_manager
+            &mut transform_manager.borrow_mut()
         );
 
         let light_manager = imagic_context.light_manager_mut();
@@ -95,6 +95,15 @@ impl App {
         hdr_texture_index
     }
 
+    pub fn run(self) {
+        let mut imagic = Imagic::new();
+        let app: Rc<RefCell<Box<dyn ImagicAppTrait>>> = Rc::new(RefCell::new(Box::new(self)));
+        imagic.init(app);
+    }
+}
+
+impl ImagicAppTrait for App {
+
     fn init(&mut self, imagic: &mut Imagic) {
         let imagic_context = imagic.context_mut();
 
@@ -103,26 +112,18 @@ impl App {
         self.prepare_lights(imagic_context);
 
         self.camera = Camera::new(Vec3::new(0.0, 1.0, 4.0), consts::FRAC_PI_4
-            , self.window_size.get_aspect() as f32, 1.0, 10.0, imagic_context);
+            , self.window_size.get_aspect() as f32, 1.0, 10.0, None, imagic_context);
 
         let pbr_material_index = self.prepare_material(imagic);
         self.sphere.init(imagic, pbr_material_index);
     }
 
-    pub fn run(mut self) {
-        let mut imagic = Imagic::new();
-        let event_loop = imagic.init(ImagicOption::new(self.window_size, "PBR Demo"));
+    fn on_update(&mut self, _imagic_context: &mut ImagicContext) {
 
-        self.init(&mut imagic);
-
-        let app: Rc<RefCell<Box<dyn ImagicAppTrait>>> = Rc::new(RefCell::new(Box::new(self)));
-        imagic.run(event_loop, app);
     }
-}
 
-impl ImagicAppTrait for App {
-    fn on_update(&mut self, _imagic_context: &mut ImagicContext, _ui_renderer: &mut UIRenderer) {
-
+    fn get_imagic_option(& self) -> ImagicOption {
+        ImagicOption::new(self.window_size, "pbr Demo")
     }
 }
 

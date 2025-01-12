@@ -1,7 +1,14 @@
-use crate::{graphics::{
-    bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
-    buffer::GPUBufferManager, render_pipeline::RenderPipelineManager, GraphicsContext,
-}, prelude::{texture_manager::TextureManager, CameraManager, LightManager, MaterialManager, TransformManager}, window::Window};
+use winit::dpi::PhysicalSize;
+
+use crate::{
+    graphics::{
+        bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
+        buffer::GPUBufferManager, render_pipeline::RenderPipelineManager, GraphicsContext,
+    }, input::InputManager, prelude::{
+        texture_manager::TextureManager, CameraManager, LightManager, MaterialManager,
+        TransformManager,
+    }, types::RR, window::Window
+};
 
 use super::render_item::render_item_manager::RenderItemManager;
 
@@ -16,22 +23,61 @@ pub struct ImagicContext {
     light_manager: LightManager,
     material_manager: MaterialManager,
     texture_manager: TextureManager,
-    transform_manager: TransformManager,
+    pub transform_manager: RR<TransformManager>,
     camera_manager: CameraManager,
 }
 
 impl ImagicContext {
     pub fn init(&mut self) {
         self.bind_group_layout_manager.init(&self.graphics_context);
-        self.pipeline_manager.init(&self.graphics_context, &self.bind_group_layout_manager);
+        self.pipeline_manager
+            .init(&self.graphics_context, &self.bind_group_layout_manager);
     }
 
-    pub fn init_after_app(&mut self, window: &Window) {
-        self.camera_manager.init_after_app(window, &self.graphics_context, &mut self.bind_group_manager, &mut self.bind_group_layout_manager, &self.transform_manager, &mut self.buffer_manager, &mut self.texture_manager);
-        self.light_manager.init_after_app(&self.graphics_context, &mut self.bind_group_manager, &mut self.bind_group_layout_manager, &self.transform_manager);
-        self.material_manager.init_after_app(&self.graphics_context, &mut self.bind_group_manager, &mut self.bind_group_layout_manager, &self.texture_manager);
-        self.render_item_manager.init_after_app(&self.graphics_context, &mut self.bind_group_manager
-            , &mut self.bind_group_layout_manager, &self.material_manager, &self.transform_manager, &mut self.pipeline_manager);
+    /// Called after App.init()
+    pub fn init_after_app(&mut self, window: &Window, input_manager: &mut InputManager) {
+        self.camera_manager.init_after_app(
+            window,
+            &self.graphics_context,
+            &mut self.bind_group_manager,
+            &mut self.bind_group_layout_manager,
+            self.transform_manager.clone(),
+            &mut self.buffer_manager,
+            &mut self.texture_manager,
+            input_manager,
+        );
+        self.light_manager.init_after_app(
+            &self.graphics_context,
+            &mut self.bind_group_manager,
+            &mut self.bind_group_layout_manager,
+            &self.transform_manager.borrow(),
+        );
+        self.material_manager.init_after_app(
+            &self.graphics_context,
+            &mut self.bind_group_manager,
+            &mut self.bind_group_layout_manager,
+            &self.texture_manager,
+        );
+        self.render_item_manager.init_after_app(
+            &self.graphics_context,
+            &mut self.bind_group_manager,
+            &mut self.bind_group_layout_manager,
+            &self.material_manager,
+            &self.transform_manager.borrow(),
+            &mut self.pipeline_manager,
+        );
+    }
+
+    pub fn on_resize(&mut self, new_size: PhysicalSize<u32>) {
+        self.graphics_context.on_resize(new_size);
+        self.camera_manager.on_resize(
+            &self.graphics_context,
+            &mut self.texture_manager,
+            &self.transform_manager.borrow(),
+            &self.buffer_manager,
+            new_size.width,
+            new_size.height,
+        );
     }
 
     pub fn graphics_context_mut(&mut self) -> &mut GraphicsContext {
@@ -106,13 +152,13 @@ impl ImagicContext {
         &mut self.texture_manager
     }
 
-    pub fn transform_manager(&self) -> &TransformManager {
-        &self.transform_manager
+    pub fn transform_manager(&self) -> RR<TransformManager> {
+        self.transform_manager.clone()
     }
 
-    pub fn transform_manager_mut(&mut self) -> &mut TransformManager {
-        &mut self.transform_manager
-    }
+    // pub fn transform_manager_mut(&mut self) -> RR<TransformManager> {
+    //     self.transform_manager.clone()
+    // }
 
     pub fn camera_manager(&self) -> &CameraManager {
         &self.camera_manager

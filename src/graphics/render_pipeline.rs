@@ -67,13 +67,13 @@ impl RenderPipelineManager {
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 buffers: &[vertex_buffer_layout],
                 compilation_options: Default::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 compilation_options: Default::default(),
                 targets: &[Some(swapchain_format.into())],
             }),
@@ -86,13 +86,13 @@ impl RenderPipelineManager {
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: DEPTH_FORMAT,
                 depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::Less,
+                depth_compare: wgpu::CompareFunction::LessEqual,
                 stencil: wgpu::StencilState::default(),
                 bias: wgpu::DepthBiasState::default(),
             }),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
-            // cache: None,
+            cache: None,
         });
         self.add_render_pipeline(render_pipeline)
     }
@@ -119,13 +119,13 @@ pub fn create_default_render_pipeline(graphics_context: &GraphicsContext, bind_g
         layout: Some(&pipeline_layout),
         vertex: wgpu::VertexState {
             module: &shader,
-            entry_point: "vs_main",
+            entry_point: Some("vs_main"),
             buffers: &[],
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             compilation_options: Default::default(),
             targets: &[Some(swapchain_format.into())],
         }),
@@ -133,7 +133,7 @@ pub fn create_default_render_pipeline(graphics_context: &GraphicsContext, bind_g
         depth_stencil: None,
         multisample: wgpu::MultisampleState::default(),
         multiview: None,
-        // cache: None,
+        cache: None,
     });
     render_pipeline
 }

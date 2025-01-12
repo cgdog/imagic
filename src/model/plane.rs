@@ -3,11 +3,16 @@ use std::usize;
 use wgpu::util::DeviceExt;
 
 use crate::{
-    camera::Layer, prelude::{render_item_manager::RenderItemManager, RenderItem, VertexOrIndexCount, INVALID_ID}, scene::{SceneObject, Transform, TransformManager}, types::ID, Imagic
+    camera::Layer,
+    prelude::{render_item_manager::RenderItemManager, RenderItem, VertexOrIndexCount, INVALID_ID},
+    scene::{SceneObject, Transform},
+    types::ID,
+    Imagic,
 };
 
 use super::Vertex;
 
+/// Plane mesh struct.
 pub struct Plane {
     pub width: f32,
     pub height: f32,
@@ -70,9 +75,9 @@ impl Plane {
     }
 
     pub fn init(&mut self, imagic: &mut Imagic, material_index: usize) {
-        let transform_manager: &mut TransformManager = imagic.context_mut().transform_manager_mut();
+        let transform_manager = imagic.context_mut().transform_manager();
         let transform = Transform::default();
-        let transform_index = transform_manager.add_transform(transform);
+        let transform_index = transform_manager.borrow_mut().add_transform(transform);
         self.transform = transform_index;
 
         let (vertex_buffer_id, index_buffer_id, index_count) = self.create_buffer(imagic);

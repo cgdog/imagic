@@ -1,7 +1,11 @@
+use std::{cell::RefCell, rc::Rc};
+
 use wgpu::TextureView;
 use winit::window::Window as WindowWinit;
 
-use crate::{camera::Camera, imagic_core::imagic_context::ImagicContext, prelude::VertexOrIndexCount, ui::ui_renderer::UIRenderer};
+use crate::{
+    camera::Camera, imagic_core::imagic_context::ImagicContext, prelude::VertexOrIndexCount, ui::ui_renderer::UIRenderer
+};
 
 pub struct Renderer {
     ui_renderer: Option<UIRenderer>,
@@ -9,9 +13,7 @@ pub struct Renderer {
 
 impl Default for Renderer {
     fn default() -> Self {
-        Self {
-            ui_renderer: None,
-        }
+        Self { ui_renderer: None }
     }
 }
 
@@ -24,8 +26,11 @@ impl Renderer {
         self.ui_renderer.as_mut().expect("ui_renderer is None.")
     }
 
-    pub fn render(&mut self, context: & ImagicContext, _window: &WindowWinit) {
-        let surface_texture = context.graphics_context().get_surface().get_current_texture();
+    pub fn render(&mut self, context: &ImagicContext, _window: &WindowWinit) {
+        let surface_texture = context
+            .graphics_context()
+            .get_surface()
+            .get_current_texture();
         let surface_texture_view = surface_texture
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
@@ -39,14 +44,27 @@ impl Renderer {
         surface_texture.present();
     }
 
-    pub fn render_with_camera(&mut self, context: & ImagicContext, camera: &Camera, camera_index: usize, surface_texture_view: &TextureView) {
-        let mut encoder = context.graphics_context()
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("imagic render command encoder desc") });
+    pub fn render_with_camera(
+        &mut self,
+        context: &ImagicContext,
+        camera: &Rc<RefCell<Camera>>,
+        camera_index: usize,
+        surface_texture_view: &TextureView,
+    ) {
+        let camera = camera.borrow();
+        let mut encoder =
+            context
+                .graphics_context()
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("imagic render command encoder desc"),
+                });
         // Render scene
         {
             let camera_clear_color = camera.get_clear_color();
             let camera_depth_textue = camera.get_depth_texture();
-            let dpeth_texture_view = context.texture_manager().get_texture_view(camera_depth_textue);
+            let dpeth_texture_view = context
+                .texture_manager()
+                .get_texture_view(camera_depth_textue);
             let camera_layer_mask = camera.layer_mask;
 
             let mut load_op = wgpu::LoadOp::Load;
@@ -55,7 +73,7 @@ impl Renderer {
                     r: camera_clear_color.x as f64,
                     g: camera_clear_color.y as f64,
                     b: camera_clear_color.z as f64,
-                    a: camera_clear_color.w as f64
+                    a: camera_clear_color.w as f64,
                 };
                 load_op = wgpu::LoadOp::Clear(clear_color);
             }
@@ -92,29 +110,51 @@ impl Renderer {
             let render_items = context.render_item_manager().render_items();
             for item in render_items.iter() {
                 if item.is_visible && camera_layer_mask.contains(item.layer) {
-                    let render_pipeline = context.pipeline_manager().get_render_pipeline(item.get_pipeline());
+                    let render_pipeline = context
+                        .pipeline_manager()
+                        .get_render_pipeline(item.get_pipeline());
 
-                    let material = context.material_manager().get_material(item.get_material_id());
+                    let material = context
+                        .material_manager()
+                        .get_material(item.get_material_id());
                     let material_bind_group_id = material.get_bind_group_id();
                     let lighting_bind_group_id = context.light_manager().get_bind_group_id();
-                    let item_bind_groups = [item.get_item_bind_group_id(), camera_bind_group_id,
-                        material_bind_group_id, lighting_bind_group_id];
+                    let item_bind_groups = [
+                        item.get_item_bind_group_id(),
+                        camera_bind_group_id,
+                        material_bind_group_id,
+                        lighting_bind_group_id,
+                    ];
 
                     rpass.set_pipeline(render_pipeline);
                     for (index, bind_group_index) in item_bind_groups.iter().enumerate() {
-                        let bind_group = context.bind_group_manager().get_bind_group(*bind_group_index);
+                        let bind_group = context
+                            .bind_group_manager()
+                            .get_bind_group(*bind_group_index);
                         rpass.set_bind_group(index as u32, bind_group, &[]);
                     }
 
                     let vertex_or_index_count = item.get_vertex_or_index_count();
                     match vertex_or_index_count {
-                        VertexOrIndexCount::VertexCount { vertex_count, instance_count } => {
+                        VertexOrIndexCount::VertexCount {
+                            vertex_count,
+                            instance_count,
+                        } => {
                             rpass.draw(0..*vertex_count, 0..*instance_count);
                         }
-                        VertexOrIndexCount::IndexCount { index_count, base_vertex, instance_count, index_format } => {
-                            let vertex_buffer = context.buffer_manager().get_buffer(item.get_vertex_buffer_id());
+                        VertexOrIndexCount::IndexCount {
+                            index_count,
+                            base_vertex,
+                            instance_count,
+                            index_format,
+                        } => {
+                            let vertex_buffer = context
+                                .buffer_manager()
+                                .get_buffer(item.get_vertex_buffer_id());
                             rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
-                            let index_buffer = context.buffer_manager().get_buffer(item.get_index_buffer_id());
+                            let index_buffer = context
+                                .buffer_manager()
+                                .get_buffer(item.get_index_buffer_id());
                             rpass.set_index_buffer(index_buffer.slice(..), *index_format);
                             rpass.draw_indexed(0..*index_count, *base_vertex, 0..*instance_count);
                         }
@@ -122,22 +162,17 @@ impl Renderer {
                 }
             }
         }
-        
+
         context.graphics_context().submit(Some(encoder.finish()));
     }
 
-    pub fn render_ui(&mut self, context: & ImagicContext, window: &WindowWinit, surface_texture_view: &TextureView) {
-
-        let mut encoder = context.graphics_context()
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("imagic render ui command encoder desc") });
-        
-        self.ui_renderer().draw(
-            context.graphics_context(),
-            &mut encoder,
-            &window,
-            surface_texture_view,
-        );
-
-        context.graphics_context().submit(Some(encoder.finish()));
+    pub fn render_ui(
+        &mut self,
+        context: &ImagicContext,
+        window: &WindowWinit,
+        surface_texture_view: &TextureView,
+    ) {
+        self.ui_renderer()
+            .draw(context.graphics_context(), &window, surface_texture_view);
     }
 }

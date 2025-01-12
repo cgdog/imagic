@@ -33,6 +33,7 @@ fn vs_main(vs_in: VSInput) -> VSOutput {
     );
 
     result.position = vp_matrix.projection * vec4f(view * vs_in.position, 1.0);
+    result.position = result.position.xyww;
     return result;
 }
 

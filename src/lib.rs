@@ -12,6 +12,7 @@ pub mod asset_loader;
 pub mod constants;
 pub mod math;
 pub mod types;
+pub mod input;
 
 pub mod prelude {
     pub use crate::graphics::*;
@@ -31,4 +32,5 @@ pub mod prelude {
     pub use crate::constants::*;
     pub use crate::math::*;
     pub use crate::types::*;
+    pub use crate::input::*;
 }

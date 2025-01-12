@@ -1,11 +1,21 @@
 use std::f32::consts::{PI, TAU};
 use wgpu::util::DeviceExt;
 
-use crate::{camera::Layer, prelude::{render_item_manager::RenderItemManager, RenderItem, TransformManager, VertexOrIndexCount, INVALID_ID}, scene::{scene_object::SceneObject, transform::Transform}, types::ID, Imagic};
+use crate::{
+    camera::Layer,
+    prelude::{render_item_manager::RenderItemManager, RenderItem, VertexOrIndexCount, INVALID_ID},
+    scene::{scene_object::SceneObject, transform::Transform},
+    types::ID,
+    Imagic,
+};
 
 use super::vertex_attribute::Vertex;
 
-fn create_sphere_vertices(radius: f32, x_segments: u32, y_segments: u32) -> (Vec<Vertex>, Vec<u32>) {
+fn create_sphere_vertices(
+    radius: f32,
+    x_segments: u32,
+    y_segments: u32,
+) -> (Vec<Vertex>, Vec<u32>) {
     let mut vertices: Vec<Vertex> = Vec::new();
     let mut indices: Vec<u32> = Vec::new();
 
@@ -77,19 +87,20 @@ impl SceneObject for Sphere {
     fn transform(&self) -> &usize {
         &self.transform
     }
-    
+
     fn get_layer(&self) -> Layer {
         self.layer
     }
-    
+
     fn set_layer(&mut self, layer: Layer, render_item_manager: &mut RenderItemManager) {
         self.layer = layer;
-        render_item_manager.get_render_item_mut(self.render_item_id).layer = layer;
+        render_item_manager
+            .get_render_item_mut(self.render_item_id)
+            .layer = layer;
     }
 }
 
 impl Sphere {
-
     pub fn new(radius: f32, x_segments: u32, y_segments: u32) -> Self {
         Self {
             radius,
@@ -104,21 +115,34 @@ impl Sphere {
     }
 
     pub fn init(&mut self, imagic: &mut Imagic, pbr_material_index: usize) {
-        let transform_manager: &mut TransformManager = imagic.context_mut().transform_manager_mut();
+        let transform_manager = imagic.context_mut().transform_manager();
         let transform = Transform::default();
-        let transform_index = transform_manager.add_transform(transform);
+        let transform_index = transform_manager.borrow_mut().add_transform(transform);
         self.transform = transform_index;
 
         let (vertex_buffer_id, index_buffer_id, index_count) = self.create_buffer(imagic);
         let mut sphere_item = RenderItem::new(
-            VertexOrIndexCount::IndexCount { index_count, base_vertex: 0, instance_count: 1, index_format: Sphere::index_buffer_format() },
-            vertex_buffer_id, index_buffer_id, transform_index, true);
+            VertexOrIndexCount::IndexCount {
+                index_count,
+                base_vertex: 0,
+                instance_count: 1,
+                index_format: Sphere::index_buffer_format(),
+            },
+            vertex_buffer_id,
+            index_buffer_id,
+            transform_index,
+            true,
+        );
         sphere_item.set_material_id(pbr_material_index);
-        self.render_item_id = imagic.context_mut().render_item_manager_mut().add_render_item(sphere_item);
+        self.render_item_id = imagic
+            .context_mut()
+            .render_item_manager_mut()
+            .add_render_item(sphere_item);
     }
 
     fn create_buffer(&mut self, imagic: &mut Imagic) -> (usize, usize, u32) {
-        let (vertex_data, index_data) = create_sphere_vertices(self.radius, self.x_segments, self.y_segments);
+        let (vertex_data, index_data) =
+            create_sphere_vertices(self.radius, self.x_segments, self.y_segments);
         let device = imagic.context().graphics_context().get_device();
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Sphere Vertex Buffer"),
@@ -132,10 +156,9 @@ impl Sphere {
             usage: wgpu::BufferUsages::INDEX,
         });
 
-        
         let buffer_manager = imagic.context_mut().buffer_manager_mut();
         let vertex_buffer_id = buffer_manager.add_buffer(vertex_buffer);
-        
+
         let index_buffer_id = buffer_manager.add_buffer(index_buffer);
         let index_count = index_data.len().try_into().unwrap();
         (vertex_buffer_id, index_buffer_id, index_count)

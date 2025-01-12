@@ -58,6 +58,8 @@ impl GraphicsContext {
                     ..wgpu::Limits::downlevel_webgl2_defaults()
                     .using_resolution(adapter.limits())
                 },
+                // TODO: choose better memoty_hints
+                memory_hints: wgpu::MemoryHints::Performance,
             },
             None,
         )
@@ -71,6 +73,8 @@ impl GraphicsContext {
         size.height = size.height.max(1);
         self.surface.retrieve_default_config(&adapter, size.width, size.height);
         self.adapter = Some(adapter);
+        // self.on_resize(new_size);
+        self.surface.configure(self.get_device());
     }
 
     pub fn get_swapchian_format(&self) -> TextureFormat {

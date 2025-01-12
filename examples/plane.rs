@@ -47,30 +47,26 @@ impl App {
         let material_index = imagic.context_mut().material_manager_mut().add_material(unlit_material);
         material_index
     }
-
-    fn init(&mut self, imagic: &mut Imagic) {
-        let imagic_context = imagic.context_mut();
-        // self.prepare_lights(imagic_context);
-        self.camera = Camera::new(Vec3::new(0.0, 0.0, 5.0), consts::FRAC_PI_4
-            , self.window_size.get_aspect(), 1.0, 100.0, imagic_context);
-
-        let material_index = self.prepare_material(imagic);
-        self.plane.init(imagic, material_index);
-    }
     
-    pub fn run(mut self) {
+    pub fn run(self) {
         let mut imagic = Imagic::new();
-        let event_loop = imagic.init(ImagicOption::new(self.window_size, "Cube Demo"));
-
-        self.init(&mut imagic);
-
         let app: Rc<RefCell<Box<dyn ImagicAppTrait>>> = Rc::new(RefCell::new(Box::new(self)));
-        imagic.run(event_loop, app);
+        imagic.init(app);
     }
 }
 
 impl ImagicAppTrait for App {
-    fn on_update(&mut self, _imagic_context: &mut ImagicContext, _ui_renderer: &mut UIRenderer) {
+    fn init(&mut self, imagic: &mut Imagic) {
+        let imagic_context = imagic.context_mut();
+        // self.prepare_lights(imagic_context);
+        self.camera = Camera::new(Vec3::new(0.0, 0.0, 5.0), consts::FRAC_PI_4
+            , self.window_size.get_aspect(), 1.0, 100.0, None, imagic_context);
+
+        let material_index = self.prepare_material(imagic);
+        self.plane.init(imagic, material_index);
+    }
+
+    fn on_update(&mut self, _imagic_context: &mut ImagicContext) {
         let render_item = _imagic_context.render_item_manager_mut().get_render_item_mut(self.plane.render_item_id());
         render_item.is_visible = self.is_show_image;
     }
@@ -98,6 +94,10 @@ impl ImagicAppTrait for App {
             ui.separator();
             ui.label("This simple demo powered by wgpu renders full screen with a big triangle and a texture without Vertex buffer");
         });
+    }
+
+    fn get_imagic_option(& self) -> ImagicOption {
+        ImagicOption::new(self.window_size, "plane Demo")
     }
 }
 

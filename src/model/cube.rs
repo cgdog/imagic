@@ -2,10 +2,15 @@ use std::usize;
 
 use wgpu::util::DeviceExt;
 
-use crate::{camera::Layer, prelude::{render_item_manager::RenderItemManager, RenderItem, VertexOrIndexCount, INVALID_ID}, scene::{SceneObject, Transform, TransformManager}, types::ID, Imagic};
+use crate::{
+    camera::Layer,
+    prelude::{render_item_manager::RenderItemManager, RenderItem, VertexOrIndexCount, INVALID_ID},
+    scene::{SceneObject, Transform},
+    types::ID,
+    Imagic,
+};
 
 use super::Vertex;
-
 
 fn vertex(pos: [i8; 3], tc: [i8; 2]) -> Vertex {
     Vertex {
@@ -61,7 +66,7 @@ fn create_cube_vertices() -> (Vec<Vertex>, Vec<u16>) {
     (vertex_data.to_vec(), index_data.to_vec())
 }
 
-
+/// Cube mesh struct.
 pub struct Cube {
     pub width: f32,
     pub height: f32,
@@ -71,9 +76,9 @@ pub struct Cube {
     pub width_segments: u32,
     pub height_segments: u32,
     pub depth_segments: u32,
-    
+
     render_item_id: usize,
-    
+
     layer: Layer,
 }
 
@@ -97,20 +102,28 @@ impl SceneObject for Cube {
     fn transform(&self) -> &usize {
         &self.transform
     }
-    
+
     fn get_layer(&self) -> Layer {
         self.layer
     }
-    
+
     fn set_layer(&mut self, layer: Layer, render_item_manager: &mut RenderItemManager) {
         self.layer = layer;
-        render_item_manager.get_render_item_mut(self.render_item_id).layer = layer;
+        render_item_manager
+            .get_render_item_mut(self.render_item_id)
+            .layer = layer;
     }
 }
 
 impl Cube {
-
-    pub fn new(width: f32, height: f32, depth: f32, width_segments: u32, height_segments: u32, depth_segments: u32) -> Self {
+    pub fn new(
+        width: f32,
+        height: f32,
+        depth: f32,
+        width_segments: u32,
+        height_segments: u32,
+        depth_segments: u32,
+    ) -> Self {
         Self {
             width,
             height,
@@ -127,18 +140,29 @@ impl Cube {
     }
 
     pub fn init(&mut self, imagic: &mut Imagic, material_index: usize) {
-        let transform_manager: &mut TransformManager = imagic.context_mut().transform_manager_mut();
+        let transform_manager = imagic.context_mut().transform_manager();
         let transform = Transform::default();
-        let transform_index = transform_manager.add_transform(transform);
+        let transform_index = transform_manager.borrow_mut().add_transform(transform);
         self.transform = transform_index;
 
         let (vertex_buffer_id, index_buffer_id, index_count) = self.create_buffer(imagic);
         let mut cube_item = RenderItem::new(
-            VertexOrIndexCount::IndexCount { index_count, base_vertex: 0, instance_count: 1, index_format: Cube::index_buffer_format() },
-            vertex_buffer_id, index_buffer_id, transform_index, true);
+            VertexOrIndexCount::IndexCount {
+                index_count,
+                base_vertex: 0,
+                instance_count: 1,
+                index_format: Cube::index_buffer_format(),
+            },
+            vertex_buffer_id,
+            index_buffer_id,
+            transform_index,
+            true,
+        );
         cube_item.set_material_id(material_index);
-        self.render_item_id = imagic.context_mut().render_item_manager_mut().add_render_item(cube_item);
-    
+        self.render_item_id = imagic
+            .context_mut()
+            .render_item_manager_mut()
+            .add_render_item(cube_item);
     }
 
     pub fn create_buffer(&mut self, imagic: &mut Imagic) -> (usize, usize, u32) {
@@ -158,7 +182,7 @@ impl Cube {
 
         let buffer_manager = imagic.context_mut().buffer_manager_mut();
         let vertex_buffer_id = buffer_manager.add_buffer(vertex_buffer);
-        
+
         let index_buffer_id = buffer_manager.add_buffer(index_buffer);
         let index_count = index_data.len().try_into().unwrap();
         (vertex_buffer_id, index_buffer_id, index_count)

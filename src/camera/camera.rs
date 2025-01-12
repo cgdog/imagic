@@ -1,5 +1,3 @@
-use log::info;
-
 use crate::{
     math::{Mat4, Vec3, Vec4}, prelude::{
         bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
@@ -9,7 +7,7 @@ use crate::{
     }, types::ID, window::Window
 };
 
-use super::{Layer, LayerMask};
+use super::{CameraControllerOptions, Layer, LayerMask};
 
 pub enum CameraMode {
     Perspective,
@@ -43,6 +41,8 @@ pub struct Camera {
 
     layer: Layer,
     pub layer_mask: LayerMask,
+
+    pub controller_options: Option<CameraControllerOptions>,
 }
 
 impl Default for Camera {
@@ -68,6 +68,7 @@ impl Default for Camera {
 
             layer: Layer::Default,
             layer_mask: LayerMask::default(),
+            controller_options: None,
         }
     }
 }
@@ -98,8 +99,9 @@ impl Camera {
         buffer_manager: &mut GPUBufferManager,
         texture_manager: &mut TextureManager,
     ) {
-        self._compute_physical_viewport_from_window(window);
-        self.create_depth_texture(graphics_context, texture_manager, window);
+        let (physical_width, physical_height) = window.get_physical_size().get();
+        self._compute_physical_viewport_aspect(physical_width, physical_height);
+        self.create_depth_texture(graphics_context, texture_manager, physical_width as u32, physical_height as u32);
         self.create_bind_group(
             graphics_context,
             bind_group_manager,
@@ -107,6 +109,22 @@ impl Camera {
             transform_manager,
             buffer_manager,
         );
+    }
+
+    /// Called to update depth texture size, viewport and projection matrix when window resized.
+    pub(crate) fn on_resize(
+        &mut self,
+        graphics_context: &GraphicsContext,
+        texture_manager: &mut TextureManager,
+        transform_manager: &TransformManager,
+        buffer_manager: &GPUBufferManager,
+        width: u32,
+        height: u32
+    ) {
+        // TODO: release outdated depth_texture: self.depth_texture, which requires to refactor TextureManager class.
+        self.create_depth_texture(graphics_context, texture_manager, width, height);
+        self._compute_physical_viewport_aspect(width as f32, height as f32);
+        self.update_uniform_buffers(graphics_context, transform_manager, buffer_manager);
     }
 
     pub fn get_bind_group_id(&self) -> ID {
@@ -175,14 +193,15 @@ impl Camera {
         aspect: f32,
         near: f32,
         far: f32,
+        controller_options: Option<CameraControllerOptions>,
         imagic_context: &mut ImagicContext,
     ) -> ID {
-        let transform_manager = imagic_context.transform_manager_mut();
+        let transform_manager = imagic_context.transform_manager();
 
         let mut transform = Transform::default();
         transform.set_position(pos);
 
-        let transform_index = transform_manager.add_transform(transform);
+        let transform_index = transform_manager.borrow_mut().add_transform(transform);
 
         let camera = Self {
             fov,
@@ -190,6 +209,7 @@ impl Camera {
             near,
             far,
             transform: transform_index,
+            controller_options,
             ..Default::default()
         };
 
@@ -301,15 +321,15 @@ impl Camera {
         &self.physical_view_port
     }
 
-    /// compute the real view port used by render pass
-    fn _compute_physical_viewport_from_window(&mut self, window: &Window) {
-        let (physical_widht, physical_heigt) = window.get_physical_size().get();
-        self.physical_view_port.x = self.view_port.x * physical_widht;
-        self.physical_view_port.y = self.view_port.y * physical_heigt;
-        self.physical_view_port.z = self.view_port.z * physical_widht;
-        self.physical_view_port.w = self.view_port.w * physical_heigt;
+    /// Compute the real (physical) view port used by render pass, and compute aspect used to calculate projection matrix.
+    fn _compute_physical_viewport_aspect(&mut self, physical_width: f32, physical_height: f32) {
+        self.physical_view_port.x = self.view_port.x * physical_width;
+        self.physical_view_port.y = self.view_port.y * physical_height;
+        self.physical_view_port.z = self.view_port.z * physical_width;
+        self.physical_view_port.w = self.view_port.w * physical_height;
+        // info!("physical_view_port: {}", self.physical_view_port);
 
-        info!("physical_view_port: {}", self.physical_view_port);
+        self.aspect = self.physical_view_port.z / self.physical_view_port.w;
     }
 
     pub fn get_clear_color(&self) -> &Vec4 {
@@ -324,15 +344,10 @@ impl Camera {
         &mut self,
         graphics_context: &GraphicsContext,
         texture_manager: &mut TextureManager,
-        window: &Window,
+        width: u32,
+        height: u32,
     ) {
         const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth24PlusStencil8;
-        let window_physical_size = window.get_physical_size();
-        // let width = self.physical_view_port.z as u32;
-        // let height = self.physical_view_port.w as u32;
-        let width = window_physical_size.get_width() as u32;
-        let height = window_physical_size.get_height() as u32;
-
         let dpeth_texture =
             Texture::create_depth_texture(graphics_context, width, height, DEPTH_FORMAT);
         self.depth_texture = texture_manager.add_texture(dpeth_texture);

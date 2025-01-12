@@ -45,35 +45,37 @@ impl App {
         let material_index = imagic.context_mut().material_manager_mut().add_material(unlit_material);
         material_index
     }
+    
+    pub fn run(self) {
+        let mut imagic = Imagic::new();
+
+        let app: Rc<RefCell<Box<dyn ImagicAppTrait>>> = Rc::new(RefCell::new(Box::new(self)));
+        imagic.init(app);
+    }
+}
+
+impl ImagicAppTrait for App {
 
     fn init(&mut self, imagic: &mut Imagic) {
         let imagic_context = imagic.context_mut();
         // self.prepare_lights(imagic_context);
         self.camera = Camera::new(Vec3::new(0.0, 5.0, 10.0), consts::FRAC_PI_4
-            , self.window_size.get_aspect(), 1.0, 100.0, imagic_context);
+            , self.window_size.get_aspect(), 1.0, 100.0, Some(CameraControllerOptions::new(Vec3::ZERO, 1.0)), imagic_context);
 
         let material_index = self.prepare_material(imagic);
         self.cube.init(imagic, material_index);
     }
-    
-    pub fn run(mut self) {
-        let mut imagic = Imagic::new();
-        let event_loop = imagic.init(ImagicOption::new(self.window_size, "Cube Demo"));
 
-        self.init(&mut imagic);
-
-        let app: Rc<RefCell<Box<dyn ImagicAppTrait>>> = Rc::new(RefCell::new(Box::new(self)));
-        imagic.run(event_loop, app);
-    }
-}
-
-impl ImagicAppTrait for App {
-    fn on_update(&mut self, _imagic_context: &mut ImagicContext, _ui_renderer: &mut UIRenderer) {
+    fn on_update(&mut self, _imagic_context: &mut ImagicContext) {
         // todo!()
     }
 
     fn on_render_ui(&mut self, _ctx: &egui::Context) {
         // todo!()
+    }
+
+    fn get_imagic_option(& self) -> ImagicOption {
+        ImagicOption::new(self.window_size, "Cube Demo")
     }
 }
 

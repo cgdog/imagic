@@ -1,10 +1,10 @@
 use crate::math::{EulerRot, Mat4, Quat, Vec3};
 
 pub struct Transform {
-    position: Vec3,
-    rotation: Vec3,
-    quat: Quat,
-    scale: Vec3,
+    pub position: Vec3,
+    pub rotation: Vec3,
+    pub quat: Quat,
+    pub scale: Vec3,
 }
 
 impl Default for Transform {
@@ -21,7 +21,6 @@ impl Default for Transform {
 impl Transform {
     pub fn set_position(&mut self, new_pos: Vec3) {
         self.position = new_pos;
-        
     }
 
     pub fn get_position(&self) -> &Vec3 {
