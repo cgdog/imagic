@@ -25,13 +25,14 @@ var<uniform> vp_matrix: VP;
 fn vs_main(vs_in: VSInput) -> VSOutput {
     var result: VSOutput;
     result.uv = vs_in.position;
-    result.position = vp_matrix.projection * vp_matrix.view * vec4f(vs_in.position, 1.0);
-    // let view = mat3x3f(
-    //     vp_matrix.view[0].xyz,
-    //     vp_matrix.view[1].xyz,
-    //     vp_matrix.view[2].xyz,
-    // );
-    // result.position = vp_matrix.projection * vec4f(view * vs_in.position, 1.0);
+    // result.position = vp_matrix.projection * vp_matrix.view * vec4f(vs_in.position, 1.0);
+    let view = mat3x3f(
+        vp_matrix.view[0].xyz,
+        vp_matrix.view[1].xyz,
+        vp_matrix.view[2].xyz,
+    );
+
+    result.position = vp_matrix.projection * vec4f(view * vs_in.position, 1.0);
     return result;
 }
 

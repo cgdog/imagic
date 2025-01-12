@@ -89,6 +89,10 @@ impl MaterialTrait for SkyboxMaterial {
     fn set_cull_mode(&mut self, cull_mode: wgpu::Face) {
         self.cull_mode = cull_mode;
     }
+
+    fn get_cull_mode(&self) -> wgpu::Face {
+        self.cull_mode
+    }
 }
 
 impl SkyboxMaterial {

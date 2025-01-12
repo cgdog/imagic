@@ -108,11 +108,11 @@ impl App {
             imagic_context.graphics_context(),
             [
                 include_bytes!("./assets/skybox/right.jpg"),
-                include_bytes!("./assets/skybox/right.jpg"),
-                include_bytes!("./assets/skybox/right.jpg"),
-                include_bytes!("./assets/skybox/right.jpg"),
-                include_bytes!("./assets/skybox/right.jpg"),
-                include_bytes!("./assets/skybox/right.jpg"),
+                include_bytes!("./assets/skybox/left.jpg"),
+                include_bytes!("./assets/skybox/top.jpg"),
+                include_bytes!("./assets/skybox/bottom.jpg"),
+                include_bytes!("./assets/skybox/front.jpg"),
+                include_bytes!("./assets/skybox/back.jpg"),
             ],
             wgpu::TextureFormat::Rgba8UnormSrgb,
         );
@@ -120,7 +120,7 @@ impl App {
         
         let mut skybox_material = Box::new(SkyboxMaterial::new());
         skybox_material.set_skybox_map(cube_texture_id);
-        // skybox_material.set_cull_mode(wgpu::Face::Back);
+        skybox_material.set_cull_mode(wgpu::Face::Front);
         let skybox_material_id = imagic_context.material_manager_mut().add_material(skybox_material);
         skybox_material_id
     }
@@ -195,10 +195,12 @@ impl App {
     fn _rotate_camera(&mut self, imagic_context: &mut ImagicContext, camera_id: ID) {
         let camera_transform = *imagic_context.camera_manager().get_camera(camera_id).transform();
         // let cur_camera_pos = imagic_context.transform_manager().get_transform(camera_transform).get_position();
-        let cur_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs_f64();
+        let mut cur_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs_f64();
         // info!("cur_time: {}", cur_time);
-        let camera_new_pos = Vec3::new(self.camera_z * cur_time.cos() as f32, 4.5, self.camera_z * cur_time.sin() as f32);
+        cur_time *= 0.5;
+        let camera_new_pos = Vec3::new(self.camera_z * cur_time.cos() as f32, 0.0, self.camera_z * cur_time.sin() as f32);
         imagic_context.transform_manager_mut().get_transform_mut(camera_transform).set_position(camera_new_pos);
+        // imagic_context.transform_manager_mut().get_transform_mut(camera_transform).set_rotation_euler(Vec3::new(-45.0, 0.0, 45.0));
         let camera = imagic_context.camera_manager().get_camera(camera_id);
         camera.update_uniform_buffers(imagic_context.graphics_context(), imagic_context.transform_manager(), imagic_context.buffer_manager());
     }
