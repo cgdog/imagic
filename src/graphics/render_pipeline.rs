@@ -78,8 +78,8 @@ impl RenderPipelineManager {
                 targets: &[Some(swapchain_format.into())],
             }),
             primitive: wgpu::PrimitiveState {
-                cull_mode: Some(wgpu::Face::Back),
-                // front_face: wgpu::FrontFace::Ccw,
+                cull_mode: Some(material.get_cull_mode()),
+                front_face: material.get_front_face(),
                 ..Default::default()
             },
             // depth_stencil: None,

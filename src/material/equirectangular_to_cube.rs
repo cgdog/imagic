@@ -5,9 +5,11 @@ use crate::{prelude::{bind_group_layout::BindGroupLayoutManager, GraphicsContext
 use super::MaterialTrait;
 
 pub struct EquirectangularToCubeMaterial {
-    equirectangular_map: usize,
+    equirectangular_map: ID,
     texture2d_sampler: Option<wgpu::Sampler>,
-    bind_group_id: usize,
+    bind_group_id: ID,
+    cull_mode: wgpu::Face,
+    front_face: wgpu::FrontFace,
 }
 
 impl Default for EquirectangularToCubeMaterial {
@@ -16,6 +18,8 @@ impl Default for EquirectangularToCubeMaterial {
             equirectangular_map: INVALID_ID,
             texture2d_sampler: None,
             bind_group_id: INVALID_ID,
+            cull_mode: wgpu::Face::Back,
+            front_face: wgpu::FrontFace::Ccw,
         }
     }
 }
@@ -84,6 +88,22 @@ impl MaterialTrait for EquirectangularToCubeMaterial {
             ))),
         });
         shader
+    }
+
+    fn get_cull_mode(&self) -> wgpu::Face {
+        self.cull_mode
+    }
+
+    fn set_cull_mode(&mut self, cull_mode: wgpu::Face) {
+        self.cull_mode = cull_mode;
+    }
+
+    fn get_front_face(&self) -> wgpu::FrontFace {
+        self.front_face
+    }
+
+    fn set_front_face(&mut self, front_face: wgpu::FrontFace) {
+        self.front_face = front_face;
     }
 }
 

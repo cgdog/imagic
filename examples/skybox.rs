@@ -115,6 +115,8 @@ impl App {
         let mut equirectangular_to_cube_material = Box::new(EquirectangularToCubeMaterial::new());
         let skybox_texture = self.prepare_skybox(imagic.context_mut());
         equirectangular_to_cube_material.set_equirectangular_map(skybox_texture);
+        // equirectangular_to_cube_material.set_cull_mode(wgpu::Face::Front);
+        
         // let albedo_index = self._prepare_albedo(imagic.context_mut());
         // equirectangular_to_cube_material.set_equirectangular_map(albedo_index);
         
@@ -139,6 +141,7 @@ impl App {
         let first_viewport = Vec4::new(0.0, 0.0, 0.5, 1.0);
         let first_clear_color = Color::new(0.1, 0.1, 0.1, 1.0);
         let first_camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
+        // TODO: 让 Cube 以天空盒的形式渲染
         let first_camera_layer_mask = LayerMask::new(Layer::Default.into());
         self.first_camera_id = self.add_camera(imagic, first_camera_pos, first_viewport, first_clear_color, first_camera_layer_mask);
 
