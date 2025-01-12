@@ -7,32 +7,30 @@ use crate::{
 
 use super::MaterialTrait;
 
-pub struct SkyboxMaterial {
-    skybox_map: usize,
-    texture_cube_sampler: Option<wgpu::Sampler>,
+pub struct UnlitMaterial {
+    albedo_map: usize,
+    texture2d_sampler: Option<wgpu::Sampler>,
     bind_group_id: usize,
-    cull_mode: wgpu::Face,
 }
 
-impl Default for SkyboxMaterial {
+impl Default for UnlitMaterial {
     fn default() -> Self {
         Self {
-            skybox_map: INVALID_ID,
-            texture_cube_sampler: None,
+            albedo_map: INVALID_ID,
+            texture2d_sampler: None,
             bind_group_id: INVALID_ID,
-            cull_mode: wgpu::Face::Back,
         }
     }
 }
 
-impl MaterialTrait for SkyboxMaterial {
+impl MaterialTrait for UnlitMaterial {
     fn init(
         &mut self,
         graphics_context: &crate::prelude::GraphicsContext,
         bind_group_layout_manager: &mut crate::prelude::bind_group_layout::BindGroupLayoutManager,
     ) {
         self.create_texture_sampler(graphics_context);
-        SkyboxMaterial::try_create_bind_group_layout(graphics_context, bind_group_layout_manager);
+        UnlitMaterial::try_create_bind_group_layout(graphics_context, bind_group_layout_manager);
     }
 
     fn create_bind_group(
@@ -46,18 +44,18 @@ impl MaterialTrait for SkyboxMaterial {
             bind_group_layout_manager.get_bind_group_layout(self.get_bind_group_layout_id());
         let bind_group = graphics_context.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: bind_group_layout,
-            label: Some("Skybox bind group"),
+            label: Some("Unlit bind group"),
             entries: &[
                 wgpu::BindGroupEntry {
                     // albedo map
                     binding: 0,
                     resource: wgpu::BindingResource::TextureView(
-                        texture_manager.get_texture_view(self.skybox_map),
+                        texture_manager.get_texture_view(self.albedo_map),
                     ),
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&self.get_cube_texture_sampler()),
+                    resource: wgpu::BindingResource::Sampler(&self.get_2d_texture_sampler()),
                 },
             ],
         });
@@ -68,7 +66,7 @@ impl MaterialTrait for SkyboxMaterial {
     }
 
     fn get_bind_group_layout_id(&self) -> ID {
-        SkyboxMaterial::internal_bind_group_layout_id(INVALID_ID)
+        UnlitMaterial::internal_bind_group_layout_id(INVALID_ID)
     }
 
     fn get_bind_group_id(&self) -> ID {
@@ -80,43 +78,39 @@ impl MaterialTrait for SkyboxMaterial {
         graphics_context: &crate::prelude::GraphicsContext,
     ) -> wgpu::ShaderModule {
         let shader = graphics_context.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("create skybox shader module"),
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../shaders/skybox.wgsl"))),
+            label: Some("crate unlit shader module"),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../shaders/unlit.wgsl"))),
         });
         shader
     }
-
-    fn set_cull_mode(&mut self, cull_mode: wgpu::Face) {
-        self.cull_mode = cull_mode;
-    }
 }
 
-impl SkyboxMaterial {
+impl UnlitMaterial {
     pub fn new() -> Self {
         Default::default()
     }
 
     fn create_texture_sampler(&mut self, graphics_context: &GraphicsContext) {
-        if self.texture_cube_sampler.is_none() {
+        if self.texture2d_sampler.is_none() {
             let texture_sampler =
                 graphics_context
                     .get_device()
                     .create_sampler(&wgpu::SamplerDescriptor {
-                        label: Some("Skybox CubeTexture Sampler"),
+                        label: Some("Unlit texture2d sampler"),
                         address_mode_u: wgpu::AddressMode::ClampToEdge,
                         address_mode_v: wgpu::AddressMode::ClampToEdge,
                         address_mode_w: wgpu::AddressMode::ClampToEdge,
                         mag_filter: wgpu::FilterMode::Linear,
                         min_filter: wgpu::FilterMode::Nearest,
-                        mipmap_filter: wgpu::FilterMode::Linear,
+                        mipmap_filter: wgpu::FilterMode::Nearest,
                         ..Default::default()
                     });
-            self.texture_cube_sampler = Some(texture_sampler);
+            self.texture2d_sampler = Some(texture_sampler);
         }
     }
 
     fn internal_bind_group_layout_id(new_id: usize) -> ID {
-        // All SkyboxMaterial instances share the same bind group layout.
+        // All UnlitMaterial instances share the same bind group layout.
         static mut LAYOUT_ID: ID = INVALID_ID;
         if new_id != INVALID_ID {
             unsafe { LAYOUT_ID = new_id };
@@ -128,11 +122,11 @@ impl SkyboxMaterial {
         graphics_context: &GraphicsContext,
         bind_group_layout_manager: &mut BindGroupLayoutManager,
     ) {
-        let layout_id = SkyboxMaterial::internal_bind_group_layout_id(INVALID_ID);
+        let layout_id = UnlitMaterial::internal_bind_group_layout_id(INVALID_ID);
         if layout_id == INVALID_ID {
-            let bind_group_layout = SkyboxMaterial::create_bind_group_layout(graphics_context);
+            let bind_group_layout = UnlitMaterial::create_bind_group_layout(graphics_context);
             let layout_id = bind_group_layout_manager.add_bind_group_layout(bind_group_layout);
-            SkyboxMaterial::internal_bind_group_layout_id(layout_id);
+            UnlitMaterial::internal_bind_group_layout_id(layout_id);
         }
     }
 
@@ -141,12 +135,12 @@ impl SkyboxMaterial {
             graphics_context.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
-                        // skybox map
+                        // albedo map
                         binding: 0,
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Texture {
                             multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::Cube,
+                            view_dimension: wgpu::TextureViewDimension::D2,
                             sample_type: wgpu::TextureSampleType::Float { filterable: true },
                         },
                         count: None,
@@ -161,20 +155,20 @@ impl SkyboxMaterial {
                         count: None,
                     },
                 ],
-                label: Some("SkyboxMaterial_bind_group_layout"),
+                label: Some("UnlitMaterial_bind_group_layout"),
             });
         bind_group_layout
     }
 
-    pub fn set_skybox_map(&mut self, skybox_map: usize) {
-        self.skybox_map = skybox_map;
+    pub fn set_albedo_map(&mut self, albedo_map: usize) {
+        self.albedo_map = albedo_map;
     }
 
-    pub fn get_skybox_map(&self) -> ID {
-        self.skybox_map
+    pub fn get_albedo_map(&self) -> ID {
+        self.albedo_map
     }
 
-    pub fn get_cube_texture_sampler(&self) -> &wgpu::Sampler {
-        self.texture_cube_sampler.as_ref().unwrap()
+    pub fn get_2d_texture_sampler(&self) -> &wgpu::Sampler {
+        self.texture2d_sampler.as_ref().unwrap()
     }
 }

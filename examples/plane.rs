@@ -23,7 +23,7 @@ impl Default for App {
 
 impl App {
 
-    fn _prepare_skybox(&mut self, imagic_context: &mut ImagicContext) -> ID {
+    fn _prepare_hdr_texture(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let mut hdr_loader = HDRLoader{};
         let cwd = std::env::current_dir().unwrap();
         let hdr_path = cwd.join("examples/assets/pbr/hdr/newport_loft.hdr");
@@ -40,14 +40,11 @@ impl App {
     }
 
     fn prepare_material(&mut self, imagic: &mut Imagic) -> ID {
-        let mut skybox_material = Box::new(SkyboxMaterial::new());
-        // let skybox_texture = self._prepare_skybox(imagic.context_mut());
-        // skybox_material.set_skybox_map(skybox_texture);
+        let mut unlit_material = Box::new(UnlitMaterial::new());
         let albedo_index = self._prepare_albedo(imagic.context_mut());
-        skybox_material.set_skybox_map(albedo_index);
-        
+        unlit_material.set_albedo_map(albedo_index);
 
-        let material_index = imagic.context_mut().material_manager_mut().add_material(skybox_material);
+        let material_index = imagic.context_mut().material_manager_mut().add_material(unlit_material);
         material_index
     }
 
@@ -83,6 +80,7 @@ impl ImagicAppTrait for App {
         .resizable(true)
         .vscroll(true)
         .default_open(false)
+        .default_size([200.0, 10.0])
         .show(&ctx, |ui| {
             ui.label("You can drag the UI window title to move the UI window!");
             if self.is_show_image {

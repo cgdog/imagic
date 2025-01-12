@@ -30,7 +30,7 @@ impl Default for App {
 
 impl App {
 
-    fn prepare_skybox(&mut self, imagic_context: &mut ImagicContext) -> ID {
+    fn prepare_hdr_texture(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let mut hdr_loader = HDRLoader{};
         let cwd = std::env::current_dir().unwrap();
         let hdr_path = cwd.join("examples/assets/pbr/hdr/newport_loft.hdr");
@@ -48,8 +48,8 @@ impl App {
 
     fn prepare_material(&mut self, imagic: &mut Imagic) -> ID {
         let mut equirectangular_to_cube_material = Box::new(EquirectangularToCubeMaterial::new());
-        let skybox_texture = self.prepare_skybox(imagic.context_mut());
-        equirectangular_to_cube_material.set_equirectangular_map(skybox_texture);
+        let hdr_texture = self.prepare_hdr_texture(imagic.context_mut());
+        equirectangular_to_cube_material.set_equirectangular_map(hdr_texture);
         // let albedo_index = self._prepare_albedo(imagic.context_mut());
         // equirectangular_to_cube_material.set_equirectangular_map(albedo_index);
         
@@ -118,6 +118,7 @@ impl ImagicAppTrait for App {
         .resizable(true)
         .vscroll(true)
         .default_open(false)
+        .default_size([100.0, 10.0])
         .show(&ctx, |ui| {
             if self.rotate_camera {
                 if ui.button("Stop Rotate").clicked() {

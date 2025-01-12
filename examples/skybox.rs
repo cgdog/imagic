@@ -1,4 +1,3 @@
-use std::usize;
 use std::{cell::RefCell, f32::consts, rc::Rc};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -9,8 +8,8 @@ use imagic::prelude::*;
 pub struct App {
     cube: Cube,
     sphere: Sphere,
-    first_camera_id: usize,
-    second_camera_id: usize,
+    first_camera_id: ID,
+    second_camera_id: ID,
     window_size: WindowSize,
     camera_z: f32,
     rotate_camera: bool,
@@ -104,6 +103,28 @@ impl App {
         hdr_texture_index
     }
 
+    fn prepare_ldr_skybox(&mut self, imagic_context: &mut ImagicContext) -> ID {
+        let cube_texture = Texture::create_cube_texture_from_bytes(
+            imagic_context.graphics_context(),
+            [
+                include_bytes!("./assets/skybox/right.jpg"),
+                include_bytes!("./assets/skybox/right.jpg"),
+                include_bytes!("./assets/skybox/right.jpg"),
+                include_bytes!("./assets/skybox/right.jpg"),
+                include_bytes!("./assets/skybox/right.jpg"),
+                include_bytes!("./assets/skybox/right.jpg"),
+            ],
+            wgpu::TextureFormat::Rgba8UnormSrgb,
+        );
+        let cube_texture_id = imagic_context.texture_manager_mut().add_texture(cube_texture);
+        
+        let mut skybox_material = Box::new(SkyboxMaterial::new());
+        skybox_material.set_skybox_map(cube_texture_id);
+        // skybox_material.set_cull_mode(wgpu::Face::Back);
+        let skybox_material_id = imagic_context.material_manager_mut().add_material(skybox_material);
+        skybox_material_id
+    }
+
     fn _prepare_albedo(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let albedo_texture = Texture::create_from_bytes(imagic_context.graphics_context(),
             include_bytes!("./assets/lena.png"), wgpu::TextureFormat::Rgba8UnormSrgb);
@@ -111,14 +132,11 @@ impl App {
         albedo_texture_index
     }
 
+    #[allow(unused)]
     fn prepare_equirect_to_cube_material(&mut self, imagic: &mut Imagic) -> ID {
         let mut equirectangular_to_cube_material = Box::new(EquirectangularToCubeMaterial::new());
         let skybox_texture = self.prepare_skybox(imagic.context_mut());
         equirectangular_to_cube_material.set_equirectangular_map(skybox_texture);
-        // equirectangular_to_cube_material.set_cull_mode(wgpu::Face::Front);
-        
-        // let albedo_index = self._prepare_albedo(imagic.context_mut());
-        // equirectangular_to_cube_material.set_equirectangular_map(albedo_index);
         
         let material_index = imagic.context_mut().material_manager_mut().add_material(equirectangular_to_cube_material);
         material_index
@@ -151,8 +169,9 @@ impl App {
         let second_camera_layer_mask = LayerMask::new(Layer::RenderTarget.into());
         self.second_camera_id = self.add_camera(imagic, second_camera_pos, second_viewport, second_clear_color, second_camera_layer_mask);
 
-        let equirect_to_cube_material_index = self.prepare_equirect_to_cube_material(imagic);
-        self.cube.init(imagic, equirect_to_cube_material_index);
+        // let equirect_to_cube_material_index = self.prepare_equirect_to_cube_material(imagic);
+        let skybox_material_id = self.prepare_ldr_skybox(imagic.context_mut());
+        self.cube.init(imagic, skybox_material_id);
         self.cube.set_layer(Layer::RenderTarget, imagic.context_mut().render_item_manager_mut());
 
         self.prepare_lights(imagic.context_mut());
@@ -173,14 +192,14 @@ impl App {
         imagic.run(event_loop, app);
     }
 
-    fn _rotate_camera(&mut self, imagic_context: &mut ImagicContext) {
-        let camera_transform = *imagic_context.camera_manager().get_camera(self.first_camera_id).transform();
+    fn _rotate_camera(&mut self, imagic_context: &mut ImagicContext, camera_id: ID) {
+        let camera_transform = *imagic_context.camera_manager().get_camera(camera_id).transform();
         // let cur_camera_pos = imagic_context.transform_manager().get_transform(camera_transform).get_position();
         let cur_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs_f64();
         // info!("cur_time: {}", cur_time);
         let camera_new_pos = Vec3::new(self.camera_z * cur_time.cos() as f32, 4.5, self.camera_z * cur_time.sin() as f32);
         imagic_context.transform_manager_mut().get_transform_mut(camera_transform).set_position(camera_new_pos);
-        let camera = imagic_context.camera_manager().get_camera(self.first_camera_id);
+        let camera = imagic_context.camera_manager().get_camera(camera_id);
         camera.update_uniform_buffers(imagic_context.graphics_context(), imagic_context.transform_manager(), imagic_context.buffer_manager());
     }
 }
@@ -188,7 +207,8 @@ impl App {
 impl ImagicAppTrait for App {
     fn on_update(&mut self, _imagic_context: &mut ImagicContext, _ui_renderer: &mut UIRenderer) {
         if self.rotate_camera {
-            self._rotate_camera(_imagic_context);
+            self._rotate_camera(_imagic_context, self.first_camera_id);
+            self._rotate_camera(_imagic_context, self.second_camera_id);
         }
     }
 
