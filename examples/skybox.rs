@@ -1,9 +1,12 @@
 use std::{cell::RefCell, f32::consts, rc::Rc};
 
+use common::create_camera;
 use glam::Vec3;
 use imagic::prelude::*;
 use imagic::window::WindowSize;
 use log::info;
+
+mod common;
 
 pub struct App {
     cube: Cube,
@@ -179,36 +182,6 @@ impl App {
         material_index
     }
 
-    fn add_camera(
-        &mut self,
-        imagic: &mut Imagic,
-        camera_pos: Vec3,
-        viewport: Vec4,
-        clear_color: Vec4,
-        layer_mask: LayerMask,
-        controller_options: Option<CameraControllerOptions>,
-    ) -> ID {
-        let imagic_context = imagic.context_mut();
-        let camera_id = Camera::new(
-            camera_pos,
-            consts::FRAC_PI_4,
-            self.window_size.get_half_width() / self.window_size.get_height(),
-            0.01,
-            500.0,
-            controller_options,
-            imagic_context,
-        );
-
-        let camera = imagic
-            .context_mut()
-            .camera_manager_mut()
-            .get_camera(camera_id);
-        camera.borrow_mut().set_viewport(viewport);
-        camera.borrow_mut().set_clear_color(clear_color);
-        camera.borrow_mut().layer_mask = layer_mask;
-        camera_id
-    }
-
     pub fn run(self) {
         let mut imagic = Imagic::new();
         let app: Rc<RefCell<Box<dyn ImagicAppTrait>>> = Rc::new(RefCell::new(Box::new(self)));
@@ -218,17 +191,25 @@ impl App {
 
 impl ImagicAppTrait for App {
     fn init(&mut self, imagic: &mut Imagic) {
+        let fov = consts::FRAC_PI_4;
+        let aspect = self.window_size.get_half_width() / self.window_size.get_height();
+        let near = 0.01;
+        let far = 500.0;
         // first camera
         let first_viewport = Vec4::new(0.0, 0.0, 0.5, 1.0);
         let first_clear_color = Color::new(0.1, 0.1, 0.1, 1.0);
         let first_camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
         // TODO: 让 Cube 以天空盒的形式渲染
         let first_camera_layer_mask = LayerMask::new(Layer::All.into());
-        self.first_camera_id = self.add_camera(
-            imagic,
+        self.first_camera_id = create_camera(
+            imagic.context_mut(),
             first_camera_pos,
             first_viewport,
             first_clear_color,
+            fov,
+            aspect,
+            near,
+            far,
             first_camera_layer_mask,
             Some(CameraControllerOptions::new(Vec3::ZERO, self.auto_rotate_camera)),
         );
@@ -237,11 +218,15 @@ impl ImagicAppTrait for App {
         let second_clear_color = Color::new(0.1, 0.2, 0.3, 1.0);
         let second_camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
         let second_camera_layer_mask = LayerMask::new(Layer::RenderTarget.into());
-        self.second_camera_id = self.add_camera(
-            imagic,
+        self.second_camera_id = create_camera(
+            imagic.context_mut(),
             second_camera_pos,
             second_viewport,
             second_clear_color,
+            fov,
+            aspect,
+            near,
+            far,
             second_camera_layer_mask,
             Some(CameraControllerOptions::new(Vec3::ZERO, false)),
         );

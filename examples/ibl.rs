@@ -1,8 +1,8 @@
 /// Show IBL
 
-use std::time::{SystemTime, UNIX_EPOCH};
 use std::{cell::RefCell, f32::consts, rc::Rc};
 
+use common::create_camera;
 use imagic::prelude::*;
 use imagic::window::WindowSize;
 use log::info;
@@ -160,36 +160,6 @@ impl App {
         material_index
     }
 
-    fn add_camera(
-        &mut self,
-        imagic: &mut Imagic,
-        camera_pos: Vec3,
-        viewport: Vec4,
-        clear_color: Vec4,
-        layer_mask: LayerMask,
-        controller_options: Option<CameraControllerOptions>,
-    ) -> ID {
-        let imagic_context = imagic.context_mut();
-        let camera_id = Camera::new(
-            camera_pos,
-            consts::FRAC_PI_4,
-            self.window_size.get_half_width() / self.window_size.get_height(),
-            0.01,
-            500.0,
-            controller_options,
-            imagic_context,
-        );
-
-        let camera = imagic
-            .context_mut()
-            .camera_manager_mut()
-            .get_camera(camera_id);
-        camera.borrow_mut().set_viewport(viewport);
-        camera.borrow_mut().set_clear_color(clear_color);
-        camera.borrow_mut().layer_mask = layer_mask;
-        camera_id
-    }
-
     pub fn run(self) {
         let mut imagic = Imagic::new();
         let app: Rc<RefCell<Box<dyn ImagicAppTrait>>> = Rc::new(RefCell::new(Box::new(self)));
@@ -197,48 +167,29 @@ impl App {
         // imagic.input_manager.register_mouse_input_listener(Rc::new(RefCell::new(Box::new(input_status))));
         imagic.run(app);
     }
-
-    fn _rotate_camera(&mut self, imagic_context: &mut ImagicContext, camera_id: ID) {
-        let camera_transform = *imagic_context
-            .camera_manager()
-            .get_camera(camera_id)
-            .borrow()
-            .transform();
-        // let cur_camera_pos = imagic_context.transform_manager().get_transform(camera_transform).get_position();
-        let mut cur_time = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs_f64();
-        // info!("cur_time: {}", cur_time);
-        cur_time *= 0.5;
-        let camera_new_pos = Vec3::new(
-            self.camera_z * cur_time.cos() as f32,
-            0.0,
-            self.camera_z * cur_time.sin() as f32,
-        );
-        imagic_context
-            .transform_manager().borrow_mut()
-            .get_transform_mut(camera_transform)
-            .set_position(camera_new_pos);
-        let camera = imagic_context.camera_manager().get_camera(camera_id);
-        // TODO: optimize to call 'set_dirty()' inside Camera or the engine, without awareness from users.
-        camera.borrow_mut().set_dirty();
-    }
 }
 
 impl ImagicAppTrait for App {
     fn init(&mut self, imagic: &mut Imagic) {
+        let fov = consts::FRAC_PI_4;
+        let aspect = self.window_size.get_half_width() / self.window_size.get_height();
+        let near = 0.01;
+        let far = 500.0;
         // first camera
         let first_viewport = Vec4::new(0.0, 0.0, 0.5, 1.0);
         let first_clear_color = Color::new(0.1, 0.1, 0.1, 1.0);
         let first_camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
         // TODO: 让 Cube 以天空盒的形式渲染
         let first_camera_layer_mask = LayerMask::new(Layer::Default.into());
-        self.first_camera_id = self.add_camera(
-            imagic,
+        self.first_camera_id = create_camera(
+            imagic.context_mut(),
             first_camera_pos,
             first_viewport,
             first_clear_color,
+            fov,
+            aspect,
+            near,
+            far,
             first_camera_layer_mask,
             None,
         );
@@ -247,11 +198,15 @@ impl ImagicAppTrait for App {
         let second_clear_color = Color::new(0.1, 0.2, 0.3, 1.0);
         let second_camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
         let second_camera_layer_mask = LayerMask::new(Layer::RenderTarget.into());
-        self.second_camera_id = self.add_camera(
-            imagic,
+        self.second_camera_id = create_camera(
+            imagic.context_mut(),
             second_camera_pos,
             second_viewport,
             second_clear_color,
+            fov,
+            aspect,
+            near,
+            far,
             second_camera_layer_mask,
             Some(CameraControllerOptions::new(Vec3::ZERO, false)),
         );
@@ -272,7 +227,7 @@ impl ImagicAppTrait for App {
 
     fn on_update(&mut self, _imagic_context: &mut ImagicContext) {
         if self.rotate_camera {
-            self._rotate_camera(_imagic_context, self.first_camera_id);
+            // self._rotate_camera(_imagic_context, self.first_camera_id);
             // self._rotate_camera(_imagic_context, self.second_camera_id);
         }
     }
