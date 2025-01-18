@@ -1,5 +1,7 @@
 //! Mouse input processor.
 
+use crate::math::Vec2;
+
 /// Mouse event type.
 #[derive(Debug, Copy, Clone)]
 pub enum MouseEventType {
@@ -10,23 +12,22 @@ pub enum MouseEventType {
     LeftReleased,
     RightReleased,
     MiddleReleased,
-    Scroll,
-    Pinch,
+    Scroll(Vec2),
+    Pinch(f32),
     Move,
 }
 
 #[derive(Debug, Copy, Clone)]
 pub struct MouseEvent {
-    pub x: f32,
-    pub y: f32,
+    /// Logical position.
+    pub logical_pos: Vec2,
     pub event_type: MouseEventType,
 }
 
 impl Default for MouseEvent {
     fn default() -> Self {
         Self {
-            x: 0.0,
-            y: 0.0,
+            logical_pos: Vec2::ZERO,
             event_type: MouseEventType::None,
         }
     }
@@ -40,10 +41,9 @@ impl MouseEvent {
         }
     }
     
-    pub fn new(x: f32, y: f32, event_type: MouseEventType) -> Self {
+    pub fn new(logical_pos: Vec2, event_type: MouseEventType) -> Self {
         Self {
-            x,
-            y, 
+            logical_pos,
             event_type
         }
     }
@@ -51,4 +51,5 @@ impl MouseEvent {
 
 pub trait MouseInputListener {
     fn on_mouse_input(&mut self, mouse_event: MouseEvent);
+    fn on_update(&mut self) {}
 }

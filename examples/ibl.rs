@@ -195,7 +195,7 @@ impl App {
         let app: Rc<RefCell<Box<dyn ImagicAppTrait>>> = Rc::new(RefCell::new(Box::new(self)));
         // let input_status = InputListener::default();
         // imagic.input_manager.register_mouse_input_listener(Rc::new(RefCell::new(Box::new(input_status))));
-        imagic.init(app);
+        imagic.run(app);
     }
 
     fn _rotate_camera(&mut self, imagic_context: &mut ImagicContext, camera_id: ID) {
@@ -253,7 +253,7 @@ impl ImagicAppTrait for App {
             second_viewport,
             second_clear_color,
             second_camera_layer_mask,
-            Some(CameraControllerOptions::new(Vec3::ZERO, 1.0)),
+            Some(CameraControllerOptions::new(Vec3::ZERO, false)),
         );
 
         let equirect_to_cube_material_index = self.prepare_equirect_to_cube_material(imagic);

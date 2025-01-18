@@ -1,6 +1,6 @@
-use std::time::{SystemTime, UNIX_EPOCH};
 use std::{cell::RefCell, f32::consts, rc::Rc};
 
+use glam::Vec3;
 use imagic::prelude::*;
 use imagic::window::WindowSize;
 use log::info;
@@ -12,7 +12,7 @@ pub struct App {
     second_camera_id: ID,
     window_size: WindowSize,
     camera_z: f32,
-    rotate_camera: bool,
+    auto_rotate_camera: bool,
 }
 
 impl Default for App {
@@ -24,7 +24,7 @@ impl Default for App {
             second_camera_id: INVALID_ID,
             window_size: WindowSize::new(800.0, 500.0),
             camera_z: 8.0,
-            rotate_camera: true,
+            auto_rotate_camera: true,
         }
     }
 }
@@ -186,6 +186,7 @@ impl App {
         viewport: Vec4,
         clear_color: Vec4,
         layer_mask: LayerMask,
+        controller_options: Option<CameraControllerOptions>,
     ) -> ID {
         let imagic_context = imagic.context_mut();
         let camera_id = Camera::new(
@@ -194,7 +195,7 @@ impl App {
             self.window_size.get_half_width() / self.window_size.get_height(),
             0.01,
             500.0,
-            None,
+            controller_options,
             imagic_context,
         );
 
@@ -211,39 +212,7 @@ impl App {
     pub fn run(self) {
         let mut imagic = Imagic::new();
         let app: Rc<RefCell<Box<dyn ImagicAppTrait>>> = Rc::new(RefCell::new(Box::new(self)));
-        imagic.init(app);
-    }
-
-    fn _rotate_camera(&mut self, imagic_context: &mut ImagicContext, camera_id: ID) {
-        let camera_transform = *imagic_context
-            .camera_manager()
-            .get_camera(camera_id)
-            .borrow()
-            .transform();
-        // let cur_camera_pos = imagic_context.transform_manager().get_transform(camera_transform).get_position();
-        let mut cur_time = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs_f64();
-        // info!("cur_time: {}", cur_time);
-        cur_time *= 0.5;
-        let camera_new_pos = Vec3::new(
-            self.camera_z * cur_time.cos() as f32,
-            0.0,
-            self.camera_z * cur_time.sin() as f32,
-        );
-        imagic_context
-            .transform_manager()
-            .borrow_mut()
-            .get_transform_mut(camera_transform)
-            .set_position(camera_new_pos);
-        // imagic_context.transform_manager_mut().get_transform_mut(camera_transform).set_rotation_euler(Vec3::new(-45.0, 0.0, 45.0));
-        let camera = imagic_context.camera_manager().get_camera(camera_id);
-        camera.borrow_mut().update_uniform_buffers(
-            imagic_context.graphics_context(),
-            &imagic_context.transform_manager().borrow(),
-            imagic_context.buffer_manager(),
-        );
+        imagic.run(app);
     }
 }
 
@@ -261,6 +230,7 @@ impl ImagicAppTrait for App {
             first_viewport,
             first_clear_color,
             first_camera_layer_mask,
+            Some(CameraControllerOptions::new(Vec3::ZERO, self.auto_rotate_camera)),
         );
 
         let second_viewport = Vec4::new(0.5, 0.0, 0.5, 1.0);
@@ -273,6 +243,7 @@ impl ImagicAppTrait for App {
             second_viewport,
             second_clear_color,
             second_camera_layer_mask,
+            Some(CameraControllerOptions::new(Vec3::ZERO, false)),
         );
 
         // let equirect_to_cube_material_index = self.prepare_equirect_to_cube_material(imagic);
@@ -290,13 +261,6 @@ impl ImagicAppTrait for App {
         // self.sphere.set_layer(Layer::Custom1, imagic.context_mut().render_item_manager_mut());
     }
 
-    fn on_update(&mut self, _imagic_context: &mut ImagicContext) {
-        if self.rotate_camera {
-            self._rotate_camera(_imagic_context, self.first_camera_id);
-            self._rotate_camera(_imagic_context, self.second_camera_id);
-        }
-    }
-
     fn on_render_ui(&mut self, ctx: &egui::Context) {
         egui::Window::new("Imagic - Skybox")
             .resizable(true)
@@ -304,15 +268,15 @@ impl ImagicAppTrait for App {
             .default_open(false)
             .default_size([100.0, 5.0])
             .show(&ctx, |ui| {
-                if self.rotate_camera {
+                if self.auto_rotate_camera {
                     if ui.button("Stop Rotate").clicked() {
                         info!("Stop Rotate");
-                        self.rotate_camera = !self.rotate_camera;
+                        self.auto_rotate_camera = !self.auto_rotate_camera;
                     }
                 } else {
                     if ui.button("Rotate").clicked() {
                         info!("Rotate.");
-                        self.rotate_camera = !self.rotate_camera;
+                        self.auto_rotate_camera = !self.auto_rotate_camera;
                     }
                 }
             });

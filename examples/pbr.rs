@@ -98,7 +98,7 @@ impl App {
     pub fn run(self) {
         let mut imagic = Imagic::new();
         let app: Rc<RefCell<Box<dyn ImagicAppTrait>>> = Rc::new(RefCell::new(Box::new(self)));
-        imagic.init(app);
+        imagic.run(app);
     }
 }
 

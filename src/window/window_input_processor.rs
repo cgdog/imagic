@@ -1,3 +1,4 @@
+use glam::Vec2;
 use log::info;
 use winit::{
     event::{ElementState, KeyEvent, MouseButton, MouseScrollDelta, TouchPhase, WindowEvent},
@@ -7,20 +8,24 @@ use winit::{
 
 use crate::input::{InputManager, MouseEvent, MouseEventType};
 
-
 /// Window input proccessor.
 /// It processes keyboard or mouse inupts at present.
-pub struct WindowInputProcessor {}
+pub struct WindowInputProcessor {
+    cursor_logical_pos: Vec2,
+}
 
 impl Default for WindowInputProcessor {
     fn default() -> Self {
-        Self {}
+        Self {
+            cursor_logical_pos: Vec2::ZERO,
+        }
     }
 }
 
 impl WindowInputProcessor {
     /// Process window input events.
     pub(crate) fn process_window_input(
+        &mut self,
         event: WindowEvent,
         event_loop: &winit::event_loop::ActiveEventLoop,
         dpi: f64,
@@ -32,7 +37,7 @@ impl WindowInputProcessor {
                 event,
                 is_synthetic: _,
             } => {
-                Self::process_keyboard_event(event, event_loop, input_manager);
+                self.process_keyboard_event(event, event_loop, input_manager);
             }
             // TODO: process mouse input
             WindowEvent::MouseInput {
@@ -40,25 +45,28 @@ impl WindowInputProcessor {
                 state,
                 button,
             } => {
-                Self::process_mouse_button_event(button, state, input_manager);
+                self.process_mouse_button_event(button, state, input_manager);
             }
             WindowEvent::MouseWheel {
                 device_id: _,
                 delta,
                 phase,
             } => {
-                Self::process_mouse_scroll_event(delta, phase, dpi, input_manager);
+                self.process_mouse_scroll_event(delta, phase, dpi, input_manager);
             }
-            WindowEvent::CursorMoved { device_id: _, position } => {
+            WindowEvent::CursorMoved {
+                device_id: _,
+                position,
+            } => {
                 // info!("cursor position: {:?}", position);
-                Self::process_mouse_move_event(dpi, position.x, position.y, input_manager);
+                self.process_mouse_move_event(dpi, position.x, position.y, input_manager);
             }
             // WindowEvent::PinchGesture {
             //     device_id: _,
             //     delta,
             //     phase,
             // } => {
-            //     Self::process_pinch_gesture(delta, phase, dpi, input_manager);
+            //     self.process_pinch_gesture(delta, phase, dpi, input_manager);
             // }
             _ => (),
         }
@@ -66,6 +74,7 @@ impl WindowInputProcessor {
 
     /// Process keyboard inputs.
     fn process_keyboard_event(
+        &mut self,
         event: KeyEvent,
         event_loop: &winit::event_loop::ActiveEventLoop,
         _input_manager: &InputManager,
@@ -92,6 +101,7 @@ impl WindowInputProcessor {
     }
 
     fn process_mouse_button_event(
+        &mut self,
         button: MouseButton,
         state: ElementState,
         input_manager: &mut InputManager,
@@ -100,11 +110,13 @@ impl WindowInputProcessor {
             MouseButton::Left => match state {
                 ElementState::Pressed => {
                     // info!("Left mouse button is pressed");
-                    input_manager.trigger_mouse_input_event(MouseEvent::click(MouseEventType::LeftPressed));
+                    input_manager
+                        .trigger_mouse_input_event(MouseEvent::click(MouseEventType::LeftPressed));
                 }
                 ElementState::Released => {
                     // info!("Left mouse button is released");
-                    input_manager.trigger_mouse_input_event(MouseEvent::click(MouseEventType::LeftReleased));
+                    input_manager
+                        .trigger_mouse_input_event(MouseEvent::click(MouseEventType::LeftReleased));
                 }
             },
             MouseButton::Right => match state {
@@ -128,6 +140,7 @@ impl WindowInputProcessor {
     }
 
     fn process_mouse_move_event(
+        &mut self,
         dpi: f64,
         pos_x: f64,
         pos_y: f64,
@@ -135,10 +148,15 @@ impl WindowInputProcessor {
     ) {
         let logical_x = pos_x / dpi;
         let logical_y = pos_y / dpi;
-        input_manager.trigger_mouse_input_event(MouseEvent::new(logical_x as f32, logical_y as f32, MouseEventType::Move));
+        self.cursor_logical_pos = Vec2::new(logical_x as f32, logical_y as f32);
+        input_manager.trigger_mouse_input_event(MouseEvent::new(
+            self.cursor_logical_pos,
+            MouseEventType::Move,
+        ));
     }
 
     fn process_mouse_scroll_event(
+        &mut self,
         delta: MouseScrollDelta,
         phase: TouchPhase,
         dpi: f64,
@@ -153,7 +171,10 @@ impl WindowInputProcessor {
                     let x = pos.x / dpi;
                     let y = pos.y / dpi;
                     // info!("PixelDelta: {x}, {y}");
-                    input_manager.trigger_mouse_input_event(MouseEvent::new(x as f32, y as f32, MouseEventType::Scroll));
+                    input_manager.trigger_mouse_input_event(MouseEvent::new(
+                        self.cursor_logical_pos,
+                        MouseEventType::Scroll(Vec2::new(x as f32, y as f32)),
+                    ));
                 }
             },
             _ => (),
@@ -163,12 +184,16 @@ impl WindowInputProcessor {
     /// only supported on macos and iOS
     #[allow(unused)]
     fn process_pinch_gesture(
+        &mut self,
         delta: f64,
         _phase: TouchPhase,
         _dpi: f64,
         input_manager: &mut InputManager,
     ) {
         // info!("pinch: delta: {}, phase: {:?}", delta, phase);
-        input_manager.trigger_mouse_input_event(MouseEvent::new(delta as f32, 0.0, MouseEventType::Pinch));
+        input_manager.trigger_mouse_input_event(MouseEvent::new(
+            self.cursor_logical_pos,
+            MouseEventType::Pinch(delta as f32),
+        ));
     }
 }

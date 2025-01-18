@@ -38,4 +38,10 @@ impl InputManager {
             listener.on_mouse_input(event);
         }
     }
+
+    pub(crate) fn on_update(&mut self) {
+        for listener in self.mouse_input_listeners.values_mut() {
+            listener.on_update();
+        }
+    }
 }

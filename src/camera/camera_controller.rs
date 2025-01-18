@@ -59,31 +59,39 @@ impl Default for InputStatus {
 #[derive(Debug, Clone, Copy)]
 pub struct CameraControllerOptions {
     pub target_pos: Vec3,
-    pub radius: f64,
+    // pub radius: f64,
+    pub is_auto_rotate: bool,
+    pub auto_rotate_speed: f32,
 }
 
 impl Default for CameraControllerOptions {
     fn default() -> Self {
         Self {
             target_pos: Vec3::ZERO,
-            radius: 1.0,
+            // radius: 1.0,
+            is_auto_rotate: false,
+            auto_rotate_speed: 0.03,
         }
     }
 }
 
 impl CameraControllerOptions {
-    pub fn new(target_pos: Vec3, radius: f64) -> Self {
-        Self { target_pos, radius }
+    pub fn new(target_pos: Vec3, is_auto_rotate: bool,) -> Self {
+        Self {
+            target_pos,
+            is_auto_rotate,
+            ..Default::default()
+        }
     }
 }
 
 pub struct CameraController {
     /// True (default): enable the camera controller, False: disable it.
     pub is_enabled: bool,
+    options: CameraControllerOptions,
     input_status: InputStatus,
     camera: ORR<Camera>,
     transform_manager: ORR<TransformManager>,
-    target_pos: Vec3,
     init_spherical: Spherical,
     cur_spherical: Spherical,
     need_update_camera: bool,
@@ -100,16 +108,19 @@ impl Default for CameraController {
     fn default() -> Self {
         Self {
             is_enabled: true,
+            // is_auto_rotate: false,
             input_status: Default::default(),
             camera: None,
             transform_manager: None,
-            target_pos: Vec3::ZERO,
+            // target_pos: Vec3::ZERO,
             init_spherical: Spherical::default(),
             cur_spherical: Spherical::default(),
             need_update_camera: false,
             phi_sensitivity: 0.01,
             theta_sensitivity: 0.01,
             zoom_sensitivity: 0.01,
+            // auto_rotate_speed: 0.05,
+            options: CameraControllerOptions::default(),
         }
     }
 }
@@ -120,7 +131,6 @@ impl MouseInputListener for CameraController {
             return;
         }
 
-        self.need_update_camera = false;
         match event.event_type {
             MouseEventType::LeftPressed => {
                 self.input_status.mouse.is_left_button_pressed = true;
@@ -137,21 +147,23 @@ impl MouseInputListener for CameraController {
             }
             MouseEventType::Move => {
                 if self.input_status.mouse.is_left_button_pressed {
-                    self.process_rotate(event);
+                    self.process_rotate(&event);
                 } else if self.input_status.mouse.is_right_button_pressed {
-                    self.process_pan(event);
+                    self.process_pan(&event);
                 }
             }
-            MouseEventType::Scroll => {
-                let delta_zoom = if event.x.abs() > event.y.abs() {
-                    event.x
+            MouseEventType::Scroll(scroll_delta) => {
+                let delta_zoom = if scroll_delta.x.abs() > scroll_delta.y.abs() {
+                    scroll_delta.x
                 } else {
-                    -event.y
+                    -scroll_delta.y
                 };
 
                 if !Self::is_delta_zoom_close_to_zero(delta_zoom) {
+                    if !self.is_in_camera_scope(&event) {
+                        return;
+                    }
                     self.on_zoom(delta_zoom);
-                    self.need_update_camera = true;
                 }
             }
             _ => {}
@@ -159,6 +171,14 @@ impl MouseInputListener for CameraController {
         if self.need_update_camera {
             self.update_camera_pos();
         }
+    }
+
+    fn on_update(&mut self) {
+        if !self.is_enabled || !self.options.is_auto_rotate {
+            return;
+        }
+
+        self.process_auto_rotate();
     }
 }
 
@@ -170,6 +190,19 @@ impl CameraController {
     const EPSILON_THETA: f32 = 0.01;
     const EPSILON_PHI: f32 = 0.01;
     const EPSILON_ZOOM: f32 = 0.01;
+
+    pub fn new(
+        camera: Rc<RefCell<Camera>>,
+        options: CameraControllerOptions,
+        transform_manager: RR<TransformManager>,
+    ) -> Self {
+        Self {
+            camera: Some(camera),
+            transform_manager: Some(transform_manager),
+            options,
+            ..Default::default()
+        }
+    }
 
     fn clamp_theta(&mut self) {
         self.cur_spherical.theta = self.cur_spherical.theta.clamp(Self::MIN_THETA, Self::MAX_THETA);
@@ -190,31 +223,60 @@ impl CameraController {
         }
     }
 
-    fn process_rotate(&mut self, event: MouseEvent) {
+    /// Auto rotate camera (yaw)
+    fn process_auto_rotate(&mut self) {
+        let cartesian = self.get_camera_position();
+        if let Some(camera_pos) = cartesian {
+            let relative_camera_pos = camera_pos - self.options.target_pos;
+            self.cur_spherical.from_cartesian(relative_camera_pos);
+            self.cur_spherical.phi += self.options.auto_rotate_speed * 0.1;
+            if !self.need_update_camera {
+                self.update_camera_pos();
+            }
+        }
+    }
+
+    /// is current mouse position in the camera viewport.
+    fn is_in_camera_scope(&self, event: &MouseEvent) -> bool{
+        if let Some(camera) = &self.camera {
+            let view_port = *camera.borrow().get_logical_viewport();
+            let x = event.logical_pos.x;
+            let y = event.logical_pos.y;
+            if x < view_port.x || y < view_port.y || x > (view_port.x + view_port.z) || y > (view_port.y + view_port.w) {
+                return false;
+            } else {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    fn process_rotate(&mut self, event: &MouseEvent) {
+        if !self.is_in_camera_scope(event) {
+            return;
+        }
         if !self.input_status.mouse.is_cursor_move {
             self.input_status.mouse.is_cursor_move = true;
-            self.input_status.mouse.start_x = event.x;
-            self.input_status.mouse.start_y = event.y;
+            self.input_status.mouse.start_x = event.logical_pos.x;
+            self.input_status.mouse.start_y = event.logical_pos.y;
             self.start_rotate();
         }
 
-        let delta_yaw = self.input_status.mouse.delta_x(event.x);
-        let delta_pitch = self.input_status.mouse.delta_y(event.y);
+        let delta_yaw = self.input_status.mouse.delta_x(event.logical_pos.x);
+        let delta_pitch = self.input_status.mouse.delta_y(event.logical_pos.y);
         
         if !Self::is_delta_theta_close_to_zero(delta_pitch) {
             self.on_pitch(delta_pitch);
-            self.need_update_camera = true;
         }
 
         if !Self::is_delta_phi_close_to_zero(delta_yaw) {
             self.on_yaw(delta_yaw);
-            self.need_update_camera = true;
         }
     }
 
     /// Pan camera target position, which moves positions of camera and target at the same time along the right andy up directions.
     /// TODO: compute world space postion delta from screen space delta, we will implement unproject() for Camera.
-    fn process_pan(&mut self, _event: MouseEvent) {
+    fn process_pan(&mut self, _event: &MouseEvent) {
 
     }
     
@@ -224,22 +286,9 @@ impl CameraController {
     fn start_rotate(&mut self) {
         let cartesian = self.get_camera_position();
         if let Some(camera_pos) = cartesian {
-            let relative_camera_pos = camera_pos - self.target_pos;
+            let relative_camera_pos = camera_pos - self.options.target_pos;
             self.init_spherical.from_cartesian(relative_camera_pos);
             self.cur_spherical = self.init_spherical;
-        }
-    }
-
-    pub fn new(
-        camera: Rc<RefCell<Camera>>,
-        options: CameraControllerOptions,
-        transform_manager: RR<TransformManager>,
-    ) -> Self {
-        Self {
-            camera: Some(camera),
-            target_pos: options.target_pos,
-            transform_manager: Some(transform_manager),
-            ..Default::default()
         }
     }
 
@@ -263,17 +312,20 @@ impl CameraController {
     fn on_pitch(&mut self, delta_pitch: f32) {
         self.cur_spherical.theta = self.init_spherical.theta + delta_pitch * self.theta_sensitivity;
         self.clamp_theta();
+        self.need_update_camera = true;
     }
 
     fn on_yaw(&mut self, delta_yaw: f32) {
         self.cur_spherical.phi = self.init_spherical.phi + delta_yaw * self.phi_sensitivity;
         self.clamp_phi();
+        self.need_update_camera = true;
     }
 
     fn on_zoom(&mut self, delta_zoom: f32) {
         // note here. delta_zoom is different from delta_yaw and delta_pitch.
         self.cur_spherical.radius += delta_zoom * self.zoom_sensitivity;
         self.clamp_zoom();
+        self.need_update_camera = true;
     }
 
     fn get_camera_position(&self) -> Option<Vec3> {
@@ -291,11 +343,12 @@ impl CameraController {
     }
 
     fn update_camera_pos(&mut self) {
+        self.need_update_camera = false;
         if let Some(camera) = &self.camera {
             let camera_transform_id = *camera.borrow().transform();
             if let Some(transform_manager) = &self.transform_manager {
                 let relative_camera_pos = self.cur_spherical.to_cartesian();
-                let new_camera_pos = relative_camera_pos + self.target_pos;
+                let new_camera_pos = relative_camera_pos + self.options.target_pos;
                 transform_manager.borrow_mut().get_transform_mut(camera_transform_id).set_position(new_camera_pos);
                 camera.borrow_mut().set_dirty();
             }

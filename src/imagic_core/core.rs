@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use log::info;
 use winit::{application::ApplicationHandler, event_loop::{ControlFlow, EventLoop}};
 
-use crate::{graphics, input::InputManager, ui::ui_renderer::UIRenderer, window::{Window, WindowSize}};
+use crate::{graphics, ui::ui_renderer::UIRenderer, window::{Window, WindowSize}};
 use super::{imagic_app::ImagicAppTrait, imagic_context::ImagicContext};
 
 pub struct ImagicOption {
@@ -38,7 +38,6 @@ pub struct Imagic {
     pub app: Option<Rc<RefCell<Box<dyn ImagicAppTrait>>>>,
     is_inited: bool,
     option: Option<ImagicOption>,
-    pub input_manager: InputManager,
 }
 
 impl ApplicationHandler for Imagic {
@@ -63,7 +62,7 @@ impl ApplicationHandler for Imagic {
             // TODO: study clone here
             self.app.clone().unwrap().borrow_mut().init(self);
 
-            self.context.init_after_app(&self.window, &mut self.input_manager);
+            self.context.init_after_app(&self.window);
 
             self.is_inited = true;
             info!("Imagic init() finished.");
@@ -82,7 +81,6 @@ impl ApplicationHandler for Imagic {
             &mut self.renderer,
             &mut self.context,
             &self.app,
-            &mut self.input_manager,
         );
     }
 }
@@ -101,7 +99,7 @@ impl Imagic {
         &mut self.context
     }
 
-    pub fn init(&mut self, app: Rc<RefCell<Box<dyn ImagicAppTrait>>>) {
+    pub fn run(&mut self, app: Rc<RefCell<Box<dyn ImagicAppTrait>>>) {
         info!("Imagic init() begin.");
         self.option = Some(app.borrow().get_imagic_option());
         self.app = Some(app);

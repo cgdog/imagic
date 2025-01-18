@@ -12,7 +12,6 @@ use winit::window::Window as WindowWinit;
 use crate::graphics;
 use crate::imagic_core::imagic_app::ImagicAppTrait;
 use crate::imagic_core::imagic_context::ImagicContext;
-use crate::input::InputManager;
 
 use super::{WindowInputProcessor, WindowSize};
 
@@ -22,6 +21,7 @@ pub struct Window {
     physical_size: WindowSize,
     /// see https://docs.rs/dpi/0.1.1/dpi/index.html
     dpi: f64,
+    window_input_processor: WindowInputProcessor,
 }
 
 impl Default for Window {
@@ -31,6 +31,7 @@ impl Default for Window {
             logical_size: WindowSize::default(),
             physical_size: WindowSize::default(),
             dpi: 1.0,
+            window_input_processor: Default::default()
         }
     }
 }
@@ -69,10 +70,12 @@ impl Window {
         window_size: WindowSize,
         window_title: &'static str,
     ) {
+        let (logical_width, logical_height) = window_size.get();
+        self.set_logical_size(logical_width, logical_height);
         // create the window.
         let logical_size = LogicalSize::new(
-            window_size.get_width() as f64,
-            window_size.get_height() as f64,
+            logical_width as f64,
+            logical_height as f64,
         );
         let window_attributes = WindowWinit::default_attributes()
             .with_title(window_title)
@@ -96,7 +99,6 @@ impl Window {
         renderer: &mut graphics::Renderer,
         context: &mut ImagicContext,
         app: &Option<Rc<RefCell<Box<dyn ImagicAppTrait>>>>,
-        input_manager: &mut InputManager,
     ) {
         renderer.ui_renderer().handle_input(&self.get(), &event);
         match event {
@@ -123,7 +125,7 @@ impl Window {
                 self.get().request_redraw();
             }
             others => {
-                WindowInputProcessor::process_window_input(others, event_loop, self.dpi, input_manager);
+                self.window_input_processor.process_window_input(others, event_loop, self.dpi, context.input_manager_mut());
             }
         }
     }

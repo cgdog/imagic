@@ -23,7 +23,14 @@ pub struct Camera {
     target_pos: Vec3,
     up: Vec3,
 
+    /// Normalized viewport. Each component is in [0.0, 1.0].
     view_port: Vec4,
+
+    /// Logical viewport corresponding to window logical size.
+    logical_view_port: Vec4,
+
+    /// Physical viewport corresponding to window physical size.
+    /// It is the real view port used by renderpass.
     physical_view_port: Vec4,
 
     clear_color: Vec4,
@@ -58,6 +65,7 @@ impl Default for Camera {
             target_pos: Vec3::ZERO,
             up: Vec3::Y,
             view_port: Vec4::new(0.0, 0.0, 1.0, 1.0),
+            logical_view_port: Vec4::new(0.0, 0.0, 100.0, 100.0),
             physical_view_port: Vec4::new(0.0, 0.0, 100.0, 100.0),
             clear_color: Vec4::new(0.1, 0.2, 0.3, 1.0),
             transform: INVALID_ID,
@@ -113,6 +121,8 @@ impl Camera {
         buffer_manager: &mut GPUBufferManager,
         texture_manager: &mut TextureManager,
     ) {
+        let (logical_width, logical_height) = window.get_logical_size().get();
+        self._compute_logical_viewport(logical_width, logical_height);
         let (physical_width, physical_height) = window.get_physical_size().get();
         self._compute_physical_viewport_aspect(physical_width, physical_height);
         self.create_depth_texture(graphics_context, texture_manager, physical_width as u32, physical_height as u32);
@@ -339,13 +349,31 @@ impl Camera {
         &self.view_port
     }
 
+    /// Set logical viewport corresponding to window logical size.
+    pub fn set_logical_viewport(&mut self, logical_view_port: Vec4) {
+        self.logical_view_port = logical_view_port;
+    }
+
+    /// Logical viewport corresponding to window logical size.
+    pub fn get_logical_viewport(&self) -> &Vec4 {
+        &self.logical_view_port
+    }
+
     pub fn set_physical_viewport(&mut self, physical_view_port: Vec4) {
         self.physical_view_port = physical_view_port;
     }
 
-    /// get the real view port used by render pass
+    /// Get the real view port (corresponding to window physical size) used by render pass.
     pub fn get_physical_viewport(&self) -> &Vec4 {
         &self.physical_view_port
+    }
+
+    /// Compute the logical viewport.
+    fn _compute_logical_viewport(&mut self, logical_width: f32, logical_height: f32) {
+        self.logical_view_port.x = self.view_port.x * logical_width;
+        self.logical_view_port.y = self.view_port.y * logical_height;
+        self.logical_view_port.z = self.view_port.z * logical_width;
+        self.logical_view_port.w = self.view_port.w * logical_height;
     }
 
     /// Compute the real (physical) view port used by render pass, and compute aspect used to calculate projection matrix.

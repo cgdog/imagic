@@ -50,7 +50,7 @@ impl App {
         let mut imagic = Imagic::new();
 
         let app: Rc<RefCell<Box<dyn ImagicAppTrait>>> = Rc::new(RefCell::new(Box::new(self)));
-        imagic.init(app);
+        imagic.run(app);
     }
 }
 
@@ -60,7 +60,7 @@ impl ImagicAppTrait for App {
         let imagic_context = imagic.context_mut();
         // self.prepare_lights(imagic_context);
         self.camera = Camera::new(Vec3::new(0.0, 5.0, 10.0), consts::FRAC_PI_4
-            , self.window_size.get_aspect(), 1.0, 100.0, Some(CameraControllerOptions::new(Vec3::ZERO, 1.0)), imagic_context);
+            , self.window_size.get_aspect(), 1.0, 100.0, Some(CameraControllerOptions::new(Vec3::ZERO, false)), imagic_context);
 
         let material_index = self.prepare_material(imagic);
         self.cube.init(imagic, material_index);

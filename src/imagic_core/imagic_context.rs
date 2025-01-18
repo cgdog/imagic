@@ -27,8 +27,9 @@ pub struct ImagicContext {
     light_manager: LightManager,
     material_manager: MaterialManager,
     texture_manager: TextureManager,
-    pub transform_manager: RR<TransformManager>,
+    transform_manager: RR<TransformManager>,
     camera_manager: CameraManager,
+    input_manager: InputManager,
 }
 
 impl ImagicContext {
@@ -39,7 +40,7 @@ impl ImagicContext {
     }
 
     /// Called after App.init()
-    pub fn init_after_app(&mut self, window: &Window, input_manager: &mut InputManager) {
+    pub fn init_after_app(&mut self, window: &Window) {
         self.camera_manager.init_after_app(
             window,
             &self.graphics_context,
@@ -48,7 +49,7 @@ impl ImagicContext {
             self.transform_manager.clone(),
             &mut self.buffer_manager,
             &mut self.texture_manager,
-            input_manager,
+            &mut self.input_manager,
         );
         self.light_manager.init_after_app(
             &self.graphics_context,
@@ -80,6 +81,8 @@ impl ImagicContext {
             &self.transform_manager.borrow(),
             &self.buffer_manager,
         );
+
+        self.input_manager.on_update();
     }
 
     pub fn on_resize(&mut self, new_size: PhysicalSize<u32>) {
@@ -180,5 +183,13 @@ impl ImagicContext {
 
     pub fn camera_manager_mut(&mut self) -> &mut CameraManager {
         &mut self.camera_manager
+    }
+
+    pub fn input_manager(&self) -> &InputManager {
+        &self.input_manager
+    }
+
+    pub fn input_manager_mut(&mut self) -> &mut InputManager {
+        &mut self.input_manager
     }
 }

@@ -114,5 +114,5 @@ fn main() {
 
     let mut imagic = Imagic::new();
     let app: Rc<RefCell<Box<dyn ImagicAppTrait>>> = Rc::new(RefCell::new(Box::new(app)));
-    imagic.init(app);
+    imagic.run(app);
 }
