@@ -5,7 +5,6 @@ use std::{cell::RefCell, f32::consts, rc::Rc};
 use common::create_camera;
 use imagic::prelude::*;
 use imagic::window::WindowSize;
-use log::info;
 
 mod common;
 
@@ -16,7 +15,9 @@ pub struct App {
     second_camera_id: ID,
     window_size: WindowSize,
     camera_z: f32,
-    rotate_camera: bool,
+    camera_controller_option_1: CameraControllerOptions,
+    camera_controller_option_2: CameraControllerOptions,
+    need_update_camera_controller: bool,
 }
 
 impl Default for App {
@@ -28,7 +29,9 @@ impl Default for App {
             second_camera_id: INVALID_ID,
             window_size: WindowSize::new(800.0, 500.0),
             camera_z: 8.0,
-            rotate_camera: true,
+            camera_controller_option_1: CameraControllerOptions::default(),
+            camera_controller_option_2: CameraControllerOptions::default(),
+            need_update_camera_controller: false,
         }
     }
 }
@@ -191,7 +194,7 @@ impl ImagicAppTrait for App {
             near,
             far,
             first_camera_layer_mask,
-            None,
+            Some(self.camera_controller_option_1),
         );
 
         let second_viewport = Vec4::new(0.5, 0.0, 0.5, 1.0);
@@ -208,7 +211,7 @@ impl ImagicAppTrait for App {
             near,
             far,
             second_camera_layer_mask,
-            Some(CameraControllerOptions::new(Vec3::ZERO, false)),
+            Some(self.camera_controller_option_2),
         );
 
         let equirect_to_cube_material_index = self.prepare_equirect_to_cube_material(imagic);
@@ -225,30 +228,29 @@ impl ImagicAppTrait for App {
         // self.sphere.set_layer(Layer::Custom1, imagic.context_mut().render_item_manager_mut());
     }
 
-    fn on_update(&mut self, _imagic_context: &mut ImagicContext) {
-        if self.rotate_camera {
-            // self._rotate_camera(_imagic_context, self.first_camera_id);
-            // self._rotate_camera(_imagic_context, self.second_camera_id);
+    fn on_update(&mut self, imagic_context: &mut ImagicContext) {
+        if self.need_update_camera_controller {
+            self.need_update_camera_controller = false;
+            imagic_context.change_camera_controller(self.first_camera_id, &self.camera_controller_option_1);
         }
     }
 
     fn on_render_ui(&mut self, ctx: &egui::Context) {
-        egui::Window::new("Imagic - Skybox")
+        egui::Window::new("Imagic - IBL")
             .resizable(true)
             .vscroll(true)
             .default_open(false)
             .default_size([100.0, 5.0])
             .show(&ctx, |ui| {
-                if self.rotate_camera {
-                    if ui.button("Stop Rotate").clicked() {
-                        info!("Stop Rotate");
-                        self.rotate_camera = !self.rotate_camera;
-                    }
+                let rotate_button_text = 
+                if self.camera_controller_option_1.is_auto_rotate {
+                    "Stop Auto Rotate"
                 } else {
-                    if ui.button("Rotate").clicked() {
-                        info!("Rotate.");
-                        self.rotate_camera = !self.rotate_camera;
-                    }
+                    "Auto Rotate"
+                };
+                if ui.button(rotate_button_text).clicked() {
+                    self.camera_controller_option_1.is_auto_rotate = !self.camera_controller_option_1.is_auto_rotate;
+                    self.need_update_camera_controller = true;
                 }
             });
     }

@@ -50,6 +50,7 @@ pub struct Camera {
     pub layer_mask: LayerMask,
 
     pub controller_options: Option<CameraControllerOptions>,
+    pub(crate) controller_id: ID,
 
     is_dirty: bool,
 }
@@ -79,6 +80,7 @@ impl Default for Camera {
             layer: Layer::Default,
             layer_mask: LayerMask::default(),
             controller_options: None,
+            controller_id: INVALID_ID,
 
             is_dirty: false,
         }

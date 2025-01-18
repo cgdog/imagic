@@ -24,9 +24,10 @@ impl InputManager {
     }
 
     pub fn register_mouse_input_listener(&mut self, listener: Box<dyn MouseInputListener>) -> ID {
-        self.mouse_input_listeners.insert(self.next_id, listener);
+        let id = self.next_id;
+        self.mouse_input_listeners.insert(id, listener);
         self.next_id += 1;
-        self.next_id
+        id
     }
 
     pub fn unregister_mouse_input_listener(&mut self, id: ID) {
@@ -44,4 +45,9 @@ impl InputManager {
             listener.on_update();
         }
     }
+
+    pub fn get_input_listener(&mut self, id: ID) -> Option<&mut Box<(dyn MouseInputListener + 'static)>> {
+        self.mouse_input_listeners.get_mut(&id)
+    }
+
 }

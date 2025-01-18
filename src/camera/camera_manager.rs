@@ -1,17 +1,19 @@
 use std::{cell::RefCell, rc::Rc};
 
+use log::info;
+
 use crate::{
     input::InputManager,
     prelude::{
         bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
         buffer::GPUBufferManager, texture_manager::TextureManager, GraphicsContext,
-        TransformManager,
+        TransformManager, INVALID_ID,
     },
     types::{ID, RR},
     window::Window,
 };
 
-use super::{camera::Camera, CameraController};
+use super::{camera::Camera, CameraController, CameraControllerOptions};
 
 pub struct CameraManager {
     cameras: Vec<RR<Camera>>,
@@ -62,11 +64,13 @@ impl CameraManager {
                 texture_manager,
             );
 
+            let mut controller_id = INVALID_ID;
             if let Some(camera_controller_options) = camera.borrow().controller_options {
                 let camera_controller =
                     CameraController::new(camera.clone(), camera_controller_options, transform_manager.clone());
-                input_manager.register_mouse_input_listener(Box::new(camera_controller));
+                controller_id = input_manager.register_mouse_input_listener(Box::new(camera_controller));
             }
+            camera.borrow_mut().controller_id = controller_id;
         }
     }
 
@@ -99,6 +103,17 @@ impl CameraManager {
                 width,
                 height,
             );
+        }
+    }
+
+    /// Change camera controller given a camera id.
+    pub fn change_camera_controller(&mut self, input_manager: &mut InputManager, camera_id: ID, camera_controller_options: &CameraControllerOptions) {
+        let controller_id = self.get_camera(camera_id).borrow().controller_id;
+        info!("change control id: {}", controller_id);
+        if let Some(input_listener) = input_manager.get_input_listener(controller_id) {
+            if let Some(controller) =input_listener.as_any_mut().downcast_mut::<CameraController>() {
+                controller.options = *camera_controller_options;
+            }
         }
     }
 }

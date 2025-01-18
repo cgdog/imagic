@@ -1,10 +1,7 @@
 use std::{cell::RefCell, f32::consts::{PI, TAU}, rc::Rc};
 
 use crate::{
-    input::{MouseEvent, MouseEventType, MouseInputListener},
-    math::{Spherical, Vec3},
-    scene::{SceneObject, TransformManager},
-    types::{Dirtyable, ORR, RR},
+    input::{MouseEvent, MouseEventType, MouseInputListener}, math::{Spherical, Vec3}, scene::{SceneObject, TransformManager}, types::{Dirtyable, ORR, RR}
 };
 
 use super::Camera;
@@ -59,7 +56,6 @@ impl Default for InputStatus {
 #[derive(Debug, Clone, Copy)]
 pub struct CameraControllerOptions {
     pub target_pos: Vec3,
-    // pub radius: f64,
     pub is_auto_rotate: bool,
     pub auto_rotate_speed: f32,
 }
@@ -88,7 +84,7 @@ impl CameraControllerOptions {
 pub struct CameraController {
     /// True (default): enable the camera controller, False: disable it.
     pub is_enabled: bool,
-    options: CameraControllerOptions,
+    pub options: CameraControllerOptions,
     input_status: InputStatus,
     camera: ORR<Camera>,
     transform_manager: ORR<TransformManager>,
@@ -179,6 +175,14 @@ impl MouseInputListener for CameraController {
         }
 
         self.process_auto_rotate();
+    }
+    
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
     }
 }
 

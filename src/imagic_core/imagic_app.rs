@@ -5,11 +5,13 @@ pub trait ImagicAppTrait {
 
     fn get_imagic_option(& self) -> ImagicOption;
     
-    fn on_update(&mut self, _imagic_context: &mut ImagicContext) {
+    #[allow(unused)]
+    fn on_update(&mut self, imagic_context: &mut ImagicContext) {
 
     }
 
-    fn on_render_ui(&mut self, _ctx: &egui::Context) {
+    #[allow(unused)]
+    fn on_render_ui(&mut self, ui_context: &egui::Context) {
         
     }
 }

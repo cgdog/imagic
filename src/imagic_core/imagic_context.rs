@@ -1,17 +1,13 @@
 use winit::dpi::PhysicalSize;
 
 use crate::{
-    graphics::{
+    camera::CameraControllerOptions, graphics::{
         bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
         buffer::GPUBufferManager, render_pipeline::RenderPipelineManager, GraphicsContext,
-    },
-    input::InputManager,
-    prelude::{
+    }, input::InputManager, prelude::{
         texture_manager::TextureManager, CameraManager, LightManager, MaterialManager,
         TransformManager,
-    },
-    types::RR,
-    window::Window,
+    }, types::{ID, RR}, window::Window
 };
 
 use super::render_item::render_item_manager::RenderItemManager;
@@ -191,5 +187,9 @@ impl ImagicContext {
 
     pub fn input_manager_mut(&mut self) -> &mut InputManager {
         &mut self.input_manager
+    }
+
+    pub fn change_camera_controller(&mut self, camera_id: ID, camera_controller_options: &CameraControllerOptions) {
+        self.camera_manager.change_camera_controller(&mut self.input_manager, camera_id, camera_controller_options);
     }
 }

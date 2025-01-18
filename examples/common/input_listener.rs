@@ -41,4 +41,12 @@ impl MouseInputListener for InputListener {
             info!("mouse event: {:?}", event);
         }
     }
+    
+    fn as_any(&self) -> &dyn std::any::Any {
+        todo!()
+    }
+    
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        todo!()
+    }
 }

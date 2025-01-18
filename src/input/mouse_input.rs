@@ -1,5 +1,7 @@
 //! Mouse input processor.
 
+use std::any::Any;
+
 use crate::math::Vec2;
 
 /// Mouse event type.
@@ -49,7 +51,9 @@ impl MouseEvent {
     }
 }
 
-pub trait MouseInputListener {
+pub trait MouseInputListener : Any{
     fn on_mouse_input(&mut self, mouse_event: MouseEvent);
     fn on_update(&mut self) {}
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
 }
