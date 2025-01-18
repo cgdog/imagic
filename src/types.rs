@@ -10,3 +10,10 @@ macro_rules! RRB_new {
         std::rc::Rc::new(std::cell::RefCell::new(Box::new($object)))
     };
 }
+
+/// If the object is dirty, we need to upload GPUBuffer related.
+pub trait Dirtyable {
+    fn is_dirty(&self) -> bool;
+    /// TODO: optimize to call 'set_dirty()' inside Camera or the engine, without awareness from users.
+    fn set_dirty(&mut self);
+}

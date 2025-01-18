@@ -4,7 +4,7 @@ use crate::{
         buffer::GPUBufferManager, render_item_manager::RenderItemManager,
         texture_manager::TextureManager, GraphicsContext, ImagicContext, SceneObject, Texture,
         Transform, TransformManager, INVALID_ID,
-    }, types::ID, window::Window
+    }, types::{Dirtyable, ID}, window::Window
 };
 
 use super::{CameraControllerOptions, Layer, LayerMask};
@@ -43,6 +43,8 @@ pub struct Camera {
     pub layer_mask: LayerMask,
 
     pub controller_options: Option<CameraControllerOptions>,
+
+    is_dirty: bool,
 }
 
 impl Default for Camera {
@@ -69,6 +71,8 @@ impl Default for Camera {
             layer: Layer::Default,
             layer_mask: LayerMask::default(),
             controller_options: None,
+
+            is_dirty: false,
         }
     }
 }
@@ -85,6 +89,16 @@ impl SceneObject for Camera {
     fn set_layer(&mut self, layer: Layer, _render_item_manager: &mut RenderItemManager) {
         self.layer = layer;
         // render_item_manager.get_render_item_mut(self.render_item_id).layer = layer;
+    }
+}
+
+impl Dirtyable for Camera {
+    fn is_dirty(&self) -> bool {
+        self.is_dirty
+    }
+
+    fn set_dirty(&mut self) {
+        self.is_dirty = true;
     }
 }
 
@@ -109,6 +123,19 @@ impl Camera {
             transform_manager,
             buffer_manager,
         );
+    }
+
+    pub fn on_update(
+        &mut self,
+        graphics_context: &GraphicsContext,
+        transform_manager: &TransformManager,
+        buffer_manager: &GPUBufferManager,
+    ) {
+        if !self.is_dirty {
+            return;
+        }
+        self.is_dirty = false;
+        self.update_uniform_buffers(graphics_context, transform_manager, buffer_manager);
     }
 
     /// Called to update depth texture size, viewport and projection matrix when window resized.

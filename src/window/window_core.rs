@@ -118,6 +118,7 @@ impl Window {
                     Some(app) => app.borrow_mut().on_update(context),
                     None => info!("No app supplied."),
                 }
+                context.on_update();
                 renderer.render(context, &self.get());
                 self.get().request_redraw();
             }

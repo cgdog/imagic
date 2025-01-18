@@ -4,10 +4,14 @@ use crate::{
     graphics::{
         bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
         buffer::GPUBufferManager, render_pipeline::RenderPipelineManager, GraphicsContext,
-    }, input::InputManager, prelude::{
+    },
+    input::InputManager,
+    prelude::{
         texture_manager::TextureManager, CameraManager, LightManager, MaterialManager,
         TransformManager,
-    }, types::RR, window::Window
+    },
+    types::RR,
+    window::Window,
 };
 
 use super::render_item::render_item_manager::RenderItemManager;
@@ -65,6 +69,16 @@ impl ImagicContext {
             &self.material_manager,
             &self.transform_manager.borrow(),
             &mut self.pipeline_manager,
+        );
+    }
+
+    /// Update imageic context after App.on_update().
+    /// Dirty uniform buffers will be updated and uploaded to GPU here.
+    pub fn on_update(&mut self) {
+        self.camera_manager.on_update(
+            &self.graphics_context,
+            &self.transform_manager.borrow(),
+            &self.buffer_manager,
         );
     }
 

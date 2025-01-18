@@ -53,13 +53,13 @@ impl WindowInputProcessor {
                 // info!("cursor position: {:?}", position);
                 Self::process_mouse_move_event(dpi, position.x, position.y, input_manager);
             }
-            WindowEvent::PinchGesture {
-                device_id: _,
-                delta,
-                phase,
-            } => {
-                Self::process_pinch_gesture(delta, phase, dpi, input_manager);
-            }
+            // WindowEvent::PinchGesture {
+            //     device_id: _,
+            //     delta,
+            //     phase,
+            // } => {
+            //     Self::process_pinch_gesture(delta, phase, dpi, input_manager);
+            // }
             _ => (),
         }
     }
@@ -135,7 +135,7 @@ impl WindowInputProcessor {
     ) {
         let logical_x = pos_x / dpi;
         let logical_y = pos_y / dpi;
-        input_manager.trigger_mouse_input_event(MouseEvent::new(logical_x, logical_y, MouseEventType::Move));
+        input_manager.trigger_mouse_input_event(MouseEvent::new(logical_x as f32, logical_y as f32, MouseEventType::Move));
     }
 
     fn process_mouse_scroll_event(
@@ -144,7 +144,6 @@ impl WindowInputProcessor {
         dpi: f64,
         input_manager: &mut InputManager,
     ) {
-        // info!("Mouse scroll delta: {:?}, phase: {:?}", delta, phase);
         match phase {
             TouchPhase::Moved => match delta {
                 MouseScrollDelta::LineDelta(x, y) => {
@@ -154,7 +153,7 @@ impl WindowInputProcessor {
                     let x = pos.x / dpi;
                     let y = pos.y / dpi;
                     // info!("PixelDelta: {x}, {y}");
-                    input_manager.trigger_mouse_input_event(MouseEvent::new(x, y, MouseEventType::Scroll));
+                    input_manager.trigger_mouse_input_event(MouseEvent::new(x as f32, y as f32, MouseEventType::Scroll));
                 }
             },
             _ => (),
@@ -162,6 +161,7 @@ impl WindowInputProcessor {
     }
 
     /// only supported on macos and iOS
+    #[allow(unused)]
     fn process_pinch_gesture(
         delta: f64,
         _phase: TouchPhase,
@@ -169,6 +169,6 @@ impl WindowInputProcessor {
         input_manager: &mut InputManager,
     ) {
         // info!("pinch: delta: {}, phase: {:?}", delta, phase);
-        input_manager.trigger_mouse_input_event(MouseEvent::new(delta, 0.0, MouseEventType::Pinch));
+        input_manager.trigger_mouse_input_event(MouseEvent::new(delta as f32, 0.0, MouseEventType::Pinch));
     }
 }

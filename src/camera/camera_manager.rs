@@ -70,6 +70,17 @@ impl CameraManager {
         }
     }
 
+    pub fn on_update(
+        &mut self,
+        graphics_context: &GraphicsContext,
+        transform_manager: &TransformManager,
+        buffer_manager: &GPUBufferManager,
+    ) {
+        for camera in self.cameras.iter() {
+            camera.borrow_mut().on_update(graphics_context, transform_manager, buffer_manager);
+        }
+    }
+
     pub fn on_resize(
         &mut self,
         graphics_context: &GraphicsContext,

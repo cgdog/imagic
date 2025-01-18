@@ -17,8 +17,8 @@ pub enum MouseEventType {
 
 #[derive(Debug, Copy, Clone)]
 pub struct MouseEvent {
-    pub x: f64,
-    pub y: f64,
+    pub x: f32,
+    pub y: f32,
     pub event_type: MouseEventType,
 }
 
@@ -40,7 +40,7 @@ impl MouseEvent {
         }
     }
     
-    pub fn new(x: f64, y: f64, event_type: MouseEventType) -> Self {
+    pub fn new(x: f32, y: f32, event_type: MouseEventType) -> Self {
         Self {
             x,
             y, 

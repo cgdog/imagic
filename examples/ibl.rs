@@ -220,13 +220,9 @@ impl App {
             .transform_manager().borrow_mut()
             .get_transform_mut(camera_transform)
             .set_position(camera_new_pos);
-        // imagic_context.transform_manager_mut().get_transform_mut(camera_transform).set_rotation_euler(Vec3::new(-45.0, 0.0, 45.0));
         let camera = imagic_context.camera_manager().get_camera(camera_id);
-        camera.borrow_mut().update_uniform_buffers(
-            imagic_context.graphics_context(),
-            &imagic_context.transform_manager().borrow(),
-            imagic_context.buffer_manager(),
-        );
+        // TODO: optimize to call 'set_dirty()' inside Camera or the engine, without awareness from users.
+        camera.borrow_mut().set_dirty();
     }
 }
 
