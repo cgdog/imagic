@@ -7,3 +7,5 @@ BindGroups passed to shader:
 Group 0, 1, 3 will be created by the renderer automatically.
 
 Group 2 will be created by the material struct.
+
+See render_with_camera() method in src/graphics/renderer.rs file.

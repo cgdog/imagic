@@ -36,7 +36,7 @@ impl ImagicContext {
     }
 
     /// Called after App.init()
-    pub fn init_after_app(&mut self, window: &Window) {
+    pub(crate) fn init_after_app(&mut self, window: &Window) {
         self.camera_manager.init_after_app(
             window,
             &self.graphics_context,

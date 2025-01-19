@@ -1,6 +1,6 @@
 use crate::{prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, texture_manager::TextureManager, GraphicsContext}, types::ID};
 
-use super::material::MaterialTrait;
+use super::material_trait::MaterialTrait;
 
 
 pub struct MaterialManager {

@@ -5,7 +5,7 @@ use crate::{math::{Color, Vec4}, prelude::{
     texture_manager::TextureManager, GraphicsContext, INVALID_ID,
 }, types::ID};
 
-use super::material::MaterialTrait;
+use super::material_trait::MaterialTrait;
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]

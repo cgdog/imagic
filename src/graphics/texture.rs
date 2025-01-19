@@ -94,6 +94,7 @@ impl Texture {
                 use image::GenericImageView;
                 (width, height) = img.dimensions();
             }
+            // Note: we can call img.to_rgba8 for .jpeg image file.
             let img_rgba = img.to_rgba8();
             imgs_data.push(img_rgba);
         }
@@ -110,7 +111,7 @@ impl Texture {
         let face_size = wgpu::Extent3d {
             width,
             height,
-            depth_or_array_layers: 1, // 每次上传一个面
+            depth_or_array_layers: 1, // upload one face data each time.
         };
 
         for (i, img) in imgs_data.iter().enumerate() {

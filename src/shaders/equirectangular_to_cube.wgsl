@@ -55,12 +55,6 @@ fn SampleSphericalMap(v: vec3f) -> vec2f
 
 @fragment
 fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
-    // // let frag_color = vec4f(fs_in.local_pos, 1.0);
-    // let frag_color = textureSample(skybox_2d_texture, skybox_2d_sampler, fs_in.uv0);
-    // // let frag_color = vec4f(fs_in.uv0, 0, 1);
-
-    // return frag_color;
-
     let uv = SampleSphericalMap(normalize(fs_in.local_pos)); // make sure to normalize localPos
     let color = textureSample(skybox_2d_texture, skybox_2d_sampler, uv);
     let frag_color = vec4f(color.rgb, 1.0);

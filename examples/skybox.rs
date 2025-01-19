@@ -8,7 +8,7 @@ use imagic::window::WindowSize;
 mod common;
 
 pub struct App {
-    cube: Cube,
+    skybox: Skybox,
     sphere: Sphere,
     first_camera_id: ID,
     second_camera_id: ID,
@@ -22,7 +22,8 @@ pub struct App {
 impl Default for App {
     fn default() -> Self {
         Self {
-            cube: Cube::new(1.0, 1.0, 1.0, 1, 1, 1),
+            // cube: Cube::new(1.0, 1.0, 1.0, 1, 1, 1),
+            skybox: Skybox::default(),
             sphere: Sphere::new(1.0, 256, 256),
             first_camera_id: INVALID_ID,
             second_camera_id: INVALID_ID,
@@ -133,32 +134,6 @@ impl App {
         hdr_texture_index
     }
 
-    fn prepare_ldr_skybox(&mut self, imagic_context: &mut ImagicContext) -> ID {
-        let cube_texture = Texture::create_cube_texture_from_bytes(
-            imagic_context.graphics_context(),
-            [
-                include_bytes!("./assets/skybox/right.jpg"),
-                include_bytes!("./assets/skybox/left.jpg"),
-                include_bytes!("./assets/skybox/top.jpg"),
-                include_bytes!("./assets/skybox/bottom.jpg"),
-                include_bytes!("./assets/skybox/front.jpg"),
-                include_bytes!("./assets/skybox/back.jpg"),
-            ],
-            wgpu::TextureFormat::Rgba8UnormSrgb,
-        );
-        let cube_texture_id = imagic_context
-            .texture_manager_mut()
-            .add_texture(cube_texture);
-
-        let mut skybox_material = Box::new(SkyboxMaterial::new());
-        skybox_material.set_skybox_map(cube_texture_id);
-        skybox_material.set_cull_mode(wgpu::Face::Front);
-        let skybox_material_id = imagic_context
-            .material_manager_mut()
-            .add_material(skybox_material);
-        skybox_material_id
-    }
-
     fn _prepare_albedo(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let albedo_texture = Texture::create_from_bytes(
             imagic_context.graphics_context(),
@@ -183,10 +158,8 @@ impl App {
             .add_material(equirectangular_to_cube_material);
         material_index
     }
-}
 
-impl ImagicAppTrait for App {
-    fn init(&mut self, imagic_context: &mut ImagicContext) {
+    fn prepare_cameras(&mut self, imagic_context: &mut ImagicContext) {
         let fov = consts::FRAC_PI_4;
         let aspect = self.window_size.get_half_width() / self.window_size.get_height();
         let near = 0.01;
@@ -213,7 +186,7 @@ impl ImagicAppTrait for App {
         let second_viewport = Vec4::new(0.5, 0.0, 0.5, 1.0);
         let second_clear_color = Color::new(0.1, 0.2, 0.3, 1.0);
         let second_camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
-        let second_camera_layer_mask = LayerMask::new(Layer::RenderTarget.into());
+        let second_camera_layer_mask = LayerMask::new(Layer::Default.into());
         self.second_camera_id = create_camera(
             imagic_context,
             second_camera_pos,
@@ -226,20 +199,26 @@ impl ImagicAppTrait for App {
             second_camera_layer_mask,
             Some(self.camera_controller_option_2),
         );
+    }
+}
 
-        // let equirect_to_cube_material_index = self.prepare_equirect_to_cube_material(imagic);
-        let skybox_material_id = self.prepare_ldr_skybox(imagic_context);
-        self.cube.init(imagic_context, skybox_material_id);
-        self.cube.set_layer(
-            Layer::RenderTarget,
-            imagic_context.render_item_manager_mut(),
-        );
+impl ImagicAppTrait for App {
+    fn init(&mut self, imagic_context: &mut ImagicContext) {
+        self.prepare_cameras(imagic_context);
+        self.skybox.init_ldr_bytes(imagic_context, [
+            include_bytes!("./assets/skybox/right.jpg"),
+            include_bytes!("./assets/skybox/left.jpg"),
+            include_bytes!("./assets/skybox/top.jpg"),
+            include_bytes!("./assets/skybox/bottom.jpg"),
+            include_bytes!("./assets/skybox/front.jpg"),
+            include_bytes!("./assets/skybox/back.jpg"),
+        ],);
 
         self.prepare_lights(imagic_context);
 
         let pbr_material_index = self.prepare_pbr_material(imagic_context);
         self.sphere.init(imagic_context, pbr_material_index);
-        // self.sphere.set_layer(Layer::Custom1, imagic.context_mut().render_item_manager_mut());
+        self.sphere.set_layer(Layer::Custom1, imagic_context.render_item_manager_mut());
     }
 
     fn on_update(&mut self, imagic_context: &mut ImagicContext) {

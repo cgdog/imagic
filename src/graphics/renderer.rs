@@ -128,10 +128,10 @@ impl Renderer {
                     let material_bind_group_id = material.get_bind_group_id();
                     let lighting_bind_group_id = context.light_manager().get_bind_group_id();
                     let item_bind_groups = [
-                        item.get_item_bind_group_id(),
-                        camera_bind_group_id,
-                        material_bind_group_id,
-                        lighting_bind_group_id,
+                        item.get_item_bind_group_id(), // Group 0
+                        camera_bind_group_id,          // Group 1
+                        material_bind_group_id,        // Group 2, this contains material related unifroms
+                        lighting_bind_group_id,        // Group 3
                     ];
 
                     rpass.set_pipeline(render_pipeline);
