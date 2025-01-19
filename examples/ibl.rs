@@ -1,7 +1,6 @@
 /// Show IBL
 
-use std::{cell::RefCell, f32::consts, rc::Rc};
-
+use std::f32::consts::FRAC_PI_4;
 use common::create_camera;
 use imagic::prelude::*;
 use imagic::window::WindowSize;
@@ -67,8 +66,8 @@ impl App {
         light_manager.add_point_light(point_light_3);
     }
 
-    fn prepare_pbr_material(&mut self, imagic: &mut Imagic) -> ID {
-        let graphics_context = imagic.context().graphics_context();
+    fn prepare_pbr_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
+        let graphics_context = imagic_context.graphics_context();
         let mut pbr_material = Box::new(PBRMaterial::new(
             Vec4::new(1.0, 1.0, 1.0, 1.0),
             1.0,
@@ -101,7 +100,7 @@ impl App {
             wgpu::TextureFormat::Rgba8Unorm,
         );
 
-        let texture_manager = imagic.context_mut().texture_manager_mut();
+        let texture_manager = imagic_context.texture_manager_mut();
 
         let albedo_texture = texture_manager.add_texture(albedo_texture);
         pbr_material.set_albedo_texture(albedo_texture);
@@ -114,8 +113,7 @@ impl App {
         let ao_texture = texture_manager.add_texture(ao_texture);
         pbr_material.set_ao_texture(ao_texture);
 
-        let pbr_material_index = imagic
-            .context_mut()
+        let pbr_material_index = imagic_context
             .material_manager_mut()
             .add_material(pbr_material);
         pbr_material_index
@@ -135,46 +133,27 @@ impl App {
         hdr_texture_index
     }
 
-    fn _prepare_albedo(&mut self, imagic_context: &mut ImagicContext) -> ID {
-        let albedo_texture = Texture::create_from_bytes(
-            imagic_context.graphics_context(),
-            include_bytes!("./assets/lena.png"),
-            wgpu::TextureFormat::Rgba8UnormSrgb,
-        );
-        let albedo_texture_index = imagic_context
-            .texture_manager_mut()
-            .add_texture(albedo_texture);
-        albedo_texture_index
-    }
-
-    fn prepare_equirect_to_cube_material(&mut self, imagic: &mut Imagic) -> ID {
+    fn prepare_equirect_to_cube_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let mut equirectangular_to_cube_material = Box::new(EquirectangularToCubeMaterial::new());
-        let skybox_texture = self.prepare_skybox(imagic.context_mut());
+        let skybox_texture = self.prepare_skybox(imagic_context);
         equirectangular_to_cube_material.set_equirectangular_map(skybox_texture);
-        // equirectangular_to_cube_material.set_cull_mode(wgpu::Face::Front);
 
-        // let albedo_index = self._prepare_albedo(imagic.context_mut());
-        // equirectangular_to_cube_material.set_equirectangular_map(albedo_index);
-
-        let material_index = imagic
-            .context_mut()
+        let material_index = imagic_context
             .material_manager_mut()
             .add_material(equirectangular_to_cube_material);
         material_index
     }
 
     pub fn run(self) {
-        let mut imagic = Imagic::new();
-        let app: Rc<RefCell<Box<dyn ImagicAppTrait>>> = Rc::new(RefCell::new(Box::new(self)));
-        // let input_status = InputListener::default();
-        // imagic.input_manager.register_mouse_input_listener(Rc::new(RefCell::new(Box::new(input_status))));
-        imagic.run(app);
+        let app: Box<dyn ImagicAppTrait> = Box::new(self);
+        let mut imagic = Imagic::new(app);
+        imagic.run();
     }
 }
 
 impl ImagicAppTrait for App {
-    fn init(&mut self, imagic: &mut Imagic) {
-        let fov = consts::FRAC_PI_4;
+    fn init(&mut self, imagic_context: &mut ImagicContext) {
+        let fov = FRAC_PI_4;
         let aspect = self.window_size.get_half_width() / self.window_size.get_height();
         let near = 0.01;
         let far = 500.0;
@@ -185,7 +164,7 @@ impl ImagicAppTrait for App {
         // TODO: 让 Cube 以天空盒的形式渲染
         let first_camera_layer_mask = LayerMask::new(Layer::Default.into());
         self.first_camera_id = create_camera(
-            imagic.context_mut(),
+            imagic_context,
             first_camera_pos,
             first_viewport,
             first_clear_color,
@@ -202,7 +181,7 @@ impl ImagicAppTrait for App {
         let second_camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
         let second_camera_layer_mask = LayerMask::new(Layer::RenderTarget.into());
         self.second_camera_id = create_camera(
-            imagic.context_mut(),
+            imagic_context,
             second_camera_pos,
             second_viewport,
             second_clear_color,
@@ -214,18 +193,17 @@ impl ImagicAppTrait for App {
             Some(self.camera_controller_option_2),
         );
 
-        let equirect_to_cube_material_index = self.prepare_equirect_to_cube_material(imagic);
-        self.cube.init(imagic, equirect_to_cube_material_index);
+        let equirect_to_cube_material_index = self.prepare_equirect_to_cube_material(imagic_context);
+        self.cube.init(imagic_context, equirect_to_cube_material_index);
         self.cube.set_layer(
             Layer::RenderTarget,
-            imagic.context_mut().render_item_manager_mut(),
+            imagic_context.render_item_manager_mut(),
         );
 
-        self.prepare_lights(imagic.context_mut());
+        self.prepare_lights(imagic_context);
 
-        let pbr_material_index = self.prepare_pbr_material(imagic);
-        self.sphere.init(imagic, pbr_material_index);
-        // self.sphere.set_layer(Layer::Custom1, imagic.context_mut().render_item_manager_mut());
+        let pbr_material_index = self.prepare_pbr_material(imagic_context);
+        self.sphere.init(imagic_context, pbr_material_index);
     }
 
     fn on_update(&mut self, imagic_context: &mut ImagicContext) {

@@ -1,5 +1,5 @@
 use std::usize;
-use std::{cell::RefCell, f32::consts, rc::Rc};
+use std::f32::consts;
 
 use common::create_camera;
 use imagic::prelude::*;
@@ -61,29 +61,28 @@ impl App {
         albedo_texture_index
     }
 
-    fn prepare_material(&mut self, imagic: &mut Imagic) -> ID {
+    fn prepare_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let mut equirectangular_to_cube_material = Box::new(EquirectangularToCubeMaterial::new());
-        let hdr_texture = self.prepare_hdr_texture(imagic.context_mut());
+        let hdr_texture = self.prepare_hdr_texture(imagic_context);
         equirectangular_to_cube_material.set_equirectangular_map(hdr_texture);
         // let albedo_index = self._prepare_albedo(imagic.context_mut());
         // equirectangular_to_cube_material.set_equirectangular_map(albedo_index);
 
-        let material_index = imagic
-            .context_mut()
+        let material_index = imagic_context
             .material_manager_mut()
             .add_material(equirectangular_to_cube_material);
         material_index
     }
 
     pub fn run(self) {
-        let mut imagic = Imagic::new();
-        let app: Rc<RefCell<Box<dyn ImagicAppTrait>>> = Rc::new(RefCell::new(Box::new(self)));
-        imagic.run(app);
+        let app:Box<dyn ImagicAppTrait> = Box::new(self);
+        let mut imagic = Imagic::new(app);
+        imagic.run();
     }
 }
 
 impl ImagicAppTrait for App {
-    fn init(&mut self, imagic: &mut Imagic) {
+    fn init(&mut self, imagic_context: &mut ImagicContext) {
         let fov = consts::FRAC_PI_4;
         let aspect = self.window_size.get_half_width() / self.window_size.get_height();
         let near = 0.01;
@@ -94,7 +93,7 @@ impl ImagicAppTrait for App {
         let first_clear_color = Vec4::new(0.1, 0.1, 0.1, 1.0);
         let first_camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
         self.first_camera_id = create_camera(
-            imagic.context_mut(),
+            imagic_context,
             first_camera_pos,
             first_viewport,
             first_clear_color,
@@ -110,7 +109,7 @@ impl ImagicAppTrait for App {
         let second_clear_color = Vec4::new(0.1, 0.2, 0.3, 1.0);
         let second_camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
         self.second_camera_id = create_camera(
-            imagic.context_mut(),
+            imagic_context,
             second_camera_pos,
             second_viewport,
             second_clear_color,
@@ -122,8 +121,8 @@ impl ImagicAppTrait for App {
             Some(self.camera_controller_option_2),
         );
 
-        let material_index = self.prepare_material(imagic);
-        self.cube.init(imagic, material_index);
+        let material_index = self.prepare_material(imagic_context);
+        self.cube.init(imagic_context, material_index);
     }
 
     fn on_update(&mut self, imagic_context: &mut ImagicContext) {

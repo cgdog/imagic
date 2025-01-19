@@ -1,7 +1,7 @@
-use super::{core::ImagicOption, imagic_context::ImagicContext, Imagic};
+use super::{core::ImagicOption, imagic_context::ImagicContext};
 
 pub trait ImagicAppTrait {
-    fn init(&mut self, imagic: &mut Imagic);
+    fn init(&mut self, imagic: &mut ImagicContext);
 
     fn get_imagic_option(& self) -> ImagicOption;
     

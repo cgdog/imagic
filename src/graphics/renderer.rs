@@ -4,7 +4,10 @@ use wgpu::TextureView;
 use winit::window::Window as WindowWinit;
 
 use crate::{
-    camera::Camera, imagic_core::imagic_context::ImagicContext, prelude::VertexOrIndexCount, ui::ui_renderer::UIRenderer
+    camera::Camera,
+    imagic_core::imagic_context::ImagicContext,
+    prelude::{ImagicAppTrait, VertexOrIndexCount},
+    ui::ui_renderer::UIRenderer,
 };
 
 pub struct Renderer {
@@ -26,7 +29,12 @@ impl Renderer {
         self.ui_renderer.as_mut().expect("ui_renderer is None.")
     }
 
-    pub fn render(&mut self, context: &ImagicContext, _window: &WindowWinit) {
+    pub fn render(
+        &mut self,
+        context: &mut ImagicContext,
+        window: &WindowWinit,
+        app: &mut Box<dyn ImagicAppTrait>,
+    ) {
         let surface_texture = context
             .graphics_context()
             .get_surface()
@@ -40,7 +48,7 @@ impl Renderer {
             self.render_with_camera(context, camera, index, &surface_texture_view);
         }
 
-        self.render_ui(context, _window, &surface_texture_view);
+        self.render_ui(context, window, &surface_texture_view, app);
         surface_texture.present();
     }
 
@@ -168,11 +176,16 @@ impl Renderer {
 
     pub fn render_ui(
         &mut self,
-        context: &ImagicContext,
+        context: &mut ImagicContext,
         window: &WindowWinit,
         surface_texture_view: &TextureView,
+        app: &mut Box<dyn ImagicAppTrait>,
     ) {
-        self.ui_renderer()
-            .draw(context.graphics_context(), &window, surface_texture_view);
+        self.ui_renderer().draw(
+            context.graphics_context(),
+            &window,
+            surface_texture_view,
+            app,
+        );
     }
 }

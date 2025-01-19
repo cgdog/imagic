@@ -3,10 +3,9 @@ use wgpu::util::DeviceExt;
 
 use crate::{
     camera::Layer,
-    prelude::{render_item_manager::RenderItemManager, RenderItem, VertexOrIndexCount, INVALID_ID},
+    prelude::{render_item_manager::RenderItemManager, ImagicContext, RenderItem, VertexOrIndexCount, INVALID_ID},
     scene::{scene_object::SceneObject, transform::Transform},
     types::ID,
-    Imagic,
 };
 
 use super::vertex_attribute::Vertex;
@@ -114,13 +113,13 @@ impl Sphere {
         self.render_item_id
     }
 
-    pub fn init(&mut self, imagic: &mut Imagic, pbr_material_index: usize) {
-        let transform_manager = imagic.context_mut().transform_manager();
+    pub fn init(&mut self, imagic_context: &mut ImagicContext, pbr_material_index: usize) {
+        let transform_manager = imagic_context.transform_manager();
         let transform = Transform::default();
         let transform_index = transform_manager.borrow_mut().add_transform(transform);
         self.transform = transform_index;
 
-        let (vertex_buffer_id, index_buffer_id, index_count) = self.create_buffer(imagic);
+        let (vertex_buffer_id, index_buffer_id, index_count) = self.create_buffer(imagic_context);
         let mut sphere_item = RenderItem::new(
             VertexOrIndexCount::IndexCount {
                 index_count,
@@ -134,16 +133,15 @@ impl Sphere {
             true,
         );
         sphere_item.set_material_id(pbr_material_index);
-        self.render_item_id = imagic
-            .context_mut()
+        self.render_item_id = imagic_context
             .render_item_manager_mut()
             .add_render_item(sphere_item);
     }
 
-    fn create_buffer(&mut self, imagic: &mut Imagic) -> (usize, usize, u32) {
+    fn create_buffer(&mut self, imagic_context: &mut ImagicContext) -> (usize, usize, u32) {
         let (vertex_data, index_data) =
             create_sphere_vertices(self.radius, self.x_segments, self.y_segments);
-        let device = imagic.context().graphics_context().get_device();
+        let device = imagic_context.graphics_context().get_device();
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Sphere Vertex Buffer"),
             contents: bytemuck::cast_slice(&vertex_data),
@@ -156,7 +154,7 @@ impl Sphere {
             usage: wgpu::BufferUsages::INDEX,
         });
 
-        let buffer_manager = imagic.context_mut().buffer_manager_mut();
+        let buffer_manager = imagic_context.buffer_manager_mut();
         let vertex_buffer_id = buffer_manager.add_buffer(vertex_buffer);
 
         let index_buffer_id = buffer_manager.add_buffer(index_buffer);

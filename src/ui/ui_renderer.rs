@@ -4,13 +4,12 @@ use wgpu::{Device, Queue, StoreOp, TextureFormat, TextureView};
 use winit::event::WindowEvent;
 use winit::window::Window as WindowWinit;
 
-use crate::graphics::GraphicsContext;
+use crate::prelude::{GraphicsContext, ImagicAppTrait};
 
 pub struct UIRenderer {
     state: egui_winit::State,
     renderer: egui_wgpu::Renderer,
     ui_scale_factor: f32,
-    ui_drawer: Option<Box<dyn Fn(&Context)>>
 }
 
 impl UIRenderer {
@@ -45,12 +44,7 @@ impl UIRenderer {
             state: egui_state,
             renderer: egui_renderer,
             ui_scale_factor: 1.0,
-            ui_drawer: None,
         }
-    }
-
-    pub fn set_ui_drawer(&mut self, ui_drawer: Option<Box<dyn Fn(&Context)>>) {
-        self.ui_drawer = ui_drawer;
     }
 
     pub fn set_ui_scale_factor(&mut self, ui_scale_factor: f32) {
@@ -63,14 +57,11 @@ impl UIRenderer {
 
     pub fn draw(
         &mut self,
-        graphics_context: &GraphicsContext,
+        graphics_context: & GraphicsContext,
         window: &WindowWinit,
         window_surface_view: &TextureView,
+        app: &mut Box<dyn ImagicAppTrait>,
     ) {
-        if self.ui_drawer.is_none() {
-            return;
-        }
-
         let device: &Device = graphics_context.get_device();
         let queue: &Queue = graphics_context.get_queue();
 
@@ -86,7 +77,7 @@ impl UIRenderer {
 
         let raw_input = self.state.take_egui_input(&window);
         let full_output = self.state.egui_ctx().run(raw_input, |_ui| {
-            self.ui_drawer.as_ref().unwrap()(&self.state.egui_ctx());
+            app.on_render_ui(&self.state.egui_ctx());
         });
 
         self.state

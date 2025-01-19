@@ -1,4 +1,4 @@
-use std::{cell::RefCell, f32::consts, rc::Rc};
+use std::f32::consts;
 
 use log::info;
 use imagic::{prelude::*, window::WindowSize};
@@ -39,31 +39,29 @@ impl App {
         albedo_texture_index
     }
 
-    fn prepare_material(&mut self, imagic: &mut Imagic) -> ID {
+    fn prepare_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let mut unlit_material = Box::new(UnlitMaterial::new());
-        let albedo_index = self._prepare_albedo(imagic.context_mut());
+        let albedo_index = self._prepare_albedo(imagic_context);
         unlit_material.set_albedo_map(albedo_index);
 
-        let material_index = imagic.context_mut().material_manager_mut().add_material(unlit_material);
+        let material_index = imagic_context.material_manager_mut().add_material(unlit_material);
         material_index
     }
     
     pub fn run(self) {
-        let mut imagic = Imagic::new();
-        let app: Rc<RefCell<Box<dyn ImagicAppTrait>>> = Rc::new(RefCell::new(Box::new(self)));
-        imagic.run(app);
+        let app: Box<dyn ImagicAppTrait> = Box::new(self);
+        let mut imagic = Imagic::new(app);
+        imagic.run();
     }
 }
 
 impl ImagicAppTrait for App {
-    fn init(&mut self, imagic: &mut Imagic) {
-        let imagic_context = imagic.context_mut();
-        // self.prepare_lights(imagic_context);
+    fn init(&mut self, imagic_context: &mut ImagicContext) {
         self.camera = Camera::new(Vec3::new(0.0, 0.0, 5.0), consts::FRAC_PI_4
             , self.window_size.get_aspect(), 1.0, 100.0, None, imagic_context);
 
-        let material_index = self.prepare_material(imagic);
-        self.plane.init(imagic, material_index);
+        let material_index = self.prepare_material(imagic_context);
+        self.plane.init(imagic_context, material_index);
     }
 
     fn on_update(&mut self, _imagic_context: &mut ImagicContext) {

@@ -1,4 +1,4 @@
-use std::{cell::RefCell, f32::consts, rc::Rc};
+use std::f32::consts;
 
 use imagic::{prelude::*, window::WindowSize};
 use log::info;
@@ -50,8 +50,8 @@ impl App {
         light_manager.add_point_light(point_light_3);
     }
 
-    fn prepare_material(&mut self, imagic: &mut Imagic) -> ID {
-        let graphics_context = imagic.context().graphics_context();
+    fn prepare_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
+        let graphics_context = imagic_context.graphics_context();
         let mut pbr_material = Box::new(PBRMaterial::new(
             Vec4::new(1.0, 1.0, 1.0, 1.0),
             1.0,
@@ -84,7 +84,7 @@ impl App {
             wgpu::TextureFormat::Rgba8Unorm,
         );
 
-        let texture_manager = imagic.context_mut().texture_manager_mut();
+        let texture_manager = imagic_context.texture_manager_mut();
 
         let albedo_texture = texture_manager.add_texture(albedo_texture);
         pbr_material.set_albedo_texture(albedo_texture);
@@ -100,8 +100,7 @@ impl App {
         // let skybox_texture = self.prepare_skybox(imagic.context_mut());
         // pbr_material.set_albedo_texture(skybox_texture);
 
-        let pbr_material_index = imagic
-            .context_mut()
+        let pbr_material_index = imagic_context
             .material_manager_mut()
             .add_material(pbr_material);
         pbr_material_index
@@ -122,18 +121,15 @@ impl App {
     }
 
     pub fn run(self) {
-        let mut imagic = Imagic::new();
-        let app: Rc<RefCell<Box<dyn ImagicAppTrait>>> = Rc::new(RefCell::new(Box::new(self)));
-        imagic.run(app);
+        let app: Box<dyn ImagicAppTrait> = Box::new(self);
+        let mut imagic = Imagic::new(app);
+        imagic.run();
     }
 }
 
 impl ImagicAppTrait for App {
-    fn init(&mut self, imagic: &mut Imagic) {
-        let imagic_context = imagic.context_mut();
-
+    fn init(&mut self, imagic_context: &mut ImagicContext) {
         self.prepare_skybox(imagic_context);
-
         self.prepare_lights(imagic_context);
 
         self.camera = Camera::new(
@@ -146,8 +142,8 @@ impl ImagicAppTrait for App {
             imagic_context,
         );
 
-        let pbr_material_index = self.prepare_material(imagic);
-        self.sphere.init(imagic, pbr_material_index);
+        let pbr_material_index = self.prepare_material(imagic_context);
+        self.sphere.init(imagic_context, pbr_material_index);
     }
 
     fn on_update(&mut self, _imagic_context: &mut ImagicContext) {}

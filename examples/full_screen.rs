@@ -1,5 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
 use imagic::{prelude::*, window::WindowSize};
 use log::info;
 
@@ -51,8 +49,8 @@ impl ImagicAppTrait for App {
         });
     }
     
-    fn init(&mut self, imagic: &mut Imagic) {
-        let graphics_context = imagic.context().graphics_context();
+    fn init(&mut self, imagic_context: &mut ImagicContext) {
+        let graphics_context = imagic_context.graphics_context();
 
         let bind_group_layout = bind_group_layout::create_default_bind_group_layout(graphics_context);
         let render_pipeline = render_pipeline::create_default_render_pipeline(graphics_context, &bind_group_layout);
@@ -75,14 +73,13 @@ impl ImagicAppTrait for App {
             &bind_group_layout, &texture_view, &texture_sampler);
         
         {
-            let context = imagic.context_mut();
-            context.bind_group_layout_manager_mut().add_bind_group_layout(bind_group_layout);
-            let pipeline_id = context.pipeline_manager_mut().add_render_pipeline(render_pipeline);
-            let bind_group_id = context.bind_group_manager_mut().add_bind_group(bind_group);
+            imagic_context.bind_group_layout_manager_mut().add_bind_group_layout(bind_group_layout);
+            let pipeline_id = imagic_context.pipeline_manager_mut().add_render_pipeline(render_pipeline);
+            let bind_group_id = imagic_context.bind_group_manager_mut().add_bind_group(bind_group);
     
             let mut render_item = RenderItem::new_thinly(pipeline_id, VertexOrIndexCount::VertexCount { vertex_count: 3, instance_count: 1 });
             render_item.set_item_bind_group_id(bind_group_id);
-            let render_item_index = context.render_item_manager_mut().add_render_item(render_item);
+            let render_item_index = imagic_context.render_item_manager_mut().add_render_item(render_item);
             self.full_screen_item_index = render_item_index;
         }
     }
@@ -112,7 +109,7 @@ fn main() {
     app.window_size.set_width(width);
     app.window_size.set_height(height);
 
-    let mut imagic = Imagic::new();
-    let app: Rc<RefCell<Box<dyn ImagicAppTrait>>> = Rc::new(RefCell::new(Box::new(app)));
-    imagic.run(app);
+    let app: Box<dyn ImagicAppTrait> = Box::new(app);
+    let mut imagic = Imagic::new(app);
+    imagic.run();
 }

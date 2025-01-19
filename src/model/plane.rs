@@ -4,10 +4,9 @@ use wgpu::util::DeviceExt;
 
 use crate::{
     camera::Layer,
-    prelude::{render_item_manager::RenderItemManager, RenderItem, VertexOrIndexCount, INVALID_ID},
+    prelude::{render_item_manager::RenderItemManager, ImagicContext, RenderItem, VertexOrIndexCount, INVALID_ID},
     scene::{SceneObject, Transform},
     types::ID,
-    Imagic,
 };
 
 use super::Vertex;
@@ -74,13 +73,13 @@ impl Plane {
         self.render_item_id
     }
 
-    pub fn init(&mut self, imagic: &mut Imagic, material_index: usize) {
-        let transform_manager = imagic.context_mut().transform_manager();
+    pub fn init(&mut self, imagic_context: &mut ImagicContext, material_index: usize) {
+        let transform_manager = imagic_context.transform_manager();
         let transform = Transform::default();
         let transform_index = transform_manager.borrow_mut().add_transform(transform);
         self.transform = transform_index;
 
-        let (vertex_buffer_id, index_buffer_id, index_count) = self.create_buffer(imagic);
+        let (vertex_buffer_id, index_buffer_id, index_count) = self.create_buffer(imagic_context);
         let mut plane_item = RenderItem::new(
             VertexOrIndexCount::IndexCount {
                 index_count,
@@ -94,8 +93,7 @@ impl Plane {
             true,
         );
         plane_item.set_material_id(material_index);
-        self.render_item_id = imagic
-            .context_mut()
+        self.render_item_id = imagic_context
             .render_item_manager_mut()
             .add_render_item(plane_item);
     }
@@ -113,9 +111,9 @@ impl Plane {
         (vertices, indices)
     }
 
-    fn create_buffer(&mut self, imagic: &mut Imagic) -> (usize, usize, u32) {
+    fn create_buffer(&mut self, imagic_context: &mut ImagicContext) -> (usize, usize, u32) {
         let (vertex_data, index_data) = self.create_vertices_data();
-        let device = imagic.context().graphics_context().get_device();
+        let device = imagic_context.graphics_context().get_device();
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Plane Vertex Buffer"),
             contents: bytemuck::cast_slice(&vertex_data),
@@ -128,7 +126,7 @@ impl Plane {
             usage: wgpu::BufferUsages::INDEX,
         });
 
-        let buffer_manager = imagic.context_mut().buffer_manager_mut();
+        let buffer_manager = imagic_context.buffer_manager_mut();
         let vertex_buffer_id = buffer_manager.add_buffer(vertex_buffer);
 
         let index_buffer_id = buffer_manager.add_buffer(index_buffer);

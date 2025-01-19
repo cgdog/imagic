@@ -1,6 +1,4 @@
 use log::info;
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
 use winit::dpi::Size;
 
@@ -98,7 +96,7 @@ impl Window {
         event: winit::event::WindowEvent,
         renderer: &mut graphics::Renderer,
         context: &mut ImagicContext,
-        app: &Option<Rc<RefCell<Box<dyn ImagicAppTrait>>>>,
+        app: &mut Box<dyn ImagicAppTrait>,
     ) {
         renderer.ui_renderer().handle_input(&self.get(), &event);
         match event {
@@ -116,12 +114,9 @@ impl Window {
                 self.dpi = scale_factor;
             }
             WindowEvent::RedrawRequested => {
-                match app {
-                    Some(app) => app.borrow_mut().on_update(context),
-                    None => info!("No app supplied."),
-                }
+                app.on_update(context);
                 context.on_update();
-                renderer.render(context, &self.get());
+                renderer.render(context, &self.get(), app);
                 self.get().request_redraw();
             }
             others => {

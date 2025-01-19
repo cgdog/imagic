@@ -1,5 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
 use log::info;
 use winit::{application::ApplicationHandler, event_loop::{ControlFlow, EventLoop}};
 
@@ -30,22 +28,21 @@ impl ImagicOption {
     }
 }
 
-#[derive(Default)]
+// #[derive(Default)]
 pub struct Imagic {
+    app: Box<dyn ImagicAppTrait>,
+    option: ImagicOption,
     window: Window,
     context: ImagicContext,
     renderer: graphics::Renderer,
-    pub app: Option<Rc<RefCell<Box<dyn ImagicAppTrait>>>>,
     is_inited: bool,
-    option: Option<ImagicOption>,
 }
 
 impl ApplicationHandler for Imagic {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         if !self.is_inited {
             // When first resumed, we create window.
-            let option = self.option.get_or_insert(ImagicOption::default());
-            self.window.init(&event_loop, option.window_size, option.window_title);
+            self.window.init(&event_loop, self.option.window_size, self.option.window_title);
             pollster::block_on(self.context.graphics_context_mut().init(&self.window));
 
             self.context.init();
@@ -54,13 +51,7 @@ impl ApplicationHandler for Imagic {
                 self.context.graphics_context().get_swapchian_format(), None, 1, &self.window.get());
             self.renderer.set_ui_renderer(Some(ui_renderer));
 
-            let app_for_ui = self.app.as_mut().unwrap().clone();
-            self.renderer.ui_renderer().set_ui_drawer(Some(Box::new(move |ctx|{
-                app_for_ui.borrow_mut().on_render_ui(ctx);
-            })));
-
-            // TODO: study clone here
-            self.app.clone().unwrap().borrow_mut().init(self);
+            self.app.init(&mut self.context);
 
             self.context.init_after_app(&self.window);
 
@@ -80,15 +71,21 @@ impl ApplicationHandler for Imagic {
             event,
             &mut self.renderer,
             &mut self.context,
-            &self.app,
+            &mut self.app,
         );
     }
 }
 
 impl Imagic {
-    pub fn new() -> Self {
+    pub fn new(app: Box<dyn ImagicAppTrait>) -> Self {
+        let option = app.get_imagic_option();
         Self {
-            ..Default::default()
+            app,
+            option: option,
+            window: Default::default(),
+            context: Default::default(),
+            renderer: Default::default(),
+            is_inited: false,
         }
     }
 
@@ -99,10 +96,8 @@ impl Imagic {
         &mut self.context
     }
 
-    pub fn run(&mut self, app: Rc<RefCell<Box<dyn ImagicAppTrait>>>) {
+    pub fn run(&mut self) {
         info!("Imagic init() begin.");
-        self.option = Some(app.borrow().get_imagic_option());
-        self.app = Some(app);
         let event_loop = EventLoop::new().unwrap();
         event_loop.set_control_flow(ControlFlow::Poll);
         let _ = event_loop.run_app(self);
