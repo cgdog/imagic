@@ -143,12 +143,6 @@ impl App {
             .add_material(equirectangular_to_cube_material);
         material_index
     }
-
-    pub fn run(self) {
-        let app: Box<dyn ImagicAppTrait> = Box::new(self);
-        let mut imagic = Imagic::new(app);
-        imagic.run();
-    }
 }
 
 impl ImagicAppTrait for App {
@@ -240,6 +234,7 @@ impl ImagicAppTrait for App {
 
 fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
-    let app: App = Default::default();
-    app.run();
+    
+    let mut imagic = Imagic::new(Box::new(App::default()));
+    imagic.run();
 }

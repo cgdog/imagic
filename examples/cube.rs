@@ -45,31 +45,17 @@ impl App {
         let material_index = imagic_context.material_manager_mut().add_material(unlit_material);
         material_index
     }
-    
-    pub fn run(self) {
-        let app: Box<dyn ImagicAppTrait> = Box::new(self);
-        let mut imagic = Imagic::new(app);
-        imagic.run();
-    }
 }
 
 impl ImagicAppTrait for App {
 
     fn init(&mut self, imagic_context: &mut ImagicContext) {
         // self.prepare_lights(imagic_context);
-        self.camera = Camera::new(Vec3::new(0.0, 5.0, 10.0), consts::FRAC_PI_4
+        self.camera = Camera::new(Vec3::new(0.0, 5.0, 5.0), consts::FRAC_PI_4
             , self.window_size.get_aspect(), 1.0, 100.0, Some(CameraControllerOptions::new(Vec3::ZERO, false)), imagic_context);
 
         let material_index = self.prepare_material(imagic_context);
         self.cube.init(imagic_context, material_index);
-    }
-
-    fn on_update(&mut self, _imagic_context: &mut ImagicContext) {
-        // todo!()
-    }
-
-    fn on_render_ui(&mut self, _ctx: &egui::Context) {
-        // todo!()
     }
 
     fn get_imagic_option(& self) -> ImagicOption {
@@ -80,6 +66,7 @@ impl ImagicAppTrait for App {
 fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
     info!("cube main.");
-    let app: App = Default::default();
-    app.run();
+    
+    let mut imagic = Imagic::new(Box::new(App::default()));
+    imagic.run();
 }

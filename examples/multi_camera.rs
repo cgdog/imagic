@@ -133,7 +133,7 @@ impl ImagicAppTrait for App {
     }
 
     fn on_render_ui(&mut self, ctx: &egui::Context) {
-        egui::Window::new("Imagic - plane")
+        egui::Window::new("Imagic - Multi Cameras")
             .resizable(true)
             .vscroll(true)
             .default_open(false)

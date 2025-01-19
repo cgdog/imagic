@@ -119,12 +119,6 @@ impl App {
             .add_texture(hdr_texture);
         hdr_texture_index
     }
-
-    pub fn run(self) {
-        let app: Box<dyn ImagicAppTrait> = Box::new(self);
-        let mut imagic = Imagic::new(app);
-        imagic.run();
-    }
 }
 
 impl ImagicAppTrait for App {
@@ -156,6 +150,6 @@ impl ImagicAppTrait for App {
 fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
     info!("pbr main.");
-    let app: App = Default::default();
-    app.run();
+    let mut imagic = Imagic::new(Box::new(App::default()));
+    imagic.run();
 }

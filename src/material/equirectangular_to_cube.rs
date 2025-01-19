@@ -1,6 +1,12 @@
-use std::{borrow::Cow, usize};
+use std::borrow::Cow;
 
-use crate::{prelude::{bind_group_layout::BindGroupLayoutManager, GraphicsContext, INVALID_ID}, types::ID};
+use crate::{
+    prelude::{
+        bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
+        texture_manager::TextureManager, GraphicsContext, INVALID_ID,
+    },
+    types::ID,
+};
 
 use super::MaterialTrait;
 
@@ -27,11 +33,11 @@ impl Default for EquirectangularToCubeMaterial {
 impl MaterialTrait for EquirectangularToCubeMaterial {
     fn init(
         &mut self,
-        graphics_context: &crate::prelude::GraphicsContext,
-        bind_group_layout_manager: &mut crate::prelude::bind_group_layout::BindGroupLayoutManager,
+        graphics_context: &GraphicsContext,
+        bind_group_layout_manager: &mut BindGroupLayoutManager,
     ) {
         self.create_texture_sampler(graphics_context);
-        EquirectangularToCubeMaterial::try_create_bind_group_layout(
+        Self::try_create_bind_group_layout(
             graphics_context,
             bind_group_layout_manager,
         );
@@ -39,10 +45,10 @@ impl MaterialTrait for EquirectangularToCubeMaterial {
 
     fn create_bind_group(
         &mut self,
-        graphics_context: &crate::prelude::GraphicsContext,
-        bind_group_manager: &mut crate::prelude::bind_group::BindGroupManager,
-        bind_group_layout_manager: &mut crate::prelude::bind_group_layout::BindGroupLayoutManager,
-        texture_manager: &crate::prelude::texture_manager::TextureManager,
+        graphics_context: &GraphicsContext,
+        bind_group_manager: &mut BindGroupManager,
+        bind_group_layout_manager: &mut BindGroupLayoutManager,
+        texture_manager: &TextureManager,
     ) -> ID {
         let bind_group_layout =
             bind_group_layout_manager.get_bind_group_layout(self.get_bind_group_layout_id());
@@ -51,7 +57,6 @@ impl MaterialTrait for EquirectangularToCubeMaterial {
             label: Some("Equirectangular to cube bind group"),
             entries: &[
                 wgpu::BindGroupEntry {
-                    // albedo map
                     binding: 0,
                     resource: wgpu::BindingResource::TextureView(
                         texture_manager.get_texture_view(self.equirectangular_map),
@@ -70,19 +75,16 @@ impl MaterialTrait for EquirectangularToCubeMaterial {
     }
 
     fn get_bind_group_layout_id(&self) -> ID {
-        EquirectangularToCubeMaterial::internal_bind_group_layout_id(INVALID_ID)
+        Self::internal_bind_group_layout_id(INVALID_ID)
     }
 
     fn get_bind_group_id(&self) -> ID {
         self.bind_group_id
     }
 
-    fn create_shader_module(
-        &self,
-        graphics_context: &crate::prelude::GraphicsContext,
-    ) -> wgpu::ShaderModule {
+    fn create_shader_module(&self, graphics_context: &GraphicsContext) -> wgpu::ShaderModule {
         let shader = graphics_context.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("crate equirectangular to cube shader module"),
+            label: Some("create equirectangular to cube shader module"),
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!(
                 "../shaders/equirectangular_to_cube.wgsl"
             ))),
@@ -143,12 +145,11 @@ impl EquirectangularToCubeMaterial {
         graphics_context: &GraphicsContext,
         bind_group_layout_manager: &mut BindGroupLayoutManager,
     ) {
-        let layout_id = EquirectangularToCubeMaterial::internal_bind_group_layout_id(INVALID_ID);
+        let layout_id = Self::internal_bind_group_layout_id(INVALID_ID);
         if layout_id == INVALID_ID {
-            let bind_group_layout =
-                EquirectangularToCubeMaterial::create_bind_group_layout(graphics_context);
+            let bind_group_layout = Self::create_bind_group_layout(graphics_context);
             let layout_id = bind_group_layout_manager.add_bind_group_layout(bind_group_layout);
-            EquirectangularToCubeMaterial::internal_bind_group_layout_id(layout_id);
+            Self::internal_bind_group_layout_id(layout_id);
         }
     }
 
@@ -182,7 +183,7 @@ impl EquirectangularToCubeMaterial {
         bind_group_layout
     }
 
-    pub fn set_equirectangular_map(&mut self, equirectangular_map: usize) {
+    pub fn set_equirectangular_map(&mut self, equirectangular_map: ID) {
         self.equirectangular_map = equirectangular_map;
     }
 
