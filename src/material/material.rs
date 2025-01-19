@@ -7,12 +7,18 @@ use crate::{
 };
 
 pub trait MaterialTrait {
+
+    /// Create BindGroupLayout and so on, e.g., create texture sampler.
     fn init(
         &mut self,
         graphics_context: &GraphicsContext,
         bind_group_layout_manager: &mut BindGroupLayoutManager,
     );
 
+    /// Create shader module.
+    fn create_shader_module(&self, graphics_context: &GraphicsContext) -> wgpu::ShaderModule;
+
+    /// create bind group.
     fn create_bind_group(
         &mut self,
         graphics_context: &GraphicsContext,
@@ -23,8 +29,6 @@ pub trait MaterialTrait {
 
     fn get_bind_group_layout_id(&self) -> ID;
     fn get_bind_group_id(&self) -> ID;
-
-    fn create_shader_module(&self, graphics_context: &GraphicsContext) -> wgpu::ShaderModule;
 
     fn get_cull_mode(&self) -> wgpu::Face {
         wgpu::Face::Back
