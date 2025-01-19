@@ -130,6 +130,7 @@ impl MouseInputListener for CameraController {
         match event.event_type {
             MouseEventType::LeftPressed => {
                 self.input_status.mouse.is_left_button_pressed = true;
+                self.start_rotate(&event);
             }
             MouseEventType::LeftReleased => {
                 self.input_status.mouse.is_left_button_pressed = false;
@@ -256,14 +257,8 @@ impl CameraController {
     }
 
     fn process_rotate(&mut self, event: &MouseEvent) {
-        if !self.is_in_camera_scope(event) {
+        if !self.input_status.mouse.is_cursor_move || !self.is_in_camera_scope(event) {
             return;
-        }
-        if !self.input_status.mouse.is_cursor_move {
-            self.input_status.mouse.is_cursor_move = true;
-            self.input_status.mouse.start_x = event.logical_pos.x;
-            self.input_status.mouse.start_y = event.logical_pos.y;
-            self.start_rotate();
         }
 
         let delta_yaw = self.input_status.mouse.delta_x(event.logical_pos.x);
@@ -287,7 +282,14 @@ impl CameraController {
     /// Start to rotate camera's spherical coordinates. 
     /// 
     /// First transform camera's cartesian coordinates to spherical.
-    fn start_rotate(&mut self) {
+    fn start_rotate(&mut self, event: &MouseEvent) {
+        if !self.is_in_camera_scope(event) {
+            return;
+        }
+
+        self.input_status.mouse.is_cursor_move = true;
+        self.input_status.mouse.start_x = event.logical_pos.x;
+        self.input_status.mouse.start_y = event.logical_pos.y;
         let cartesian = self.get_camera_position();
         if let Some(camera_pos) = cartesian {
             let relative_camera_pos = camera_pos - self.options.target_pos;

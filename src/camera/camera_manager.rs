@@ -111,7 +111,7 @@ impl CameraManager {
         let controller_id = self.get_camera(camera_id).borrow().controller_id;
         info!("change control id: {}", controller_id);
         if let Some(input_listener) = input_manager.get_input_listener(controller_id) {
-            if let Some(controller) =input_listener.as_any_mut().downcast_mut::<CameraController>() {
+            if let Some(controller) = input_listener.as_any_mut().downcast_mut::<CameraController>() {
                 controller.options = *camera_controller_options;
             }
         }

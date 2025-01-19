@@ -111,12 +111,12 @@ impl WindowInputProcessor {
                 ElementState::Pressed => {
                     // info!("Left mouse button is pressed");
                     input_manager
-                        .trigger_mouse_input_event(MouseEvent::click(MouseEventType::LeftPressed));
+                        .trigger_mouse_input_event(MouseEvent::new(self.cursor_logical_pos, MouseEventType::LeftPressed));
                 }
                 ElementState::Released => {
                     // info!("Left mouse button is released");
                     input_manager
-                        .trigger_mouse_input_event(MouseEvent::click(MouseEventType::LeftReleased));
+                        .trigger_mouse_input_event(MouseEvent::new(self.cursor_logical_pos, MouseEventType::LeftReleased));
                 }
             },
             MouseButton::Right => match state {

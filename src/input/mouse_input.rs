@@ -36,12 +36,6 @@ impl Default for MouseEvent {
 }
 
 impl MouseEvent {
-    pub fn click (event_type: MouseEventType) -> Self {
-        Self {
-            event_type,
-            ..Default::default()
-        }
-    }
     
     pub fn new(logical_pos: Vec2, event_type: MouseEventType) -> Self {
         Self {
