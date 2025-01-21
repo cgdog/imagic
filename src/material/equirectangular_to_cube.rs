@@ -31,7 +31,7 @@ impl Default for EquirectangularToCubeMaterial {
 }
 
 impl MaterialTrait for EquirectangularToCubeMaterial {
-    fn init(
+    fn on_init(
         &mut self,
         graphics_context: &GraphicsContext,
         bind_group_layout_manager: &mut BindGroupLayoutManager,
@@ -106,6 +106,10 @@ impl MaterialTrait for EquirectangularToCubeMaterial {
 
     fn set_front_face(&mut self, front_face: wgpu::FrontFace) {
         self.front_face = front_face;
+    }
+
+    fn enable_lights(&self) -> bool {
+        false
     }
 }
 

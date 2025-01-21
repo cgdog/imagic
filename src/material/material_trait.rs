@@ -9,7 +9,7 @@ use crate::{
 pub trait MaterialTrait {
 
     /// Create BindGroupLayout and so on, e.g., create texture sampler.
-    fn init(
+    fn on_init(
         &mut self,
         graphics_context: &GraphicsContext,
         bind_group_layout_manager: &mut BindGroupLayoutManager,
@@ -46,5 +46,9 @@ pub trait MaterialTrait {
     #[allow(unused)]
     fn set_front_face(&mut self, front_face: wgpu::FrontFace) {
         
+    }
+
+    fn enable_lights(&self) -> bool {
+        true
     }
 }

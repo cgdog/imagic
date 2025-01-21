@@ -1,7 +1,7 @@
 use std::{borrow::Cow, usize};
 
 use crate::{
-    prelude::{bind_group_layout::BindGroupLayoutManager, GraphicsContext, INVALID_ID},
+    prelude::{bind_group_layout::BindGroupLayoutManager, GraphicsContext, Texture, INVALID_ID},
     types::ID,
 };
 
@@ -16,7 +16,7 @@ pub struct UnlitMaterial {
 impl Default for UnlitMaterial {
     fn default() -> Self {
         Self {
-            albedo_map: INVALID_ID,
+            albedo_map: Texture::white(),
             texture2d_sampler: None,
             bind_group_id: INVALID_ID,
         }
@@ -24,7 +24,7 @@ impl Default for UnlitMaterial {
 }
 
 impl MaterialTrait for UnlitMaterial {
-    fn init(
+    fn on_init(
         &mut self,
         graphics_context: &crate::prelude::GraphicsContext,
         bind_group_layout_manager: &mut crate::prelude::bind_group_layout::BindGroupLayoutManager,

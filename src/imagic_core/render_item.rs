@@ -10,7 +10,7 @@ pub enum VertexOrIndexCount {
 }
 
 pub struct RenderItem {
-    pipeline_id: usize,
+    // pipeline_id: usize,
     // model matrix bind group
     item_bind_group_id: usize,
     vertex_buffer_id: usize,
@@ -25,7 +25,7 @@ pub struct RenderItem {
 impl Default for RenderItem {
     fn default() -> Self {
         Self {
-            pipeline_id: INVALID_ID,
+            // pipeline_id: INVALID_ID,
             item_bind_group_id: INVALID_ID,
             vertex_buffer_id: INVALID_ID,
             index_buffer_id: INVALID_ID,
@@ -52,22 +52,22 @@ impl RenderItem {
         }
     }
 
-    pub fn new_thinly(pipeline_id: usize, vertex_or_index_count: VertexOrIndexCount) -> Self {
+    pub fn new_thinly(vertex_or_index_count: VertexOrIndexCount) -> Self {
         Self {
-            pipeline_id,
+            // pipeline_id,
             // bind_group_ids: bind_group_id,
             vertex_or_index_count,
             ..Default::default()
         }
     }
 
-    pub fn set_pipeline(&mut self, pipeline_id: usize) {
-        self.pipeline_id = pipeline_id;
-    }
+    // pub fn set_pipeline(&mut self, pipeline_id: usize) {
+    //     self.pipeline_id = pipeline_id;
+    // }
 
-    pub fn get_pipeline(&self) -> ID {
-        self.pipeline_id
-    }
+    // pub fn get_pipeline(&self) -> ID {
+    //     self.pipeline_id
+    // }
 
     pub fn set_item_bind_group_id(&mut self, bind_group_id: usize) {
         self.item_bind_group_id = bind_group_id;

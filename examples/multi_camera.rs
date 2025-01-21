@@ -1,5 +1,5 @@
-use std::usize;
 use std::f32::consts;
+use std::usize;
 
 use common::create_camera;
 use imagic::prelude::*;
@@ -36,11 +36,17 @@ impl Default for App {
 
 impl App {
     fn prepare_hdr_texture(&mut self, imagic_context: &mut ImagicContext) -> ID {
-        let mut hdr_loader = HDRLoader {};
-        let cwd = std::env::current_dir().unwrap();
-        let hdr_path = cwd.join("examples/assets/pbr/hdr/newport_loft.hdr");
-        let hdr_texture = hdr_loader.load(
-            hdr_path.to_str().unwrap(),
+        let mut hdr_loader = HDRLoader::new(HDRLoaderOptions{is_flip_y: true});
+        // let cwd = std::env::current_dir().unwrap();
+        // let hdr_path = cwd.join("examples/assets/pbr/hdr/newport_loft.hdr");
+        // let hdr_texture = hdr_loader.load(
+        //     hdr_path.to_str().unwrap(),
+        //     // include_bytes!("./assets/pbr/hdr/newport_loft.hdr"),
+        //     imagic_context.graphics_context(),
+        // );
+
+        let hdr_texture = hdr_loader.load_by_bytes(
+            include_bytes!("./assets/pbr/hdr/newport_loft.hdr"),
             imagic_context.graphics_context(),
         );
         let hdr_texture_index = imagic_context
@@ -68,14 +74,12 @@ impl App {
         // let albedo_index = self._prepare_albedo(imagic.context_mut());
         // equirectangular_to_cube_material.set_equirectangular_map(albedo_index);
 
-        let material_index = imagic_context
-            .material_manager_mut()
-            .add_material(equirectangular_to_cube_material);
+        let material_index = imagic_context.add_material(equirectangular_to_cube_material);
         material_index
     }
 
     pub fn run(self) {
-        let app:Box<dyn ImagicAppTrait> = Box::new(self);
+        let app: Box<dyn ImagicAppTrait> = Box::new(self);
         let mut imagic = Imagic::new(app);
         imagic.run();
     }
@@ -128,7 +132,8 @@ impl ImagicAppTrait for App {
     fn on_update(&mut self, imagic_context: &mut ImagicContext) {
         if self.need_update_camera_controller {
             self.need_update_camera_controller = false;
-            imagic_context.change_camera_controller(self.first_camera_id, &self.camera_controller_option_1);
+            imagic_context
+                .change_camera_controller(self.first_camera_id, &self.camera_controller_option_1);
         }
     }
 
@@ -139,14 +144,14 @@ impl ImagicAppTrait for App {
             .default_open(false)
             .default_size([100.0, 10.0])
             .show(&ctx, |ui| {
-                let rotate_button_text = 
-                if self.camera_controller_option_1.is_auto_rotate {
+                let rotate_button_text = if self.camera_controller_option_1.is_auto_rotate {
                     "Stop Auto Rotate"
                 } else {
                     "Auto Rotate"
                 };
                 if ui.button(rotate_button_text).clicked() {
-                    self.camera_controller_option_1.is_auto_rotate = !self.camera_controller_option_1.is_auto_rotate;
+                    self.camera_controller_option_1.is_auto_rotate =
+                        !self.camera_controller_option_1.is_auto_rotate;
                     self.need_update_camera_controller = true;
                 }
             });

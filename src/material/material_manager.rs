@@ -1,7 +1,12 @@
-use crate::{prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, texture_manager::TextureManager, GraphicsContext}, types::ID};
+use crate::{
+    prelude::{
+        bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
+        texture_manager::TextureManager, GraphicsContext,
+    },
+    types::ID,
+};
 
 use super::material_trait::MaterialTrait;
-
 
 pub struct MaterialManager {
     materials: Vec<Box<dyn MaterialTrait>>,
@@ -16,7 +21,21 @@ impl Default for MaterialManager {
 }
 
 impl MaterialManager {
-    pub fn add_material(&mut self, material: Box<dyn MaterialTrait>) -> ID {
+    pub(crate) fn add_material(
+        &mut self,
+        mut material: Box<dyn MaterialTrait>,
+        graphics_context: &GraphicsContext,
+        bind_group_manager: &mut BindGroupManager,
+        bind_group_layout_manager: &mut BindGroupLayoutManager,
+        texture_manager: &TextureManager,
+    ) -> ID {
+        material.on_init(graphics_context, bind_group_layout_manager);
+        material.create_bind_group(
+            graphics_context,
+            bind_group_manager,
+            bind_group_layout_manager,
+            texture_manager,
+        );
         let index = self.materials.len();
         self.materials.push(material);
         index
@@ -30,12 +49,21 @@ impl MaterialManager {
         &mut self.materials[index]
     }
 
-    pub fn init_after_app(&mut self, graphics_context: &GraphicsContext, bind_group_manager: &mut BindGroupManager
-        , bind_group_layout_manager: &mut BindGroupLayoutManager, texture_manager: &TextureManager) {
-
-        for material in self.materials.iter_mut() {
-            material.init(graphics_context, bind_group_layout_manager);
-            material.create_bind_group(graphics_context, bind_group_manager, bind_group_layout_manager, texture_manager);
-        }
-    }
+    // pub fn init_after_app(
+    //     &mut self,
+    //     graphics_context: &GraphicsContext,
+    //     bind_group_manager: &mut BindGroupManager,
+    //     bind_group_layout_manager: &mut BindGroupLayoutManager,
+    //     texture_manager: &TextureManager,
+    // ) {
+    //     for material in self.materials.iter_mut() {
+    //         material.init(graphics_context, bind_group_layout_manager);
+    //         material.create_bind_group(
+    //             graphics_context,
+    //             bind_group_manager,
+    //             bind_group_layout_manager,
+    //             texture_manager,
+    //         );
+    //     }
+    // }
 }

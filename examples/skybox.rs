@@ -114,14 +114,12 @@ impl App {
         let ao_texture = texture_manager.add_texture(ao_texture);
         pbr_material.set_ao_texture(ao_texture);
 
-        let pbr_material_index = imagic_context
-            .material_manager_mut()
-            .add_material(pbr_material);
+        let pbr_material_index = imagic_context.add_material(pbr_material);
         pbr_material_index
     }
 
-    fn prepare_skybox(&mut self, imagic_context: &mut ImagicContext) -> ID {
-        let mut hdr_loader = HDRLoader {};
+    fn _prepare_skybox(&mut self, imagic_context: &mut ImagicContext) -> ID {
+        let mut hdr_loader = HDRLoader::default();
         let cwd = std::env::current_dir().unwrap();
         let hdr_path = cwd.join("examples/assets/pbr/hdr/newport_loft.hdr");
         let hdr_texture = hdr_loader.load(
@@ -144,19 +142,6 @@ impl App {
             .texture_manager_mut()
             .add_texture(albedo_texture);
         albedo_texture_index
-    }
-
-    #[allow(unused)]
-    fn prepare_equirect_to_cube_material(&mut self, imagic: &mut Imagic) -> ID {
-        let mut equirectangular_to_cube_material = Box::new(EquirectangularToCubeMaterial::new());
-        let skybox_texture = self.prepare_skybox(imagic.context_mut());
-        equirectangular_to_cube_material.set_equirectangular_map(skybox_texture);
-
-        let material_index = imagic
-            .context_mut()
-            .material_manager_mut()
-            .add_material(equirectangular_to_cube_material);
-        material_index
     }
 
     fn prepare_cameras(&mut self, imagic_context: &mut ImagicContext) {
@@ -205,26 +190,31 @@ impl App {
 impl ImagicAppTrait for App {
     fn init(&mut self, imagic_context: &mut ImagicContext) {
         self.prepare_cameras(imagic_context);
-        self.skybox.init_ldr_bytes(imagic_context, [
-            include_bytes!("./assets/skybox/right.jpg"),
-            include_bytes!("./assets/skybox/left.jpg"),
-            include_bytes!("./assets/skybox/top.jpg"),
-            include_bytes!("./assets/skybox/bottom.jpg"),
-            include_bytes!("./assets/skybox/front.jpg"),
-            include_bytes!("./assets/skybox/back.jpg"),
-        ],);
+        self.skybox.init_ldr_bytes(
+            imagic_context,
+            [
+                include_bytes!("./assets/skybox/right.jpg"),
+                include_bytes!("./assets/skybox/left.jpg"),
+                include_bytes!("./assets/skybox/top.jpg"),
+                include_bytes!("./assets/skybox/bottom.jpg"),
+                include_bytes!("./assets/skybox/front.jpg"),
+                include_bytes!("./assets/skybox/back.jpg"),
+            ],
+        );
 
         self.prepare_lights(imagic_context);
 
         let pbr_material_index = self.prepare_pbr_material(imagic_context);
         self.sphere.init(imagic_context, pbr_material_index);
-        self.sphere.set_layer(Layer::Custom1, imagic_context.render_item_manager_mut());
+        self.sphere
+            .set_layer(Layer::Custom1, imagic_context.render_item_manager_mut());
     }
 
     fn on_update(&mut self, imagic_context: &mut ImagicContext) {
         if self.need_update_camera_controller {
             self.need_update_camera_controller = false;
-            imagic_context.change_camera_controller(self.first_camera_id, &self.camera_controller_option_1);
+            imagic_context
+                .change_camera_controller(self.first_camera_id, &self.camera_controller_option_1);
         }
     }
 
@@ -235,14 +225,14 @@ impl ImagicAppTrait for App {
             .default_open(false)
             .default_size([100.0, 5.0])
             .show(&ctx, |ui| {
-                let rotate_button_text = 
-                if self.camera_controller_option_1.is_auto_rotate {
+                let rotate_button_text = if self.camera_controller_option_1.is_auto_rotate {
                     "Stop Auto Rotate"
                 } else {
                     "Auto Rotate"
                 };
                 if ui.button(rotate_button_text).clicked() {
-                    self.camera_controller_option_1.is_auto_rotate = !self.camera_controller_option_1.is_auto_rotate;
+                    self.camera_controller_option_1.is_auto_rotate =
+                        !self.camera_controller_option_1.is_auto_rotate;
                     self.need_update_camera_controller = true;
                 }
             });

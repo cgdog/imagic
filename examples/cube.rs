@@ -22,7 +22,7 @@ impl Default for App {
 impl App {
 
     fn _prepare_hdr_texture(&mut self, imagic_context: &mut ImagicContext) -> ID {
-        let mut hdr_loader = HDRLoader{};
+        let mut hdr_loader = HDRLoader::default();
         let cwd = std::env::current_dir().unwrap();
         let hdr_path = cwd.join("examples/assets/pbr/hdr/newport_loft.hdr");
         let hdr_texture = hdr_loader.load(hdr_path.to_str().unwrap(), imagic_context.graphics_context());
@@ -42,7 +42,7 @@ impl App {
         let albedo_index = self._prepare_albedo(imagic_context);
         unlit_material.set_albedo_map(albedo_index);
         
-        let material_index = imagic_context.material_manager_mut().add_material(unlit_material);
+        let material_index = imagic_context.add_material(unlit_material);
         material_index
     }
 }

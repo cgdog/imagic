@@ -54,6 +54,7 @@ impl LightManager {
         &self.point_lights[index]
     }
 
+    /// TODO: to support add lights at any runtime frame.
     fn create_light_buffer(
         &mut self,
         graphics_context: &GraphicsContext,

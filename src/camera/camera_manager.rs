@@ -10,12 +10,15 @@ use crate::{
         TransformManager, INVALID_ID,
     },
     types::{ID, RR},
-    window::Window,
+    window::WindowSize,
 };
 
 use super::{camera::Camera, CameraController, CameraControllerOptions};
 
 pub struct CameraManager {
+    /// Some other struct (e.g., CameraController) also holds camera instance.
+    /// TODO: may be we can avoid this. and remove RR(RC::RefCell) by utilizing Update method.
+    /// (Let CameraController only holds camera id).
     cameras: Vec<RR<Camera>>,
 }
 
@@ -28,9 +31,44 @@ impl Default for CameraManager {
 }
 
 impl CameraManager {
-    pub fn add_camera(&mut self, camera: Camera) -> ID {
+    pub fn add_camera(
+        &mut self,
+        camera: Camera,
+        logical_size: &WindowSize,
+        physical_size: &WindowSize,
+        graphics_context: &GraphicsContext,
+        bind_group_manager: &mut BindGroupManager,
+        bind_group_layout_manager: &mut BindGroupLayoutManager,
+        transform_manager: RR<TransformManager>,
+        buffer_manager: &mut GPUBufferManager,
+        texture_manager: &mut TextureManager,
+        input_manager: &mut InputManager,
+    ) -> ID {
+        let camera = Rc::new(RefCell::new(camera));
+        camera.borrow_mut().on_init(
+            logical_size,
+            physical_size,
+            graphics_context,
+            bind_group_manager,
+            bind_group_layout_manager,
+            &transform_manager.borrow(),
+            buffer_manager,
+            texture_manager,
+        );
+
+        let mut controller_id = INVALID_ID;
+        if let Some(camera_controller_options) = camera.borrow().controller_options {
+            let camera_controller = CameraController::new(
+                camera.clone(),
+                camera_controller_options,
+                transform_manager.clone(),
+            );
+            controller_id =
+                input_manager.register_mouse_input_listener(Box::new(camera_controller));
+        }
+        camera.borrow_mut().controller_id = controller_id;
         let index = self.cameras.len();
-        self.cameras.push(Rc::new(RefCell::new(camera)));
+        self.cameras.push(camera);
         index
     }
 
@@ -42,38 +80,6 @@ impl CameraManager {
         &self.cameras
     }
 
-    pub fn init_after_app(
-        &mut self,
-        window: &Window,
-        graphics_context: &GraphicsContext,
-        bind_group_manager: &mut BindGroupManager,
-        bind_group_layout_manager: &mut BindGroupLayoutManager,
-        transform_manager: RR<TransformManager>,
-        buffer_manager: &mut GPUBufferManager,
-        texture_manager: &mut TextureManager,
-        input_manager: &mut InputManager,
-    ) {
-        for camera in self.cameras.iter() {
-            camera.borrow_mut().init_after_app(
-                window,
-                graphics_context,
-                bind_group_manager,
-                bind_group_layout_manager,
-                &transform_manager.borrow(),
-                buffer_manager,
-                texture_manager,
-            );
-
-            let mut controller_id = INVALID_ID;
-            if let Some(camera_controller_options) = camera.borrow().controller_options {
-                let camera_controller =
-                    CameraController::new(camera.clone(), camera_controller_options, transform_manager.clone());
-                controller_id = input_manager.register_mouse_input_listener(Box::new(camera_controller));
-            }
-            camera.borrow_mut().controller_id = controller_id;
-        }
-    }
-
     pub fn on_update(
         &mut self,
         graphics_context: &GraphicsContext,
@@ -81,7 +87,9 @@ impl CameraManager {
         buffer_manager: &GPUBufferManager,
     ) {
         for camera in self.cameras.iter() {
-            camera.borrow_mut().on_update(graphics_context, transform_manager, buffer_manager);
+            camera
+                .borrow_mut()
+                .on_update(graphics_context, transform_manager, buffer_manager);
         }
     }
 
@@ -91,8 +99,10 @@ impl CameraManager {
         texture_manager: &mut TextureManager,
         transform_manager: &TransformManager,
         buffer_manager: &GPUBufferManager,
-        width: u32,
-        height: u32,
+        physical_width: u32,
+        physical_height: u32,
+        logical_width: u32,
+        logical_height: u32,
     ) {
         for camera in self.cameras.iter() {
             camera.borrow_mut().on_resize(
@@ -100,18 +110,28 @@ impl CameraManager {
                 texture_manager,
                 transform_manager,
                 buffer_manager,
-                width,
-                height,
+                physical_width,
+                physical_height,
+                logical_width,
+                logical_height,
             );
         }
     }
 
     /// Change camera controller given a camera id.
-    pub fn change_camera_controller(&mut self, input_manager: &mut InputManager, camera_id: ID, camera_controller_options: &CameraControllerOptions) {
+    pub fn change_camera_controller(
+        &mut self,
+        input_manager: &mut InputManager,
+        camera_id: ID,
+        camera_controller_options: &CameraControllerOptions,
+    ) {
         let controller_id = self.get_camera(camera_id).borrow().controller_id;
         info!("change control id: {}", controller_id);
         if let Some(input_listener) = input_manager.get_input_listener(controller_id) {
-            if let Some(controller) = input_listener.as_any_mut().downcast_mut::<CameraController>() {
+            if let Some(controller) = input_listener
+                .as_any_mut()
+                .downcast_mut::<CameraController>()
+            {
                 controller.options = *camera_controller_options;
             }
         }

@@ -26,7 +26,7 @@ impl Default for SkyboxMaterial {
 }
 
 impl MaterialTrait for SkyboxMaterial {
-    fn init(
+    fn on_init(
         &mut self,
         graphics_context: &crate::prelude::GraphicsContext,
         bind_group_layout_manager: &mut crate::prelude::bind_group_layout::BindGroupLayoutManager,

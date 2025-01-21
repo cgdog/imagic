@@ -1,35 +1,30 @@
-/// Show IBL
-
-use std::f32::consts::FRAC_PI_4;
 use common::create_camera;
 use imagic::prelude::*;
 use imagic::window::WindowSize;
+/// Show IBL
+use std::f32::consts::FRAC_PI_4;
 
 mod common;
 
 pub struct App {
-    cube: Cube,
+    skybox: Skybox,
     sphere: Sphere,
-    first_camera_id: ID,
-    second_camera_id: ID,
+    camera_id: ID,
     window_size: WindowSize,
     camera_z: f32,
-    camera_controller_option_1: CameraControllerOptions,
-    camera_controller_option_2: CameraControllerOptions,
+    camera_controller_option: CameraControllerOptions,
     need_update_camera_controller: bool,
 }
 
 impl Default for App {
     fn default() -> Self {
         Self {
-            cube: Cube::new(1.0, 1.0, 1.0, 1, 1, 1),
+            skybox: Skybox::default(),
             sphere: Sphere::new(1.0, 256, 256),
-            first_camera_id: INVALID_ID,
-            second_camera_id: INVALID_ID,
+            camera_id: INVALID_ID,
             window_size: WindowSize::new(800.0, 500.0),
             camera_z: 8.0,
-            camera_controller_option_1: CameraControllerOptions::default(),
-            camera_controller_option_2: CameraControllerOptions::default(),
+            camera_controller_option: CameraControllerOptions::default(),
             need_update_camera_controller: false,
         }
     }
@@ -41,22 +36,22 @@ impl App {
         let point_light_0 = PointLight::new(
             Vec3::new(-10.0, 10.0, 10.0),
             ColorRGB::new(300.0, 300.0, 300.0),
-            & mut transform_manager.borrow_mut(),
+            &mut transform_manager.borrow_mut(),
         );
         let point_light_1 = PointLight::new(
             Vec3::new(10.0, 10.0, 10.0),
             ColorRGB::new(300.0, 300.0, 300.0),
-            & mut transform_manager.borrow_mut(),
+            &mut transform_manager.borrow_mut(),
         );
         let point_light_2 = PointLight::new(
             Vec3::new(-10.0, -10.0, 10.0),
             ColorRGB::new(300.0, 300.0, 300.0),
-            & mut transform_manager.borrow_mut(),
+            &mut transform_manager.borrow_mut(),
         );
         let point_light_3 = PointLight::new(
             Vec3::new(10.0, -10.0, 10.0),
             ColorRGB::new(300.0, 300.0, 300.0),
-            & mut transform_manager.borrow_mut(),
+            &mut transform_manager.borrow_mut(),
         );
 
         let light_manager = imagic_context.light_manager_mut();
@@ -113,35 +108,8 @@ impl App {
         let ao_texture = texture_manager.add_texture(ao_texture);
         pbr_material.set_ao_texture(ao_texture);
 
-        let pbr_material_index = imagic_context
-            .material_manager_mut()
-            .add_material(pbr_material);
+        let pbr_material_index = imagic_context.add_material(pbr_material);
         pbr_material_index
-    }
-
-    fn prepare_skybox(&mut self, imagic_context: &mut ImagicContext) -> ID {
-        let mut hdr_loader = HDRLoader {};
-        let cwd = std::env::current_dir().unwrap();
-        let hdr_path = cwd.join("examples/assets/pbr/hdr/newport_loft.hdr");
-        let hdr_texture = hdr_loader.load(
-            hdr_path.to_str().unwrap(),
-            imagic_context.graphics_context(),
-        );
-        let hdr_texture_index = imagic_context
-            .texture_manager_mut()
-            .add_texture(hdr_texture);
-        hdr_texture_index
-    }
-
-    fn prepare_equirect_to_cube_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
-        let mut equirectangular_to_cube_material = Box::new(EquirectangularToCubeMaterial::new());
-        let skybox_texture = self.prepare_skybox(imagic_context);
-        equirectangular_to_cube_material.set_equirectangular_map(skybox_texture);
-
-        let material_index = imagic_context
-            .material_manager_mut()
-            .add_material(equirectangular_to_cube_material);
-        material_index
     }
 }
 
@@ -152,58 +120,51 @@ impl ImagicAppTrait for App {
         let near = 0.01;
         let far = 500.0;
         // first camera
-        let first_viewport = Vec4::new(0.0, 0.0, 0.5, 1.0);
-        let first_clear_color = Color::new(0.1, 0.1, 0.1, 1.0);
-        let first_camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
+        let viewport = Vec4::new(0.0, 0.0, 1.0, 1.0);
+        let clear_color = Color::new(0.1, 0.1, 0.1, 1.0);
+        let camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
         // TODO: 让 Cube 以天空盒的形式渲染
-        let first_camera_layer_mask = LayerMask::new(Layer::Default.into());
-        self.first_camera_id = create_camera(
+        let camera_layer_mask = LayerMask::new(Layer::Default.into());
+        self.camera_id = create_camera(
             imagic_context,
-            first_camera_pos,
-            first_viewport,
-            first_clear_color,
+            camera_pos,
+            viewport,
+            clear_color,
             fov,
             aspect,
             near,
             far,
-            first_camera_layer_mask,
-            Some(self.camera_controller_option_1),
+            camera_layer_mask,
+            Some(self.camera_controller_option),
         );
-
-        let second_viewport = Vec4::new(0.5, 0.0, 0.5, 1.0);
-        let second_clear_color = Color::new(0.1, 0.2, 0.3, 1.0);
-        let second_camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
-        let second_camera_layer_mask = LayerMask::new(Layer::RenderTarget.into());
-        self.second_camera_id = create_camera(
-            imagic_context,
-            second_camera_pos,
-            second_viewport,
-            second_clear_color,
-            fov,
-            aspect,
-            near,
-            far,
-            second_camera_layer_mask,
-            Some(self.camera_controller_option_2),
-        );
-
-        let equirect_to_cube_material_index = self.prepare_equirect_to_cube_material(imagic_context);
-        self.cube.init(imagic_context, equirect_to_cube_material_index);
-        self.cube.set_layer(
-            Layer::RenderTarget,
-            imagic_context.render_item_manager_mut(),
-        );
-
         self.prepare_lights(imagic_context);
 
         let pbr_material_index = self.prepare_pbr_material(imagic_context);
         self.sphere.init(imagic_context, pbr_material_index);
+        let cube_texture_id = EquirectToCubeConverter::default().convert_by_bytes(
+            include_bytes!("./assets/pbr/hdr/newport_loft.hdr"),
+            imagic_context,
+            512,
+            wgpu::TextureFormat::Rgba32Float,
+        );
+        self.skybox
+            .init_with_cube_texture(imagic_context, cube_texture_id);
+
+        // self.skybox.init_ldr_bytes(imagic_context, [
+        //     include_bytes!("./assets/skybox/right.jpg"),
+        //     include_bytes!("./assets/skybox/left.jpg"),
+        //     include_bytes!("./assets/skybox/top.jpg"),
+        //     include_bytes!("./assets/skybox/bottom.jpg"),
+        //     include_bytes!("./assets/skybox/front.jpg"),
+        //     include_bytes!("./assets/skybox/back.jpg"),
+        // ],);
     }
 
     fn on_update(&mut self, imagic_context: &mut ImagicContext) {
         if self.need_update_camera_controller {
             self.need_update_camera_controller = false;
-            imagic_context.change_camera_controller(self.first_camera_id, &self.camera_controller_option_1);
+            imagic_context
+                .change_camera_controller(self.camera_id, &self.camera_controller_option);
         }
     }
 
@@ -214,14 +175,14 @@ impl ImagicAppTrait for App {
             .default_open(false)
             .default_size([100.0, 5.0])
             .show(&ctx, |ui| {
-                let rotate_button_text = 
-                if self.camera_controller_option_1.is_auto_rotate {
+                let rotate_button_text = if self.camera_controller_option.is_auto_rotate {
                     "Stop Auto Rotate"
                 } else {
                     "Auto Rotate"
                 };
                 if ui.button(rotate_button_text).clicked() {
-                    self.camera_controller_option_1.is_auto_rotate = !self.camera_controller_option_1.is_auto_rotate;
+                    self.camera_controller_option.is_auto_rotate =
+                        !self.camera_controller_option.is_auto_rotate;
                     self.need_update_camera_controller = true;
                 }
             });
@@ -234,7 +195,7 @@ impl ImagicAppTrait for App {
 
 fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
-    
+
     let mut imagic = Imagic::new(Box::new(App::default()));
     imagic.run();
 }

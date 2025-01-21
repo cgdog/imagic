@@ -23,7 +23,7 @@ impl GPUBufferManager {
 
     pub fn get_buffer(&self, index: usize) -> &wgpu::Buffer {
         if index >= self.buffers.len() {
-            panic!("buffer index of bound.");
+            panic!("buffer index out of bound.");
         }
         &self.buffers[index]
     }

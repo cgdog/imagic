@@ -1,15 +1,19 @@
 pub mod surface_wrapper;
-pub use surface_wrapper::SurfaceWrapper;
-
 pub mod graphics_context;
-pub use graphics_context::GraphicsContext;
-
 pub mod render_pipeline;
 pub mod renderer;
-pub use renderer::Renderer;
-
 pub mod bind_group_layout;
 pub mod bind_group;
 pub mod texture;
 pub mod buffer;
 pub mod texture_manager;
+pub mod render_texture;
+pub mod cube_texture_prefilter;
+pub mod equirect_to_cube_convert;
+
+pub use surface_wrapper::SurfaceWrapper;
+pub use graphics_context::GraphicsContext;
+pub use renderer::Renderer;
+pub use render_texture::*;
+pub use cube_texture_prefilter::*;
+pub use equirect_to_cube_convert::*;

@@ -23,16 +23,7 @@ impl Default for App {
 
 impl App {
 
-    fn _prepare_hdr_texture(&mut self, imagic_context: &mut ImagicContext) -> ID {
-        let mut hdr_loader = HDRLoader{};
-        let cwd = std::env::current_dir().unwrap();
-        let hdr_path = cwd.join("examples/assets/pbr/hdr/newport_loft.hdr");
-        let hdr_texture = hdr_loader.load(hdr_path.to_str().unwrap(), imagic_context.graphics_context());
-        let hdr_texture_index = imagic_context.texture_manager_mut().add_texture(hdr_texture);
-        hdr_texture_index
-    }
-
-    fn _prepare_albedo(&mut self, imagic_context: &mut ImagicContext) -> ID {
+    fn prepare_albedo(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let albedo_texture = Texture::create_from_bytes(imagic_context.graphics_context(),
             include_bytes!("./assets/lena.png"), wgpu::TextureFormat::Rgba8UnormSrgb);
         let albedo_texture_index = imagic_context.texture_manager_mut().add_texture(albedo_texture);
@@ -41,10 +32,10 @@ impl App {
 
     fn prepare_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let mut unlit_material = Box::new(UnlitMaterial::new());
-        let albedo_index = self._prepare_albedo(imagic_context);
+        let albedo_index = self.prepare_albedo(imagic_context);
         unlit_material.set_albedo_map(albedo_index);
 
-        let material_index = imagic_context.material_manager_mut().add_material(unlit_material);
+        let material_index = imagic_context.add_material(unlit_material);
         material_index
     }
 }

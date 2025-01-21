@@ -1,8 +1,7 @@
 use std::borrow::Cow;
 
 use crate::{math::{Color, Vec4}, prelude::{
-    bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
-    texture_manager::TextureManager, GraphicsContext, INVALID_ID,
+    bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, texture_manager::TextureManager, GraphicsContext, Texture, INVALID_ID
 }, types::ID};
 
 use super::material_trait::MaterialTrait;
@@ -34,11 +33,11 @@ impl Default for PBRMaterial {
         Self {
             albedo_color: Vec4::ONE,
             metallic_roughness_ao: Vec4::ONE,
-            albedo_texture: INVALID_ID,
-            normal_textue: INVALID_ID,
-            metallic_texture: INVALID_ID,
-            roughness_texture: INVALID_ID,
-            ao_texture: INVALID_ID,
+            albedo_texture: Texture::white(),
+            normal_textue: Texture::blue(),
+            metallic_texture: Texture::white(),
+            roughness_texture: Texture::white(),
+            ao_texture: Texture::white(),
             texture2d_sampler: None,
 
             bind_group_id: INVALID_ID,
@@ -47,7 +46,7 @@ impl Default for PBRMaterial {
 }
 
 impl MaterialTrait for PBRMaterial {
-    fn init(
+    fn on_init(
         &mut self,
         graphics_context: &GraphicsContext,
         bind_group_layout_manager: &mut BindGroupLayoutManager,

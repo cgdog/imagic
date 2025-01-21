@@ -4,7 +4,10 @@ use wgpu::util::DeviceExt;
 
 use crate::{
     camera::Layer,
-    prelude::{render_item_manager::RenderItemManager, ImagicContext, RenderItem, VertexOrIndexCount, INVALID_ID},
+    prelude::{
+        render_item_manager::RenderItemManager, ImagicContext, RenderItem, VertexOrIndexCount,
+        INVALID_ID,
+    },
     scene::{SceneObject, Transform},
     types::ID,
 };
@@ -93,9 +96,7 @@ impl Plane {
             true,
         );
         plane_item.set_material_id(material_index);
-        self.render_item_id = imagic_context
-            .render_item_manager_mut()
-            .add_render_item(plane_item);
+        self.render_item_id = imagic_context.add_render_item(plane_item);
     }
 
     fn create_vertices_data(&self) -> (Vec<Vertex>, Vec<u16>) {

@@ -45,7 +45,7 @@ impl ApplicationHandler for Imagic {
             self.window.init(&event_loop, self.option.window_size, self.option.window_title);
             pollster::block_on(self.context.graphics_context_mut().init(&self.window));
 
-            self.context.init();
+            self.context.init(*self.window.get_logical_size(), *self.window.get_physical_size());
 
             let ui_renderer = UIRenderer::new(self.context.graphics_context().get_device(), 
                 self.context.graphics_context().get_swapchian_format(), None, 1, &self.window.get());
@@ -53,7 +53,8 @@ impl ApplicationHandler for Imagic {
 
             self.app.init(&mut self.context);
 
-            self.context.init_after_app(&self.window);
+            // TODO: optimize lightmanager logic
+            self.context.init_after_app();
 
             self.is_inited = true;
             info!("Imagic init() finished.");

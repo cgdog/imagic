@@ -103,8 +103,12 @@ impl Window {
             WindowEvent::CloseRequested => {
                 event_loop.exit();
             }
-            WindowEvent::Resized(new_size) => {
-                context.on_resize(new_size);
+            WindowEvent::Resized(new_physical_size) => {
+                info!("on resize...");
+                self.dpi = self.get().scale_factor();
+                let new_logical_size: LogicalSize<u32> = new_physical_size.to_logical(self.dpi);
+
+                context.on_resize(new_physical_size, new_logical_size);
                 self.get().request_redraw();
             }
             WindowEvent::ScaleFactorChanged {
