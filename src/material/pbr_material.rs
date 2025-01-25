@@ -9,6 +9,8 @@ use super::material_trait::MaterialTrait;
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 struct PBRFragmentUniforms {
+    // x: enabled features. y,z,w: reserved. 
+    features: [u32; 4],
     albedo: [f32; 4],
     metallic_roughness_ao: [f32; 4],
 }
@@ -34,7 +36,7 @@ impl Default for PBRMaterial {
             albedo_color: Vec4::ONE,
             metallic_roughness_ao: Vec4::ONE,
             albedo_texture: Texture::white(),
-            normal_textue: Texture::blue(),
+            normal_textue: Texture::white(),
             metallic_texture: Texture::white(),
             roughness_texture: Texture::white(),
             ao_texture: Texture::white(),
@@ -72,6 +74,7 @@ impl MaterialTrait for PBRMaterial {
         texture_manager: &TextureManager,
     ) -> ID {
         let fragment_uniforms = PBRFragmentUniforms {
+            features: self.get_enabled_features(),
             albedo: self.albedo_color.to_array(),
             metallic_roughness_ao: self.metallic_roughness_ao.to_array(),
         };
@@ -189,7 +192,7 @@ impl PBRMaterial {
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
                             has_dynamic_offset: false,
-                            min_binding_size: wgpu::BufferSize::new(16 * 2),
+                            min_binding_size: wgpu::BufferSize::new(16 * 3),
                         },
                         count: None,
                     },
@@ -359,5 +362,34 @@ impl PBRMaterial {
 
     pub fn get_2d_texture_sampler(&self) -> &wgpu::Sampler {
         self.texture2d_sampler.as_ref().unwrap()
+    }
+
+    // PBR related features, corresponding to WGSL feature flags.
+    const FEATURE_FLAG_ALBEDO_MAP: u32 = 1;
+    const FEATURE_FLAG_NORMAL_MAP: u32 = 2;
+    const FEATURE_FLAG_METALLIC_MAP: u32 = 4;
+    const FEATURE_FLAG_ROUGHNESS_MAP: u32 = 8;
+    const FEATURE_FLAG_AO_MAP: u32 = 16;
+
+    pub fn get_enabled_features(&self) ->[u32; 4] {
+        let mut features: u32 = 0;
+        if self.albedo_texture != INVALID_ID && self.albedo_texture != Texture::white() {
+            features |= Self::FEATURE_FLAG_ALBEDO_MAP; // 1 << 0
+        }
+        if self.normal_textue != INVALID_ID && self.normal_textue != Texture::white() {
+            // TODO: determine the default normal map.
+            features |= Self::FEATURE_FLAG_NORMAL_MAP; // 1 << 1
+        }
+        if self.metallic_texture != INVALID_ID && self.metallic_texture != Texture::white() {
+            features |= Self::FEATURE_FLAG_METALLIC_MAP; // 1 << 2
+        }
+        if self.roughness_texture != INVALID_ID && self.roughness_texture != Texture::white() {
+            features |= Self::FEATURE_FLAG_ROUGHNESS_MAP;
+        }
+        if self.ao_texture != INVALID_ID && self.ao_texture != Texture::white() {
+            features |= Self::FEATURE_FLAG_AO_MAP;
+        }
+
+        [features, 0, 0, 0]
     }
 }

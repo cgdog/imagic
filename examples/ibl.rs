@@ -14,6 +14,7 @@ pub struct App {
     camera_z: f32,
     camera_controller_option: CameraControllerOptions,
     need_update_camera_controller: bool,
+    sphere_use_textured_pbr: bool,
 }
 
 impl Default for App {
@@ -26,6 +27,7 @@ impl Default for App {
             camera_z: 8.0,
             camera_controller_option: CameraControllerOptions::default(),
             need_update_camera_controller: false,
+            sphere_use_textured_pbr: false,
         }
     }
 }
@@ -61,7 +63,8 @@ impl App {
         light_manager.add_point_light(point_light_3);
     }
 
-    fn prepare_pbr_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
+    #[allow(unused)]
+    fn prepare_rusted_pbr_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let graphics_context = imagic_context.graphics_context();
         let mut pbr_material = Box::new(PBRMaterial::new(
             Vec4::new(1.0, 1.0, 1.0, 1.0),
@@ -111,6 +114,17 @@ impl App {
         let pbr_material_index = imagic_context.add_material(pbr_material);
         pbr_material_index
     }
+
+    fn prepare_red_pbr_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
+        let pbr_material = Box::new(PBRMaterial::new(
+            Vec4::new(1.0, 0.0, 0.0, 1.0),
+            1.0,
+            0.2,
+            1.0,
+        ));
+        imagic_context.add_material(pbr_material)
+    }
+
 }
 
 impl ImagicAppTrait for App {
@@ -139,7 +153,12 @@ impl ImagicAppTrait for App {
         );
         self.prepare_lights(imagic_context);
 
-        let pbr_material_index = self.prepare_pbr_material(imagic_context);
+        let pbr_material_index = if self.sphere_use_textured_pbr {
+            self.prepare_rusted_pbr_material(imagic_context)
+        } else {
+            self.prepare_red_pbr_material(imagic_context)
+        };
+
         self.sphere.init(imagic_context, pbr_material_index);
         let cube_texture_id = EquirectToCubeConverter::default().convert_by_bytes(
             include_bytes!("./assets/pbr/hdr/newport_loft.hdr"),

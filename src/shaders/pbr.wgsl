@@ -44,6 +44,8 @@ fn vs_main(
 
 //////////////// fragment shader ////////////////
 struct FragmentUniforms {
+    // enabled features
+    features: vec4<u32>,
     albedo: vec4f,
     metallic_roughness_ao: vec4f,
     // w: 0, perspective; <0, orthographic
@@ -116,7 +118,37 @@ struct FSIn {
     @location(2) uv0: vec2f,
 }
 
+const FEATURE_FLAG_ALBEDO_MAP: u32 = 1;
+const FEATURE_FLAG_NORMAL_MAP: u32 = 2;
+const FEATURE_FLAG_METALLIC_MAP: u32 = 4;
+const FEATURE_FLAG_ROUGHNESS_MAP: u32 = 8;
+const FEATURE_FLAG_AO_MAP: u32 = 16;
+
+fn is_albedo_map_enabled() -> bool {
+    return (fragment_uniforms.features.x & FEATURE_FLAG_ALBEDO_MAP) != 0;
+}
+
+fn is_normal_map_enabled() -> bool {
+    return (fragment_uniforms.features.x & FEATURE_FLAG_NORMAL_MAP) != 0;
+}
+
+fn is_metallic_map_enabled() -> bool {
+    return (fragment_uniforms.features.x & FEATURE_FLAG_METALLIC_MAP) != 0;
+}
+
+fn is_roughness_map_enabled() -> bool {
+    return (fragment_uniforms.features.x & FEATURE_FLAG_ROUGHNESS_MAP) != 0;
+}
+
+fn is_ao_map_enabled() -> bool {
+    return (fragment_uniforms.features.x & FEATURE_FLAG_AO_MAP) != 0;
+}
+
+
 fn get_normal_from_map(v_world_normal: vec3f, world_pos: vec3f, uv: vec2f) -> vec3f {
+    if !is_normal_map_enabled() {
+        return v_world_normal;
+    }
     let tangent_normal = textureSample(t_normal, s_sampler_0, uv).xyz * 2.0 - 1.0;
 
     // https://www.w3.org/TR/WGSL/#dpdx-builtin
@@ -217,12 +249,27 @@ fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
     let metallic = fragment_uniforms.metallic_roughness_ao.x;
     let roughness = fragment_uniforms.metallic_roughness_ao.y;
     let ao = fragment_uniforms.metallic_roughness_ao.z;
-    let surface_metallic  = metallic * textureSample(t_metallic, s_sampler_0, fs_in.uv0).r;
-    let surface_roughness = roughness * textureSample(t_roughness, s_sampler_0, fs_in.uv0).r;
-    let surface_ao        = ao * textureSample(t_ao, s_sampler_0, fs_in.uv0).r;
+    var surface_metallic = metallic;
+    if is_metallic_map_enabled() {
+        surface_metallic *= textureSample(t_metallic, s_sampler_0, fs_in.uv0).r;
+    }
 
-    let albedo_texl = textureSample(t_albedo, s_sampler_0, fs_in.uv0);
-    let surface_albedo = albedo_texl.rgb * fragment_uniforms.albedo.rgb;
+    var surface_roughness = roughness;
+    if is_roughness_map_enabled() {
+        surface_roughness *= textureSample(t_roughness, s_sampler_0, fs_in.uv0).r;
+    }
+
+    var surface_ao = ao;
+    if is_ao_map_enabled() {
+        surface_ao *= textureSample(t_ao, s_sampler_0, fs_in.uv0).r;
+    }
+
+    var surface_albedo = fragment_uniforms.albedo.rgb;
+    if is_albedo_map_enabled() {
+        let albedo_texl = textureSample(t_albedo, s_sampler_0, fs_in.uv0);
+        surface_albedo *= albedo_texl.rgb;
+    }
+
     var f0 = vec3f(0.04);
     f0 = mix(f0, surface_albedo, surface_metallic);
 

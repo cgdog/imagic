@@ -279,23 +279,24 @@ impl Texture {
     }
 
     /// Get default 2x2 black texture.
-    pub fn black() -> ID {
-        Self::_internal_black(None, &mut None)
-    }
+    // pub fn black() -> ID {
+    //     Self::_internal_black(None, &mut None)
+    // }
 
     /// Get default 2x2 blue texture, which can be used as default normal texture in tangent space.
-    pub fn blue() -> ID {
-        Self::_internal_blue(None, &mut None)
-    }
+    // pub fn blue() -> ID {
+    //     Self::_internal_blue(None, &mut None)
+    // }
 
     /// Create all default textures.
     pub(crate) fn _internal_create_default_textures(
         graphics_context: Option<&GraphicsContext>,
         texture_manager: &mut Option<&mut TextureManager>,
     ) {
+        // At preset, all missing textures will use a default white image and PBR will disable related features.
         Self::_internal_white(graphics_context, texture_manager);
-        Self::_internal_black(graphics_context, texture_manager);
-        Self::_internal_blue(graphics_context, texture_manager);
+        // Self::_internal_black(graphics_context, texture_manager);
+        // Self::_internal_blue(graphics_context, texture_manager);
     }
 
     /// Get or create default a 2x2 white texture.
