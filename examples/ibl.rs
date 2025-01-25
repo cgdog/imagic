@@ -1,7 +1,9 @@
+//! Show IBL
+
+use changeable::Changeable;
 use common::create_camera;
 use imagic::prelude::*;
 use imagic::window::WindowSize;
-/// Show IBL
 use std::f32::consts::FRAC_PI_4;
 
 mod common;
@@ -12,10 +14,8 @@ pub struct App {
     camera_id: ID,
     window_size: WindowSize,
     camera_z: f32,
-    camera_controller_option: CameraControllerOptions,
-    need_update_camera_controller: bool,
-    sphere_use_textured_pbr: bool,
-    need_update_sphere_material: bool,
+    camera_controller_option: Changeable<CameraControllerOptions>,
+    sphere_use_textured_pbr: Changeable<bool>,
     red_pbr_material_index: ID,
     textured_pbr_material_index: ID,
 }
@@ -28,10 +28,8 @@ impl Default for App {
             camera_id: INVALID_ID,
             window_size: WindowSize::new(800.0, 500.0),
             camera_z: 8.0,
-            camera_controller_option: CameraControllerOptions::default(),
-            need_update_camera_controller: false,
-            sphere_use_textured_pbr: false,
-            need_update_sphere_material: false,
+            camera_controller_option: Changeable::new(CameraControllerOptions::default()),
+            sphere_use_textured_pbr: Changeable::new(false),
             red_pbr_material_index: INVALID_ID,
             textured_pbr_material_index: INVALID_ID,
         }
@@ -154,14 +152,14 @@ impl ImagicAppTrait for App {
             near,
             far,
             camera_layer_mask,
-            Some(self.camera_controller_option),
+            Some(*self.camera_controller_option),
         );
         self.prepare_lights(imagic_context);
 
         self.textured_pbr_material_index = self.prepare_rusted_pbr_material(imagic_context);
         self.red_pbr_material_index = self.prepare_red_pbr_material(imagic_context);
 
-        let pbr_material_index = if self.sphere_use_textured_pbr {
+        let pbr_material_index = if *self.sphere_use_textured_pbr {
             self.textured_pbr_material_index
         } else {
             self.red_pbr_material_index
@@ -188,14 +186,14 @@ impl ImagicAppTrait for App {
     }
 
     fn on_update(&mut self, imagic_context: &mut ImagicContext) {
-        if self.need_update_camera_controller {
-            self.need_update_camera_controller = false;
+        if self.camera_controller_option.is_changed() {
+            self.camera_controller_option.reset();
             imagic_context.change_camera_controller(self.camera_id, &self.camera_controller_option);
         }
 
-        if self.need_update_sphere_material {
-            self.need_update_sphere_material = false;
-            let pbr_material_index = if self.sphere_use_textured_pbr {
+        if self.sphere_use_textured_pbr.is_changed() {
+            self.sphere_use_textured_pbr.reset();
+            let pbr_material_index = if *self.sphere_use_textured_pbr {
                 self.textured_pbr_material_index
             } else {
                 self.red_pbr_material_index
@@ -225,17 +223,15 @@ impl ImagicAppTrait for App {
                 if ui.button(rotate_button_text).clicked() {
                     self.camera_controller_option.is_auto_rotate =
                         !self.camera_controller_option.is_auto_rotate;
-                    self.need_update_camera_controller = true;
                 }
 
-                let sphere_material_text = if self.sphere_use_textured_pbr {
+                let sphere_material_text = if *self.sphere_use_textured_pbr {
                     "Use red pbr"
                 } else {
                     "Use textured pbr"
                 };
                 if ui.button(sphere_material_text).clicked() {
-                    self.need_update_sphere_material = true;
-                    self.sphere_use_textured_pbr = !self.sphere_use_textured_pbr;
+                    *self.sphere_use_textured_pbr = !*self.sphere_use_textured_pbr;
                 }
             });
     }

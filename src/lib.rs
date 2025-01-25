@@ -13,6 +13,7 @@ pub mod constants;
 pub mod math;
 pub mod types;
 pub mod input;
+pub mod utils;
 
 pub mod prelude {
     pub use crate::graphics::*;
@@ -33,4 +34,5 @@ pub mod prelude {
     pub use crate::math::*;
     pub use crate::types::*;
     pub use crate::input::*;
+    pub use crate::utils::*;
 }

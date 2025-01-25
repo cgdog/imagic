@@ -1,3 +1,5 @@
+//! common code for examples
+
 pub mod input_listener;
 pub mod camera_helper;
 
