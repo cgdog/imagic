@@ -65,7 +65,6 @@ impl RenderPipelineManager {
         bind_group_layout_manager: &BindGroupLayoutManager,
         material: &Box<dyn MaterialTrait>,
     ) {
-        // let bind_group_layout = bind_group_layout_manager.default_pbr_bind_group_layout();
         const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth24PlusStencil8;
         let mut bind_group_layouts = vec![
             bind_group_layout_manager.default_model_vertex_bind_group_layout(),
@@ -90,6 +89,8 @@ impl RenderPipelineManager {
         };
 
         let shader = material.create_shader_module(graphics_context);
+        // TODO: optimize pipeline creation, e.g., render itmes with same pipeline layout, 
+        // shaderStates, PrimitiveState, DepthStencilState and so on, can share the same pipeline.
         let render_pipeline =
             graphics_context.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 label: Some("create pipeline"),
@@ -104,7 +105,6 @@ impl RenderPipelineManager {
                     module: &shader,
                     entry_point: Some("fs_main"),
                     compilation_options: Default::default(),
-                    // TODO: 能自定义 render target format
                     targets: &[Some(swapchain_format.into())],
                 }),
                 primitive: wgpu::PrimitiveState {

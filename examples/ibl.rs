@@ -15,6 +15,9 @@ pub struct App {
     camera_controller_option: CameraControllerOptions,
     need_update_camera_controller: bool,
     sphere_use_textured_pbr: bool,
+    need_update_sphere_material: bool,
+    red_pbr_material_index: ID,
+    textured_pbr_material_index: ID,
 }
 
 impl Default for App {
@@ -28,6 +31,9 @@ impl Default for App {
             camera_controller_option: CameraControllerOptions::default(),
             need_update_camera_controller: false,
             sphere_use_textured_pbr: false,
+            need_update_sphere_material: false,
+            red_pbr_material_index: INVALID_ID,
+            textured_pbr_material_index: INVALID_ID,
         }
     }
 }
@@ -124,7 +130,6 @@ impl App {
         ));
         imagic_context.add_material(pbr_material)
     }
-
 }
 
 impl ImagicAppTrait for App {
@@ -153,10 +158,13 @@ impl ImagicAppTrait for App {
         );
         self.prepare_lights(imagic_context);
 
+        self.textured_pbr_material_index = self.prepare_rusted_pbr_material(imagic_context);
+        self.red_pbr_material_index = self.prepare_red_pbr_material(imagic_context);
+
         let pbr_material_index = if self.sphere_use_textured_pbr {
-            self.prepare_rusted_pbr_material(imagic_context)
+            self.textured_pbr_material_index
         } else {
-            self.prepare_red_pbr_material(imagic_context)
+            self.red_pbr_material_index
         };
 
         self.sphere.init(imagic_context, pbr_material_index);
@@ -182,8 +190,23 @@ impl ImagicAppTrait for App {
     fn on_update(&mut self, imagic_context: &mut ImagicContext) {
         if self.need_update_camera_controller {
             self.need_update_camera_controller = false;
+            imagic_context.change_camera_controller(self.camera_id, &self.camera_controller_option);
+        }
+
+        if self.need_update_sphere_material {
+            self.need_update_sphere_material = false;
+            let pbr_material_index = if self.sphere_use_textured_pbr {
+                self.textured_pbr_material_index
+            } else {
+                self.red_pbr_material_index
+            };
+
+            imagic_context.pipeline_manager().borrow_mut().remove_render_pipeline(self.sphere.render_item_id());
+
             imagic_context
-                .change_camera_controller(self.camera_id, &self.camera_controller_option);
+                .render_item_manager_mut()
+                .get_render_item_mut(self.sphere.render_item_id())
+                .set_material_id(pbr_material_index);
         }
     }
 
@@ -203,6 +226,16 @@ impl ImagicAppTrait for App {
                     self.camera_controller_option.is_auto_rotate =
                         !self.camera_controller_option.is_auto_rotate;
                     self.need_update_camera_controller = true;
+                }
+
+                let sphere_material_text = if self.sphere_use_textured_pbr {
+                    "Use red pbr"
+                } else {
+                    "Use textured pbr"
+                };
+                if ui.button(sphere_material_text).clicked() {
+                    self.need_update_sphere_material = true;
+                    self.sphere_use_textured_pbr = !self.sphere_use_textured_pbr;
                 }
             });
     }
