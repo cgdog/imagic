@@ -7,6 +7,7 @@ struct VSInput {
 
 struct VSOutput {
     @location(0) local_pos: vec3f,
+    // TODO: remove uv0
     @location(1) uv0: vec2f,
     @builtin(position) position: vec4f,
 };

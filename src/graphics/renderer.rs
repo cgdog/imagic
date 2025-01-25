@@ -42,7 +42,7 @@ impl Renderer {
                 continue;
             }
             // self.render_with_camera(context, camera, index, &surface_texture_view);
-            camera.borrow().render_to_attachments(context, &surface_texture_view, index, None);
+            camera.borrow().render_to_attachments(context, &surface_texture_view, index, None, None);
         }
 
         self.render_ui(context, window, &surface_texture_view, app);

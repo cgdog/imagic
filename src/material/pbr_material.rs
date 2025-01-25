@@ -25,7 +25,10 @@ pub struct PBRMaterial {
     roughness_texture: ID,
     ao_texture: ID,
 
+    irradiance_cube_texture: ID,
+
     texture2d_sampler: Option<wgpu::Sampler>,
+    texture_cube_sampler: Option<wgpu::Sampler>,
 
     bind_group_id: ID,
 }
@@ -40,7 +43,9 @@ impl Default for PBRMaterial {
             metallic_texture: Texture::white(),
             roughness_texture: Texture::white(),
             ao_texture: Texture::white(),
+            irradiance_cube_texture: INVALID_ID,
             texture2d_sampler: None,
+            texture_cube_sampler: None,
 
             bind_group_id: INVALID_ID,
         }
@@ -134,6 +139,17 @@ impl MaterialTrait for PBRMaterial {
                     resource: wgpu::BindingResource::TextureView(
                         texture_manager.get_texture_view(self.ao_texture),
                     ),
+                },
+                wgpu::BindGroupEntry {
+                    // irradiance map
+                    binding: 7,
+                    resource: wgpu::BindingResource::TextureView(
+                        texture_manager.get_texture_view(self.irradiance_cube_texture),
+                    ),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 8,
+                    resource: wgpu::BindingResource::Sampler(&self.get_cube_texture_sampler()),
                 },
             ],
         });
@@ -260,6 +276,26 @@ impl PBRMaterial {
                         },
                         count: None,
                     },
+                    wgpu::BindGroupLayoutEntry {
+                        // reflection cube map
+                        binding: 7,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::Cube,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        // cube sampler
+                        binding: 8,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        // This should match the filterable field of the
+                        // corresponding Texture entry.
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
                 ],
                 label: Some("PBRMaterial_bind_group_layout"),
             });
@@ -281,6 +317,23 @@ impl PBRMaterial {
                         ..Default::default()
                     });
             self.texture2d_sampler = Some(texture_sampler);
+        }
+
+        if self.texture_cube_sampler.is_none() {
+            let texture_sampler =
+                graphics_context
+                    .get_device()
+                    .create_sampler(&wgpu::SamplerDescriptor {
+                        label: Some("PBR CubeTexture Sampler"),
+                        address_mode_u: wgpu::AddressMode::ClampToEdge,
+                        address_mode_v: wgpu::AddressMode::ClampToEdge,
+                        address_mode_w: wgpu::AddressMode::ClampToEdge,
+                        mag_filter: wgpu::FilterMode::Linear,
+                        min_filter: wgpu::FilterMode::Nearest,
+                        mipmap_filter: wgpu::FilterMode::Linear,
+                        ..Default::default()
+                    });
+            self.texture_cube_sampler = Some(texture_sampler);
         }
     }
 
@@ -360,8 +413,20 @@ impl PBRMaterial {
         self.ao_texture
     }
 
+    pub fn set_irradiance_cube_texture(&mut self, irradiance_cube_texture: ID) {
+        self.irradiance_cube_texture = irradiance_cube_texture;
+    }
+
+    pub fn get_reflection_cube_texture(&self) -> ID {
+        self.irradiance_cube_texture
+    }
+
     pub fn get_2d_texture_sampler(&self) -> &wgpu::Sampler {
         self.texture2d_sampler.as_ref().unwrap()
+    }
+
+    pub fn get_cube_texture_sampler(&self) -> &wgpu::Sampler {
+        self.texture_cube_sampler.as_ref().unwrap()
     }
 
     // PBR related features, corresponding to WGSL feature flags.

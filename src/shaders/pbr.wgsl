@@ -92,6 +92,10 @@ var t_metallic: texture_2d<f32>;
 var t_roughness: texture_2d<f32>;
 @group(2) @binding(6)
 var t_ao: texture_2d<f32>;
+@group(2) @binding(7)
+var t_irradiance_cube_map: texture_cube<f32>;
+@group(2) @binding(8)
+var s_cube_sampler: sampler;
 
 @group(3) @binding(0)
 var<storage, read> lighting_infos: LightsInfo;
@@ -146,8 +150,9 @@ fn is_ao_map_enabled() -> bool {
 
 
 fn get_normal_from_map(v_world_normal: vec3f, world_pos: vec3f, uv: vec2f) -> vec3f {
+    let N   = normalize(v_world_normal);
     if !is_normal_map_enabled() {
-        return v_world_normal;
+        return N;
     }
     let tangent_normal = textureSample(t_normal, s_sampler_0, uv).xyz * 2.0 - 1.0;
 
@@ -156,8 +161,7 @@ fn get_normal_from_map(v_world_normal: vec3f, world_pos: vec3f, uv: vec2f) -> ve
     let Q2  = dpdy(world_pos);
     let st1 = dpdx(uv);
     let st2 = dpdy(uv);
-
-    let N   = normalize(v_world_normal);
+    
     let T  = normalize(Q1*st2.y - Q2*st1.y);
     let B  = -normalize(cross(N, T));
     let TBN = mat3x3f(T, B, N);
@@ -198,6 +202,11 @@ fn geometry_smith(normal: vec3f, view_dir: vec3f, light_dir: vec3f, roughness: f
 fn fresnel_schlick(cos_theta: f32, f0: vec3f) -> vec3f {
     return f0 + (1.0 - f0) * pow(clamp(1.0 - cos_theta, 0.0, 1.0), 5.0);
 }
+
+fn fresnel_schlick_roughness(cos_theta: f32, F0: vec3f, roughness: f32) -> vec3f
+{
+    return F0 + (max(vec3f(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cos_theta, 0.0, 1.0), 5.0);
+}  
 
 fn lighting_point(light_pos: vec3f, light_color: vec3f, surface_props: SurfaceProps, camera_props: CameraProps) -> vec3f {
     let light_dir = normalize(light_pos - surface_props.world_pos);
@@ -296,7 +305,12 @@ fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
     // compute spot lighting
 
     // let ambient = vec3f(0.03) * albedo * surface_ao;
-    let ambient = vec3f(0.0);
+    let kS = fresnel_schlick_roughness(max(dot(surface_props.world_normal, camera_props.view_dir), 0.0), f0, surface_props.roughness); 
+    let kD = vec3f(1.0) - kS;
+    let irradiance = textureSample(t_irradiance_cube_map, s_cube_sampler, surface_props.world_normal).rgb;
+    let diffuse    = irradiance * surface_props.albedo;
+    let ambient    = (kD * diffuse) * ao; 
+
     var color = ambient + lo;
 
     // HDR tonemapping

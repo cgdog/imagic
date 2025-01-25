@@ -2,6 +2,7 @@
 
 use changeable::Changeable;
 use common::create_camera;
+use ibl::ibl_baker::IBLBaker;
 use imagic::prelude::*;
 use imagic::window::WindowSize;
 use std::f32::consts::FRAC_PI_4;
@@ -9,6 +10,7 @@ use std::f32::consts::FRAC_PI_4;
 mod common;
 
 pub struct App {
+    ibl_data: IBLData,
     skybox: Skybox,
     sphere: Sphere,
     camera_id: ID,
@@ -23,6 +25,7 @@ pub struct App {
 impl Default for App {
     fn default() -> Self {
         Self {
+            ibl_data: IBLData::default(),
             skybox: Skybox::default(),
             sphere: Sphere::new(1.0, 256, 256),
             camera_id: INVALID_ID,
@@ -67,7 +70,6 @@ impl App {
         light_manager.add_point_light(point_light_3);
     }
 
-    #[allow(unused)]
     fn prepare_rusted_pbr_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let graphics_context = imagic_context.graphics_context();
         let mut pbr_material = Box::new(PBRMaterial::new(
@@ -114,24 +116,43 @@ impl App {
         pbr_material.set_roughness_texture(roughness_texture);
         let ao_texture = texture_manager.add_texture(ao_texture);
         pbr_material.set_ao_texture(ao_texture);
+        pbr_material.set_irradiance_cube_texture(self.ibl_data.irradiance_cube_texture);
 
         let pbr_material_index = imagic_context.add_material(pbr_material);
         pbr_material_index
     }
 
     fn prepare_red_pbr_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
-        let pbr_material = Box::new(PBRMaterial::new(
-            Vec4::new(1.0, 0.0, 0.0, 1.0),
+        let mut pbr_material = Box::new(PBRMaterial::new(
+            Vec4::new(0.5, 0.0, 0.0, 1.0),
             1.0,
             0.2,
             1.0,
         ));
+        pbr_material.set_irradiance_cube_texture(self.ibl_data.irradiance_cube_texture);
         imagic_context.add_material(pbr_material)
+    }
+
+    fn init_ibl(&mut self, imagic_context: &mut ImagicContext) {
+        let mut ibl_baker = IBLBaker::new(IBLBakerOptions {
+            input_equirect_image: InputEquirect::Bytes(include_bytes!(
+                "./assets/pbr/hdr/newport_loft.hdr"
+            )),
+            background_cube_map_size: 512,
+            irradiance_cube_map_size: 32,
+            ..Default::default()
+        });
+        self.ibl_data = ibl_baker.bake(imagic_context);
+        self.skybox
+            .init_with_cube_texture(imagic_context, self.ibl_data.background_cube_texture);
+            // .init_with_cube_texture(imagic_context, self.ibl_data.irradiance_cube_texture);
     }
 }
 
 impl ImagicAppTrait for App {
     fn init(&mut self, imagic_context: &mut ImagicContext) {
+        self.init_ibl(imagic_context);
+
         let fov = FRAC_PI_4;
         let aspect = self.window_size.get_half_width() / self.window_size.get_height();
         let near = 0.01;
@@ -166,15 +187,8 @@ impl ImagicAppTrait for App {
         };
 
         self.sphere.init(imagic_context, pbr_material_index);
-        let cube_texture_id = EquirectToCubeConverter::default().convert_by_bytes(
-            include_bytes!("./assets/pbr/hdr/newport_loft.hdr"),
-            imagic_context,
-            512,
-            wgpu::TextureFormat::Rgba32Float,
-        );
-        self.skybox
-            .init_with_cube_texture(imagic_context, cube_texture_id);
 
+        // let ibl_baker = IBLBaker{};
         // self.skybox.init_ldr_bytes(imagic_context, [
         //     include_bytes!("./assets/skybox/right.jpg"),
         //     include_bytes!("./assets/skybox/left.jpg"),
@@ -199,7 +213,10 @@ impl ImagicAppTrait for App {
                 self.red_pbr_material_index
             };
 
-            imagic_context.pipeline_manager().borrow_mut().remove_render_pipeline(self.sphere.render_item_id());
+            imagic_context
+                .pipeline_manager()
+                .borrow_mut()
+                .remove_render_pipeline(self.sphere.render_item_id());
 
             imagic_context
                 .render_item_manager_mut()

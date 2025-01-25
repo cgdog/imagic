@@ -4,7 +4,7 @@ use crate::{
     math::{Mat4, Vec3, Vec4},
     prelude::{
         bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
-        buffer::GPUBufferManager, render_item_manager::RenderItemManager,
+        buffer::{GPUBufferManager, SyncBuffer}, render_item_manager::RenderItemManager,
         texture_manager::TextureManager, GraphicsContext, ImagicContext, RenderTexture,
         SceneObject, Texture, Transform, TransformManager, VertexOrIndexCount, INVALID_ID,
     },
@@ -135,7 +135,7 @@ impl Camera {
     }
 
     /// Render the scene by current Camera.
-    pub fn render(&mut self, context: &ImagicContext) {
+    pub fn render(&mut self, context: &ImagicContext, sync_buffer: Option<&SyncBuffer>) {
         // let mut attachment_views: &[TextureView];
         if let Some(rt) = &self.render_texture {
             // draw to rt
@@ -145,7 +145,7 @@ impl Camera {
             let attachment_count = color_attachment_views.len();
             let color_attachment_format = rt.get_color_attachment_format();
             if attachment_count == 1 {
-                self.render_to_attachments(context, &color_attachment_views[0], 0, Some(color_attachment_format));
+                self.render_to_attachments(context, &color_attachment_views[0], 0, Some(color_attachment_format), sync_buffer);
             } else {
                 for (view_index, cur_rt_view) in color_attachment_views.iter().enumerate() {
                     // Update camera view matrix before rendering.
@@ -164,7 +164,7 @@ impl Camera {
                         &context.transform_manager().borrow(),
                         context.buffer_manager(),
                     );
-                    self.render_to_attachments(context, cur_rt_view, 0, Some(color_attachment_format));
+                    self.render_to_attachments(context, cur_rt_view, 0, Some(color_attachment_format), sync_buffer);
                 }
             }
         } else {
@@ -176,7 +176,7 @@ impl Camera {
             let surface_texture_view = surface_texture
                 .texture
                 .create_view(&wgpu::TextureViewDescriptor::default());
-            self.render_to_attachments(context, &surface_texture_view, 0, None);
+            self.render_to_attachments(context, &surface_texture_view, 0, None, sync_buffer);
         }
     }
 
@@ -187,6 +187,7 @@ impl Camera {
         color_attachment_view: &TextureView,
         camera_index: usize,
         color_attachment_format: Option<TextureFormat>,
+        sync_buffer: Option<&SyncBuffer>,
     ) {
         let mut encoder =
             context
@@ -305,6 +306,9 @@ impl Camera {
             }
         }
 
+        if let Some(sync_buffer) = sync_buffer {
+            sync_buffer.sync(&mut encoder);
+        }
         context.graphics_context().submit(Some(encoder.finish()));
     }
 
