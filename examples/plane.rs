@@ -25,7 +25,7 @@ impl App {
 
     fn prepare_albedo(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let albedo_texture = Texture::create_from_bytes(imagic_context.graphics_context(),
-            include_bytes!("./assets/lena.png"), wgpu::TextureFormat::Rgba8UnormSrgb);
+            include_bytes!("./assets/lena.png"), wgpu::TextureFormat::Rgba8UnormSrgb, true);
         let albedo_texture_index = imagic_context.texture_manager_mut().add_texture(albedo_texture);
         albedo_texture_index
     }

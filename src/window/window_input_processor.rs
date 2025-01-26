@@ -166,6 +166,13 @@ impl WindowInputProcessor {
             TouchPhase::Moved => match delta {
                 MouseScrollDelta::LineDelta(x, y) => {
                     info!("LineDelta: {x}, {y}");
+                    // TODO: Windows execute the branch. Select a proper speed.
+                    // (x, y) is (0, 1) or (0, -1) on Windows.
+                    let speed = 10.0;
+                    input_manager.trigger_mouse_input_event(MouseEvent::new(
+                        self.cursor_logical_pos,
+                        MouseEventType::Scroll(Vec2::new(x as f32 * speed, y as f32 * speed)),
+                    ));
                 }
                 MouseScrollDelta::PixelDelta(pos) => {
                     let x = pos.x / dpi;

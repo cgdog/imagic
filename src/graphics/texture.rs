@@ -50,8 +50,12 @@ impl Texture {
         graphics_context: &GraphicsContext,
         buffer: &[u8],
         format: wgpu::TextureFormat,
+        is_flip_y: bool,
     ) -> Self {
-        let img = image::load_from_memory(buffer).unwrap();
+        let mut img = image::load_from_memory(buffer).unwrap();
+        if is_flip_y {
+            img = img.flipv();
+        }
         let img_rgba = img.to_rgba8();
         use image::GenericImageView;
         let dimensions = img.dimensions();

@@ -100,14 +100,16 @@ impl Plane {
     }
 
     fn create_vertices_data(&self) -> (Vec<Vertex>, Vec<u16>) {
+        // (0.0, 0.0) left botton corner of the texture。
+        // (1.0, 1.0) right top corner。
         let vertices: Vec<Vertex> = vec![
-            Vertex::new([-1.0, 1.0, 0.0], [0.0, 0.0, -1.0], [0.0, 0.0]),
-            Vertex::new([1.0, 1.0, 0.0], [0.0, 0.0, -1.0], [1.0, 0.0]),
-            Vertex::new([1.0, -1.0, 0.0], [0.0, 0.0, -1.0], [1.0, 1.0]),
-            Vertex::new([-1.0, -1.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0]),
+            Vertex::new([-1.0, -1.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0]),
+            Vertex::new([1.0, -1.0, 0.0], [0.0, 0.0, 1.0], [1.0, 0.0]),
+            Vertex::new([1.0, 1.0, 0.0], [0.0, 0.0, 1.0], [1.0, 1.0]),
+            Vertex::new([-1.0, 1.0, 0.0], [0.0, 0.0, 1.0], [0.0, 1.0]),
         ];
         // ccw
-        let indices: Vec<u16> = vec![0, 3, 1, 1, 3, 2];
+        let indices: Vec<u16> = vec![0, 1, 2, 0, 2, 3];
 
         (vertices, indices)
     }
