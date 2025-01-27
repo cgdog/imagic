@@ -12,6 +12,14 @@ pub struct Texture {
 }
 
 impl Texture {
+    pub fn set_view(&mut self, view: TextureView) {
+        self.view = Some(view);
+    }
+
+    pub fn get_view(&self) -> &Option<TextureView> {
+        &self.view
+    }
+
     pub fn create(
         graphics_context: &GraphicsContext,
         width: u32,

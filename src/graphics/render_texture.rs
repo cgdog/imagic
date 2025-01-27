@@ -2,7 +2,11 @@ use wgpu::{
     TextureAspect, TextureUsages, TextureView, TextureViewDescriptor, TextureViewDimension,
 };
 
-use crate::{math::{Vec3, Vec4}, prelude::ImagicContext, types::ID};
+use crate::{
+    math::{Vec3, Vec4},
+    prelude::ImagicContext,
+    types::ID,
+};
 
 use super::texture::Texture;
 
@@ -25,8 +29,110 @@ pub trait RenderTexture {
     fn get_aspect(&self) -> f32;
 
     /// Only used by cube render texture, whose each face has a specific view matrix.
+    /// Thre return is (camera position, camera pos, up).
     // fn get_rt_view_matrix(&self, index: usize) -> &Mat4;
     fn get_per_face_camera_params(&self, index: usize) -> (Vec3, Vec3, Vec3);
+}
+
+/// Create a depth texture, used internally.
+fn create_depth_texture(imagic_context: &mut ImagicContext, width: u32, height: u32) -> ID {
+    const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth24PlusStencil8;
+    let dpeth_texture = Texture::create_depth_texture(
+        imagic_context.graphics_context(),
+        width,
+        height,
+        DEPTH_FORMAT,
+    );
+    let depth_texture = imagic_context
+        .texture_manager_mut()
+        .add_texture(dpeth_texture);
+    depth_texture
+}
+
+pub struct RenderTexture2D {
+    color_attachment: ID,
+    color_attachment_format: wgpu::TextureFormat,
+    color_attachment_view: [TextureView; 1],
+    depth_attachment: ID,
+    width: f32,
+    height: f32,
+}
+
+impl RenderTexture for RenderTexture2D {
+    fn get_color_attachment_id(&self) -> ID {
+        self.color_attachment
+    }
+
+    fn get_color_attachment_format(&self) -> wgpu::TextureFormat {
+        self.color_attachment_format
+    }
+
+    fn get_depth_attachment_id(&self) -> ID {
+        self.depth_attachment
+    }
+
+    fn get_rt_views(&self) -> &[TextureView] {
+        &self.color_attachment_view
+    }
+
+    fn get_width(&self) -> f32 {
+        self.width
+    }
+
+    fn get_height(&self) -> f32 {
+        self.height
+    }
+
+    fn get_physical_viewport(&self) -> Vec4 {
+        Vec4::new(0.0, 0.0, self.width, self.height)
+    }
+
+    fn get_aspect(&self) -> f32 {
+        self.width / self.height
+    }
+
+    fn get_per_face_camera_params(&self, _index: usize) -> (Vec3, Vec3, Vec3) {
+        todo!()
+    }
+}
+
+impl RenderTexture2D {
+    pub fn new(
+        imagic_context: &mut ImagicContext,
+        format: wgpu::TextureFormat,
+        width: u32,
+        height: u32,
+    ) -> Self {
+        let usage = TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING;
+        let mut texture = Texture::create(
+            imagic_context.graphics_context(),
+            width,
+            height,
+            1,
+            format,
+            usage,
+        );
+        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        texture.set_view(texture_view);
+
+        let rt_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let color_attachment_id = imagic_context
+            .texture_manager_mut()
+            .add_texture(texture);
+
+        let depth_attachment_id = create_depth_texture(imagic_context, width, height);
+
+
+        Self {
+            color_attachment: color_attachment_id,
+            color_attachment_format: format,
+            color_attachment_view: [rt_view],
+            depth_attachment: depth_attachment_id,
+            width: width as f32,
+            height: height as f32,
+        }
+    }
 }
 
 pub struct CubeRenderTexture {
@@ -71,11 +177,11 @@ impl RenderTexture for CubeRenderTexture {
     fn get_aspect(&self) -> f32 {
         1.0
     }
-    
+
     fn get_per_face_camera_params(&self, index: usize) -> (Vec3, Vec3, Vec3) {
         self.per_face_camera_params[index]
     }
-    
+
     // fn get_rt_view_matrix(&self, index: usize) -> &Mat4 {
     //     &self.view_matrices[index]
     // }
@@ -83,7 +189,7 @@ impl RenderTexture for CubeRenderTexture {
 
 impl CubeRenderTexture {
     /// Create a cube render texture.
-    pub fn create(
+    pub fn new(
         imagic_context: &mut ImagicContext,
         format: wgpu::TextureFormat,
         width: u32,
@@ -121,7 +227,7 @@ impl CubeRenderTexture {
             .texture_manager_mut()
             .add_texture(cube_texture);
 
-        let depth_attachment_id = Self::create_depth_texture(imagic_context, width, height);
+        let depth_attachment_id = create_depth_texture(imagic_context, width, height);
 
         // let view_matrices: [Mat4; 6] = [
         //         Mat4::look_at_rh(Vec3::ZERO, Vec3::new( 1.0,  0.0,  0.0), Vec3::new(0.0, -1.0,  0.0)),
@@ -133,13 +239,37 @@ impl CubeRenderTexture {
         //     ];
 
         let per_face_camera_params: [(Vec3, Vec3, Vec3); 6] = [
-            (Vec3::ZERO, Vec3::new( 1.0,  0.0,  0.0), Vec3::new(0.0, -1.0,  0.0)),
-            (Vec3::ZERO, Vec3::new(-1.0,  0.0,  0.0), Vec3::new(0.0, -1.0,  0.0)),
+            (
+                Vec3::ZERO,
+                Vec3::new(1.0, 0.0, 0.0),
+                Vec3::new(0.0, -1.0, 0.0),
+            ),
+            (
+                Vec3::ZERO,
+                Vec3::new(-1.0, 0.0, 0.0),
+                Vec3::new(0.0, -1.0, 0.0),
+            ),
             // note the follow two line (bottom and top), which is different from opengl?
-            (Vec3::ZERO, Vec3::new( 0.0, -1.0,  0.0), Vec3::new(0.0,  0.0, -1.0)),
-            (Vec3::ZERO, Vec3::new( 0.0,  1.0,  0.0), Vec3::new(0.0,  0.0,  1.0)),
-            (Vec3::ZERO, Vec3::new( 0.0,  0.0,  1.0), Vec3::new(0.0, -1.0,  0.0)),
-            (Vec3::ZERO, Vec3::new( 0.0,  0.0, -1.0), Vec3::new(0.0, -1.0,  0.0)),
+            (
+                Vec3::ZERO,
+                Vec3::new(0.0, -1.0, 0.0),
+                Vec3::new(0.0, 0.0, -1.0),
+            ),
+            (
+                Vec3::ZERO,
+                Vec3::new(0.0, 1.0, 0.0),
+                Vec3::new(0.0, 0.0, 1.0),
+            ),
+            (
+                Vec3::ZERO,
+                Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(0.0, -1.0, 0.0),
+            ),
+            (
+                Vec3::ZERO,
+                Vec3::new(0.0, 0.0, -1.0),
+                Vec3::new(0.0, -1.0, 0.0),
+            ),
         ];
 
         Self {
@@ -151,17 +281,5 @@ impl CubeRenderTexture {
             // view_matrices,
             per_face_camera_params,
         }
-    }
-
-    fn create_depth_texture(
-        imagic_context: &mut ImagicContext,
-        width: u32,
-        height: u32,
-    ) -> ID {
-        const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth24PlusStencil8;
-        let dpeth_texture =
-            Texture::create_depth_texture(imagic_context.graphics_context(), width, height, DEPTH_FORMAT);
-        let depth_texture = imagic_context.texture_manager_mut().add_texture(dpeth_texture);
-        depth_texture
     }
 }

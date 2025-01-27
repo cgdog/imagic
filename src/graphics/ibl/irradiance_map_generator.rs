@@ -35,7 +35,7 @@ impl IrradianceMapGenerator {
             .get_render_item_mut(box_item_id)
             .set_material_id(irradiance_map_gen_material);
 
-        let cube_rt = CubeRenderTexture::create(imagic_context, format, face_size, face_size);
+        let cube_rt = CubeRenderTexture::new(imagic_context, format, face_size, face_size);
         // camera change viewport
         let viewport_size = face_size as f32;
         camera.set_logical_viewport(Vec4::new(0.0, 0.0, viewport_size, viewport_size));
