@@ -1,8 +1,9 @@
 use crate::{
     camera::{Camera, Layer, LayerMask},
     math::{Vec3, Vec4},
-    model::Cube,
-    prelude::{ImagicContext, INVALID_ID},
+    model::{Cube, Plane},
+    prelude::{BRDFIntegralMaterial, ImagicContext, RenderTexture, RenderTexture2D, INVALID_ID},
+    scene::SceneObject,
     types::{ID, RR},
 };
 
@@ -19,10 +20,12 @@ pub struct IBLBakerOptions {
     pub is_flip_y: bool,
     pub is_bake_irradiance: bool,
     pub is_bake_reflection: bool,
+    pub is_generate_brdf_lut: bool,
 
     pub background_cube_map_size: u32,
     pub irradiance_cube_map_size: u32,
     pub reflection_cube_map_size: u32,
+    pub brdf_lut_size: u32,
 
     pub rt_format: wgpu::TextureFormat,
 }
@@ -34,10 +37,12 @@ impl Default for IBLBakerOptions {
             is_flip_y: false,
             is_bake_irradiance: true,
             is_bake_reflection: true,
+            is_generate_brdf_lut: true,
 
             background_cube_map_size: 512,
             irradiance_cube_map_size: 32,
             reflection_cube_map_size: 128,
+            brdf_lut_size: 512,
 
             rt_format: wgpu::TextureFormat::Rgba32Float,
         }
@@ -48,6 +53,7 @@ pub struct IBLData {
     pub background_cube_texture: ID,
     pub irradiance_cube_texture: ID,
     pub refelction_cube_texture: ID,
+    pub brdf_lut: ID,
 }
 
 impl Default for IBLData {
@@ -56,6 +62,7 @@ impl Default for IBLData {
             background_cube_texture: INVALID_ID,
             irradiance_cube_texture: INVALID_ID,
             refelction_cube_texture: INVALID_ID,
+            brdf_lut: INVALID_ID,
         }
     }
 }
@@ -65,6 +72,7 @@ pub struct IBLBaker {
     background_cube_texture: ID,
     irradiance_cube_texture: ID,
     refelction_cube_texture: ID,
+    brdf_lut: ID,
 }
 
 impl Default for IBLBaker {
@@ -74,6 +82,7 @@ impl Default for IBLBaker {
             background_cube_texture: INVALID_ID,
             irradiance_cube_texture: INVALID_ID,
             refelction_cube_texture: INVALID_ID,
+            brdf_lut: INVALID_ID,
         }
     }
 }
@@ -107,10 +116,14 @@ impl IBLBaker {
         );
         // sync_buffer2.receive(imagic_context.graphics_context());
 
+        if self.options.is_generate_brdf_lut {
+            self.generate_brdf_lut(imagic_context);
+        }
         IBLData {
             background_cube_texture: self.background_cube_texture,
             irradiance_cube_texture: self.irradiance_cube_texture,
             refelction_cube_texture: self.refelction_cube_texture,
+            brdf_lut: self.brdf_lut,
         }
     }
 
@@ -199,5 +212,40 @@ impl IBLBaker {
 
     pub fn get_reflection_cube_texture(&self) -> ID {
         self.refelction_cube_texture
+    }
+
+    /// Generate BRDF LUT texture.
+    pub fn generate_brdf_lut(&mut self, imagic_context: &mut ImagicContext) -> ID {
+        let camera = Self::create_camera(imagic_context);
+        let material = Box::new(BRDFIntegralMaterial::new());
+        let material_index = imagic_context.add_material(material);
+        let mut plane = Plane::default();
+        let rt_size = self.options.brdf_lut_size;
+        plane.init(imagic_context, material_index);
+        plane.set_layer(
+            Layer::RenderTarget,
+            imagic_context.render_item_manager_mut(),
+        );
+        let rt = RenderTexture2D::new(
+            imagic_context,
+            // TODO: try to use Rgba16Float.
+            wgpu::TextureFormat::Rgba32Float,
+            rt_size,
+            rt_size,
+        );
+        self.brdf_lut = rt.get_color_attachment_id();
+        let rt_size = rt_size as f32;
+        camera
+            .borrow_mut()
+            .set_viewport(Vec4::new(0.0, 0.0, 1.0, 1.0));
+        camera
+            .borrow_mut()
+            .set_logical_viewport(Vec4::new(0.0, 0.0, rt_size, rt_size));
+        camera
+            .borrow_mut()
+            .set_physical_viewport(Vec4::new(0.0, 0.0, rt_size, rt_size));
+        camera.borrow_mut().set_render_texture(Box::new(rt));
+        camera.borrow_mut().render(imagic_context, None);
+        self.brdf_lut
     }
 }

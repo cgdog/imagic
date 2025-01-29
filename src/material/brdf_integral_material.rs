@@ -54,6 +54,10 @@ impl MaterialTrait for BRDFIntegralMaterial {
         self.bind_group_id
     }
 
+    fn enable_lights(&self) -> bool {
+        false
+    }
+
     fn get_bind_group_layout_id(&self) -> ID {
         Self::internal_bind_group_layout_id(INVALID_ID)
     }

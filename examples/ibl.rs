@@ -212,6 +212,7 @@ impl ImagicAppTrait for App {
 
         if self.sphere_use_textured_pbr.is_changed() {
             self.sphere_use_textured_pbr.reset();
+            // TODO: optimize to use only one pbr material
             let pbr_material_index = if *self.sphere_use_textured_pbr {
                 self.textured_pbr_material_index
             } else {

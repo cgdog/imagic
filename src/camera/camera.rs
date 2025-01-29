@@ -145,6 +145,8 @@ impl Camera {
             let attachment_count = color_attachment_views.len();
             let color_attachment_format = rt.get_color_attachment_format();
             if attachment_count == 1 {
+                let depth_attachment = rt.get_depth_attachment_id();
+                self.depth_texture = depth_attachment;
                 self.render_to_attachments(context, &color_attachment_views[0], 0, Some(color_attachment_format), sync_buffer);
             } else {
                 for (view_index, cur_rt_view) in color_attachment_views.iter().enumerate() {
@@ -554,6 +556,7 @@ impl Camera {
         self.far = new_far;
     }
 
+    /// Set normalized viewport, range in [0.0, 1.0].
     pub fn set_viewport(&mut self, view_port: Vec4) {
         self.view_port = view_port;
     }
