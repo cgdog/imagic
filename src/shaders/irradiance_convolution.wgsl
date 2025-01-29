@@ -52,7 +52,7 @@ fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
     let right = normalize(cross(up, normal));
     up         = normalize(cross(normal, right));
 
-    // Note: if phiSteps and thetaSteps were set to 251 and 63 respectively, the result may be black in my powerful machine. 
+    // Note: if phiSteps and thetaSteps were set to 251 and 63 respectively, the result may be black in some machine. 
     // I do not know the reason.
     // I try to set phiSteps and thetaSteps to be 200, 200 respectively, the result may be also balck.
     // It seems that the times the the double for loop execute should not greater than some value in WGSL.

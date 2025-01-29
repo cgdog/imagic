@@ -35,6 +35,9 @@ impl App {
         let albedo_index = self.prepare_albedo(imagic_context);
         unlit_material.set_albedo_map(albedo_index);
 
+        // debug brdflut integration
+        // let unlit_material = Box::new(BRDFIntegralMaterial::new());
+
         let material_index = imagic_context.add_material(unlit_material);
         material_index
     }

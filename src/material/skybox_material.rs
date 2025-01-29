@@ -8,9 +8,9 @@ use crate::{
 use super::MaterialTrait;
 
 pub struct SkyboxMaterial {
-    skybox_map: usize,
+    skybox_map: ID,
     texture_cube_sampler: Option<wgpu::Sampler>,
-    bind_group_id: usize,
+    bind_group_id: ID,
     cull_mode: wgpu::Face,
 }
 
