@@ -52,12 +52,14 @@ impl GraphicsContext {
                 label: None,
                 required_features: required_features,// wgpu::Features::empty(),
                 required_limits: wgpu::Limits {
-                    max_storage_buffers_per_shader_stage: 1,
+                    max_storage_buffers_per_shader_stage: 8,
                     max_storage_buffer_binding_size: 256,
                     // Make sure we use the texture resolution limits from the adapter, so we can support images the size of the swapchain.
-                    ..wgpu::Limits::downlevel_webgl2_defaults()
+                    // ..wgpu::Limits::downlevel_webgl2_defaults()
+                    ..wgpu::Limits::downlevel_defaults()// To support compute shader
                     .using_resolution(adapter.limits())
                 },
+                // required_limits: wgpu::Limits::downlevel_defaults(),
                 // TODO: choose better memoty_hints
                 memory_hints: wgpu::MemoryHints::Performance,
             },
