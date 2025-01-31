@@ -1,5 +1,5 @@
 use log::info;
-use wgpu::TextureAspect;
+use wgpu::{BindGroup, BindGroupLayout, ComputePipeline, TextureAspect};
 
 use crate::{
     prelude::{ComputeShader, ImagicContext, Texture, INVALID_ID},
@@ -15,7 +15,40 @@ pub struct CubeMipmapsGenerator {
 
 impl ComputeShader for CubeMipmapsGenerator {
     fn execute(&mut self, imagic_context: &mut ImagicContext) {
-        self.create_cube_texture_with_mipmaps(imagic_context);
+        let mip_level_count = self.create_cube_texture_with_mipmaps(imagic_context);
+        let bind_group_layout = self.create_bind_group_layout(imagic_context);
+        let compute_pipeline = self.create_compute_pipeline(imagic_context, &bind_group_layout);
+
+        let mut encoder = imagic_context
+            .graphics_context()
+            .get_device()
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+
+        info!("mip_level_count: {}", mip_level_count);
+        for mip in 1..mip_level_count {
+            info!("mip: {}", mip);
+            let bind_group = self.create_bind_group(imagic_context, mip, &bind_group_layout);
+
+            let mut compute_pass =
+                encoder.begin_compute_pass(&wgpu::ComputePassDescriptor::default());
+            compute_pass.set_pipeline(&compute_pipeline);
+            compute_pass.set_bind_group(0, &bind_group, &[]);
+            let workgroup_size = 8;
+            // note: Parentheses that encapsule "self.face_size >> mip" below is essential.
+            let workgroup_count = ((self.face_size >> mip) + workgroup_size - 1) / workgroup_size;
+            // info!("workgroup_count: {}", workgroup_count);
+            compute_pass.dispatch_workgroups(workgroup_count, workgroup_count, 6);
+        }
+
+        imagic_context
+            .graphics_context()
+            .get_queue()
+            .submit(Some(encoder.finish()));
+
+        imagic_context
+            .graphics_context()
+            .get_device()
+            .poll(wgpu::Maintain::Wait);
     }
 }
 
@@ -33,7 +66,7 @@ impl CubeMipmapsGenerator {
         self.cube_with_mipmaps
     }
 
-    fn create_cube_texture_with_mipmaps(&mut self, imagic_context: &mut ImagicContext) {
+    fn create_cube_texture_with_mipmaps(&mut self, imagic_context: &mut ImagicContext) -> u32 {
         let mip_level_count = self.face_size.ilog2() + 1;
         let cube_map_with_mipmap = Texture::create_cube_texture(
             imagic_context.graphics_context(),
@@ -88,12 +121,134 @@ impl CubeMipmapsGenerator {
             );
         }
 
-        imagic_context.graphics_context().get_queue().submit(Some(encoder.finish()));
-        imagic_context.graphics_context().get_device().poll(wgpu::Maintain::Wait);
+        imagic_context
+            .graphics_context()
+            .get_queue()
+            .submit(Some(encoder.finish()));
+        imagic_context
+            .graphics_context()
+            .get_device()
+            .poll(wgpu::Maintain::Wait);
 
         self.cube_with_mipmaps = imagic_context
             .texture_manager_mut()
             .add_texture(cube_map_with_mipmap);
-        info!("cube_with_mipmaps: {}", self.cube_with_mipmaps);
+        // info!("cube_with_mipmaps: {}", self.cube_with_mipmaps);
+
+        mip_level_count
+    }
+
+    fn create_bind_group_layout(&mut self, imagic_context: &mut ImagicContext) -> BindGroupLayout {
+        let bind_group_layout = imagic_context
+            .graphics_context()
+            .get_device()
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Mipmap Generation Bind Group Layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2Array,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::StorageTexture {
+                            access: wgpu::StorageTextureAccess::WriteOnly,
+                            format: wgpu::TextureFormat::Rgba32Float,
+                            view_dimension: wgpu::TextureViewDimension::D2Array,
+                        },
+                        count: None,
+                    },
+                ],
+            });
+        bind_group_layout
+    }
+
+    fn create_bind_group(
+        &mut self,
+        imagic_context: &mut ImagicContext,
+        mip: u32,
+        bind_group_layout: &BindGroupLayout,
+    ) -> BindGroup {
+        let cube_texture_with_mipmaps = imagic_context
+            .texture_manager()
+            .get_texture(self.cube_with_mipmaps);
+        let input_texture_view =
+            cube_texture_with_mipmaps.create_view(&wgpu::TextureViewDescriptor {
+                label: Some("Input Mipmap Texture View"),
+                base_mip_level: mip - 1,
+                mip_level_count: Some(1),
+                base_array_layer: 0,
+                array_layer_count: Some(6),
+                dimension: Some(wgpu::TextureViewDimension::D2Array),
+                format: Some(self.format),
+                aspect: TextureAspect::All,
+            });
+
+        let output_texture_view =
+            cube_texture_with_mipmaps.create_view(&wgpu::TextureViewDescriptor {
+                label: Some("Output Mipmap Texture View"),
+                base_mip_level: mip,
+                mip_level_count: Some(1),
+                base_array_layer: 0,
+                array_layer_count: Some(6),
+                dimension: Some(wgpu::TextureViewDimension::D2Array),
+                format: Some(self.format),
+                aspect: TextureAspect::All,
+            });
+
+        let bind_group = imagic_context
+            .graphics_context()
+            .get_device()
+            .create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("Mipmap Generation Bind Group"),
+                layout: &bind_group_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(&input_texture_view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::TextureView(&output_texture_view),
+                    },
+                ],
+            });
+
+        bind_group
+    }
+
+    fn create_compute_pipeline(
+        &mut self,
+        imagic_context: &mut ImagicContext,
+        bind_group_layout: &BindGroupLayout,
+    ) -> ComputePipeline {
+        let device = imagic_context.graphics_context().get_device();
+        let compute_shader = device.create_shader_module(wgpu::include_wgsl!(
+            "../../shaders/compute/gen_mipmaps.wgsl"
+        ));
+
+        let compute_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("Mipmap Pipeline Layout"),
+                bind_group_layouts: &[&bind_group_layout],
+                push_constant_ranges: &[],
+            });
+
+        let compute_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+            label: Some("Mipmap Compute Pipeline"),
+            layout: Some(&compute_pipeline_layout),
+            module: &compute_shader,
+            entry_point: Some("main"),
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
+            cache: None,
+        });
+        compute_pipeline
     }
 }
