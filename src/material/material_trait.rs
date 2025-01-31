@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use crate::{
     prelude::{
         bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
@@ -6,7 +8,7 @@ use crate::{
     types::ID,
 };
 
-pub trait MaterialTrait {
+pub trait MaterialTrait : Any {
 
     /// Create BindGroupLayout and so on, e.g., create texture sampler.
     fn on_init(
@@ -50,5 +52,17 @@ pub trait MaterialTrait {
 
     fn enable_lights(&self) -> bool {
         true
+    }
+
+    #[allow(unused)]
+    fn on_update(&mut self, graphics_context: &GraphicsContext) {
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        todo!()
+    }
+    
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        todo!()
     }
 }

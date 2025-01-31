@@ -58,12 +58,13 @@ fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
     // It seems that the times the the double for loop execute should not greater than some value in WGSL.
     // Oh, shit! (120, 120) or even (110, 110) may be aslo black.
     // Finally, I decide to use (100, 100) here, it always works.
+    // Update, (100, 100) may also get bad work. I changed it to (64, 64).
     // TODO: figure out the real reason in the future.
 
     // let sampleDelta: f32 = 0.025;
     var nrSamples: f32 = 0.0; 
-    let phiSteps: i32 = 100;//i32(TWO_PI / sampleDelta);//251
-    let thetaSteps: i32 = 100;//i32(HALF_PI / sampleDelta);//63
+    let phiSteps: i32 = 64;//i32(TWO_PI / sampleDelta);//251
+    let thetaSteps: i32 = 64;//i32(HALF_PI / sampleDelta);//63
     let phiSampleDelta = TWO_PI / f32(phiSteps);
     let thetaSampleDelta = HALF_PI / f32(thetaSteps);
 

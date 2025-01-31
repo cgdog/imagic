@@ -111,6 +111,7 @@ impl RenderTexture2D {
             1,
             format,
             usage,
+            1,
         );
         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
         texture.set_view(texture_view);
@@ -194,14 +195,16 @@ impl CubeRenderTexture {
         format: wgpu::TextureFormat,
         width: u32,
         height: u32,
+        mip_level_count: u32,
     ) -> Self {
-        let usage = TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING;
+        let usage = TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_SRC;
         let cube_texture = Texture::create_cube_texture(
             imagic_context.graphics_context(),
             format,
             width,
             height,
             usage,
+            mip_level_count,
         );
 
         let cube_texture_views = (0..6)

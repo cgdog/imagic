@@ -78,6 +78,7 @@ impl HDRLoader {
                 rgb_image.height(),
                 flat_data,
                 wgpu::TextureFormat::Rgba32Float,
+                1,
             );
             return hdr_texture;
         } else {

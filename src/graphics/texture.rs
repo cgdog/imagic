@@ -12,6 +12,10 @@ pub struct Texture {
 }
 
 impl Texture {
+    pub fn get(&self) -> &wgpu::Texture {
+        &self.texture
+    }
+    
     pub fn set_view(&mut self, view: TextureView) {
         self.view = Some(view);
     }
@@ -27,6 +31,7 @@ impl Texture {
         depth: u32,
         format: wgpu::TextureFormat,
         usage: wgpu::TextureUsages,
+        mip_level_count: u32,
     ) -> Self {
         let size = wgpu::Extent3d {
             width,
@@ -38,7 +43,7 @@ impl Texture {
             .create_texture(&wgpu::TextureDescriptor {
                 label: Some("imagic_texture"),
                 size,
-                mip_level_count: 1,
+                mip_level_count,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
                 format,
@@ -59,6 +64,7 @@ impl Texture {
         buffer: &[u8],
         format: wgpu::TextureFormat,
         is_flip_y: bool,
+        mip_level_count: u32,
     ) -> Self {
         let mut img = image::load_from_memory(buffer).unwrap();
         if is_flip_y {
@@ -74,6 +80,7 @@ impl Texture {
             1,
             format,
             wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            mip_level_count,
         );
         texture.fill_content(graphics_context, &img_rgba, Some(dimensions.0 * 4));
 
@@ -89,6 +96,7 @@ impl Texture {
         width: u32,
         height: u32,
         format: wgpu::TextureFormat,
+        mip_level_count: u32,
     ) -> Self {
         let mut texture = Texture::create(
             graphics_context,
@@ -97,6 +105,7 @@ impl Texture {
             1,
             format,
             wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            mip_level_count,
         );
         texture.fill_content(graphics_context, &buffer, Some(width * 4));
 
@@ -123,6 +132,7 @@ impl Texture {
         graphics_context: &GraphicsContext,
         buffers: [&[u8]; 6],
         format: wgpu::TextureFormat,
+        mip_level_count: u32,
     ) -> Self {
         let (width, height, imgs_data) = Self::create_cube_image_buffers_from_bytes(buffers);
         let mut texture = Texture::create_cube_texture(
@@ -131,6 +141,7 @@ impl Texture {
             width,
             height,
             wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            mip_level_count,
         );
 
         texture.fill_cube_texture_with_bytes(graphics_context, imgs_data);
@@ -199,8 +210,9 @@ impl Texture {
         width: u32,
         height: u32,
         usage: wgpu::TextureUsages,
+        mip_level_count: u32,
     ) -> Self {
-        let mut texture = Texture::create(graphics_context, width, height, 6, format, usage);
+        let mut texture = Texture::create(graphics_context, width, height, 6, format, usage, mip_level_count);
 
         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
             label: Some("Cube Texture View"),
@@ -218,6 +230,7 @@ impl Texture {
         height: u32,
         pixels: &[u8],
         format: wgpu::TextureFormat,
+        mip_level_count: u32,
     ) -> Self {
         let mut texture = Texture::create(
             graphics_context,
@@ -226,6 +239,7 @@ impl Texture {
             1,
             format,
             wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            mip_level_count,
         );
         texture.fill_content(
             graphics_context,
@@ -245,7 +259,7 @@ impl Texture {
         format: TextureFormat,
     ) -> Self {
         let usage = wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING;
-        let mut dpeth_texture = Texture::create(graphics_context, width, height, 1, format, usage);
+        let mut dpeth_texture = Texture::create(graphics_context, width, height, 1, format, usage, 1);
 
         let texture_view = dpeth_texture.create_view(&wgpu::TextureViewDescriptor::default());
         dpeth_texture.view = Some(texture_view);
@@ -335,6 +349,7 @@ impl Texture {
                         2,
                         2,
                         wgpu::TextureFormat::Rgba8UnormSrgb,
+                        1,
                     );
                     WHITE_TEXTURE_ID = texture_manager.add_texture(white_texture);
                 }
@@ -367,6 +382,7 @@ impl Texture {
                         2,
                         2,
                         wgpu::TextureFormat::Rgba8UnormSrgb,
+                        1,
                     );
                     BLACK_TEXTURE_ID = texture_manager.add_texture(white_texture);
                 }
@@ -399,6 +415,7 @@ impl Texture {
                         2,
                         2,
                         wgpu::TextureFormat::Rgba8UnormSrgb,
+                        1,
                     );
                     BLACK_TEXTURE_ID = texture_manager.add_texture(white_texture);
                 }

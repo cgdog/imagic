@@ -1,15 +1,20 @@
 use std::borrow::Cow;
 
-use crate::{math::{Color, Vec4}, prelude::{
-    bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, texture_manager::TextureManager, GraphicsContext, Texture, INVALID_ID
-}, types::ID};
+use crate::{
+    math::{Color, Vec4},
+    prelude::{
+        bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
+        texture_manager::TextureManager, GraphicsContext, Texture, INVALID_ID,
+    },
+    types::ID,
+};
 
 use super::material_trait::MaterialTrait;
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 struct PBRFragmentUniforms {
-    // x: enabled features. y,z,w: reserved. 
+    // x: enabled features. y,z,w: reserved.
     features: [u32; 4],
     albedo: [f32; 4],
     metallic_roughness_ao: [f32; 4],
@@ -65,7 +70,7 @@ impl MaterialTrait for PBRMaterial {
 
     fn create_shader_module(&self, graphics_context: &GraphicsContext) -> wgpu::ShaderModule {
         let shader = graphics_context.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("crate PBR shader module"),
+            label: Some("create PBR shader module"),
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../shaders/pbr.wgsl"))),
         });
         shader
@@ -436,7 +441,7 @@ impl PBRMaterial {
     const FEATURE_FLAG_ROUGHNESS_MAP: u32 = 8;
     const FEATURE_FLAG_AO_MAP: u32 = 16;
 
-    pub fn get_enabled_features(&self) ->[u32; 4] {
+    pub fn get_enabled_features(&self) -> [u32; 4] {
         let mut features: u32 = 0;
         if self.albedo_texture != INVALID_ID && self.albedo_texture != Texture::white() {
             features |= Self::FEATURE_FLAG_ALBEDO_MAP; // 1 << 0

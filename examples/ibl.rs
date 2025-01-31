@@ -83,30 +83,35 @@ impl App {
             include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_basecolor.png"),
             wgpu::TextureFormat::Rgba8UnormSrgb,
             false,
+            1,
         );
         let normal_texture = Texture::create_from_bytes(
             graphics_context,
             include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_normal.png"),
             wgpu::TextureFormat::Rgba8Unorm,
             false,
+            1,
         );
         let metallic_texture = Texture::create_from_bytes(
             graphics_context,
             include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_metallic.png"),
             wgpu::TextureFormat::Rgba8Unorm,
             false,
+            1,
         );
         let roughness_texture = Texture::create_from_bytes(
             graphics_context,
             include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_roughness.png"),
             wgpu::TextureFormat::Rgba8Unorm,
             false,
+            1,
         );
         let ao_texture = Texture::create_from_bytes(
             graphics_context,
             include_bytes!("./assets/pbr/rustediron1-alt2-bl/ao.png"),
             wgpu::TextureFormat::Rgba8Unorm,
             false,
+            1,
         );
 
         let texture_manager = imagic_context.texture_manager_mut();
@@ -166,7 +171,6 @@ impl ImagicAppTrait for App {
         let viewport = Vec4::new(0.0, 0.0, 1.0, 1.0);
         let clear_color = Color::new(0.1, 0.1, 0.1, 1.0);
         let camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
-        // TODO: 让 Cube 以天空盒的形式渲染
         let camera_layer_mask = LayerMask::new(Layer::Default.into());
         self.camera_id = create_camera(
             imagic_context,
@@ -246,6 +250,7 @@ impl ImagicAppTrait for App {
                 if ui.button(rotate_button_text).clicked() {
                     self.camera_controller_option.is_auto_rotate =
                         !self.camera_controller_option.is_auto_rotate;
+                    self.camera_controller_option.set();
                 }
 
                 let sphere_material_text = if *self.sphere_use_textured_pbr {
@@ -255,6 +260,7 @@ impl ImagicAppTrait for App {
                 };
                 if ui.button(sphere_material_text).clicked() {
                     *self.sphere_use_textured_pbr = !*self.sphere_use_textured_pbr;
+                    self.sphere_use_textured_pbr.set();
                 }
             });
     }

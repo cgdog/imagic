@@ -1,8 +1,8 @@
 use std::f32::consts;
 
 use changeable::Changeable;
-use log::info;
 use imagic::{prelude::*, window::WindowSize};
+use log::info;
 
 pub struct App {
     plane: Plane,
@@ -24,17 +24,23 @@ impl Default for App {
             is_show_image: Changeable::new(true),
             show_brdf_lut: Changeable::new(true),
             lena_unlit: INVALID_ID,
-            brdf_lut_unlit: INVALID_ID
+            brdf_lut_unlit: INVALID_ID,
         }
     }
 }
 
 impl App {
-
     fn prepare_albedo(&mut self, imagic_context: &mut ImagicContext) -> ID {
-        let albedo_texture = Texture::create_from_bytes(imagic_context.graphics_context(),
-            include_bytes!("./assets/lena.png"), wgpu::TextureFormat::Rgba8UnormSrgb, true);
-        let albedo_texture_index = imagic_context.texture_manager_mut().add_texture(albedo_texture);
+        let albedo_texture = Texture::create_from_bytes(
+            imagic_context.graphics_context(),
+            include_bytes!("./assets/lena.png"),
+            wgpu::TextureFormat::Rgba8UnormSrgb,
+            true,
+            1,
+        );
+        let albedo_texture_index = imagic_context
+            .texture_manager_mut()
+            .add_texture(albedo_texture);
         albedo_texture_index
     }
 
@@ -65,8 +71,15 @@ impl App {
 
 impl ImagicAppTrait for App {
     fn init(&mut self, imagic_context: &mut ImagicContext) {
-        self.camera = Camera::new(Vec3::new(0.0, 0.0, 5.0), consts::FRAC_PI_4
-            , self.window_size.get_aspect(), 1.0, 100.0, None, imagic_context);
+        self.camera = Camera::new(
+            Vec3::new(0.0, 0.0, 5.0),
+            consts::FRAC_PI_4,
+            self.window_size.get_aspect(),
+            1.0,
+            100.0,
+            None,
+            imagic_context,
+        );
 
         let material_index = self.prepare_material(imagic_context);
         self.plane.init(imagic_context, material_index);
@@ -75,7 +88,9 @@ impl ImagicAppTrait for App {
     fn on_update(&mut self, imagic_context: &mut ImagicContext) {
         if self.is_show_image.is_changed() {
             self.is_show_image.reset();
-            let render_item = imagic_context.render_item_manager_mut().get_render_item_mut(self.plane.render_item_id());
+            let render_item = imagic_context
+                .render_item_manager_mut()
+                .get_render_item_mut(self.plane.render_item_id());
             render_item.is_visible = *self.is_show_image;
         }
 
@@ -102,45 +117,49 @@ impl ImagicAppTrait for App {
 
     fn on_render_ui(&mut self, ctx: &egui::Context) {
         egui::Window::new("Imagic - plane")
-        .resizable(true)
-        .vscroll(true)
-        .default_open(false)
-        .default_size([200.0, 10.0])
-        .show(&ctx, |ui| {
-            if *self.show_brdf_lut {
-                ui.label("Below is the brdf integration map, a HDR texture and upside down.");
-            } else {
-                ui.label("Below is lena image.");
-            }
+            .resizable(true)
+            .vscroll(true)
+            .default_open(false)
+            .default_size([200.0, 10.0])
+            .show(&ctx, |ui| {
+                if *self.show_brdf_lut {
+                    ui.label("Below is the brdf integration map, a HDR texture and upside down.");
+                } else {
+                    ui.label("Below is lena image.");
+                }
 
-            if *self.show_brdf_lut {
-                if ui.button("Show lena").clicked() {
-                    *self.show_brdf_lut = !*self.show_brdf_lut;
+                if *self.show_brdf_lut {
+                    if ui.button("Show lena").clicked() {
+                        *self.show_brdf_lut = !*self.show_brdf_lut;
+                        self.show_brdf_lut.set();
+                    }
+                } else {
+                    if ui.button("Show brdf lut").clicked() {
+                        *self.show_brdf_lut = !*self.show_brdf_lut;
+                        self.show_brdf_lut.set();
+                    }
                 }
-            } else {
-                if ui.button("Show brdf lut").clicked() {
-                    *self.show_brdf_lut = !*self.show_brdf_lut;
-                }
-            }
 
-            if *self.is_show_image {
-                if ui.button("Hide image").clicked() {
-                    info!("Hide image.");
-                    *self.is_show_image = !*self.is_show_image;
+                if *self.is_show_image {
+                    if ui.button("Hide image").clicked() {
+                        info!("Hide image.");
+                        *self.is_show_image = !*self.is_show_image;
+                        self.is_show_image.set();
+                    }
+                } else {
+                    if ui.button("Show image").clicked() {
+                        info!("Show image.");
+                        *self.is_show_image = !*self.is_show_image;
+                        self.is_show_image.set();
+                    }
                 }
-            } else {
-                if ui.button("Show image").clicked() {
-                    info!("Show image.");
-                    *self.is_show_image = !*self.is_show_image;
-                }
-            }
 
-            // ui.separator();
-            // ui.label("This simple demo powered by wgpu renders full screen with a big triangle and a texture without Vertex buffer");
-        });
+                // ui.separator();
+                // ui.label("This simple demo powered by wgpu renders full screen with a big triangle and a texture without Vertex buffer");
+            });
     }
 
-    fn get_imagic_option(& self) -> ImagicOption {
+    fn get_imagic_option(&self) -> ImagicOption {
         ImagicOption::new(self.window_size, "plane Demo")
     }
 }

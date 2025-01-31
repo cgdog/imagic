@@ -80,30 +80,35 @@ impl App {
             include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_basecolor.png"),
             wgpu::TextureFormat::Rgba8UnormSrgb,
             false,
+            1,
         );
         let normal_texture = Texture::create_from_bytes(
             graphics_context,
             include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_normal.png"),
             wgpu::TextureFormat::Rgba8Unorm,
             false,
+            1,
         );
         let metallic_texture = Texture::create_from_bytes(
             graphics_context,
             include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_metallic.png"),
             wgpu::TextureFormat::Rgba8Unorm,
             false,
+            1,
         );
         let roughness_texture = Texture::create_from_bytes(
             graphics_context,
             include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_roughness.png"),
             wgpu::TextureFormat::Rgba8Unorm,
             false,
+            1,
         );
         let ao_texture = Texture::create_from_bytes(
             graphics_context,
             include_bytes!("./assets/pbr/rustediron1-alt2-bl/ao.png"),
             wgpu::TextureFormat::Rgba8Unorm,
             false,
+            1,
         );
 
         let texture_manager = imagic_context.texture_manager_mut();
@@ -143,6 +148,7 @@ impl App {
             include_bytes!("./assets/lena.png"),
             wgpu::TextureFormat::Rgba8UnormSrgb,
             false,
+            1,
         );
         let albedo_texture_index = imagic_context
             .texture_manager_mut()

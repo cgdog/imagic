@@ -15,14 +15,19 @@ impl<T> Changeable<T> {
         }
     }
 
-    /// Is the data wrapped changed?
-    pub fn is_changed(&self) -> bool {
-        self.is_changed
+    /// Mark the data has changed.
+    pub fn set(&mut self) {
+        self.is_changed = true;
     }
 
     /// Mark the data not changed.
     pub fn reset(&mut self) {
         self.is_changed = false;
+    }
+
+    /// Is the data wrapped changed?
+    pub fn is_changed(&self) -> bool {
+        self.is_changed
     }
 }
 
@@ -36,7 +41,6 @@ impl<T> Deref for Changeable<T> {
 
 impl<T>  DerefMut for Changeable<T>{
     fn deref_mut(&mut self) -> &mut Self::Target {
-        self.is_changed = true;
         &mut self.data
     }
 }

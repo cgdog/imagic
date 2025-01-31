@@ -96,6 +96,8 @@ impl ImagicContext {
         );
 
         self.input_manager.on_update();
+
+        self.material_manager.on_update(&self.graphics_context);
     }
 
     pub fn on_resize(

@@ -32,6 +32,7 @@ impl Skybox {
             imagic_context.graphics_context(),
             buffers,
             wgpu::TextureFormat::Rgba8UnormSrgb,
+            1,
         );
         let cube_texture_id = imagic_context
             .texture_manager_mut()
@@ -63,5 +64,9 @@ impl Skybox {
 
         self.background_texture_id = background_cube_texture;
         self.skybox_material_id = skybox_material_id;
+    }
+
+    pub fn init_with_custom_material(&mut self, imagic_context: &mut ImagicContext, material: ID) {
+        self.cube.init(imagic_context, material);
     }
 }

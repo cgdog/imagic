@@ -1,12 +1,14 @@
+//! double nums by compute shader.
 use std::num::NonZeroU64;
 
-use imagic::{prelude::{ComputeShader, ImagicAppTrait, ImagicOption}, window::WindowSize, Imagic};
+use imagic::{
+    prelude::{ComputeShader, ImagicAppTrait, ImagicOption},
+    window::WindowSize,
+    Imagic,
+};
 use wgpu::util::DeviceExt;
 
-
-pub struct App {
-
-}
+pub struct App {}
 
 impl ImagicAppTrait for App {
     fn init(&mut self, imagic: &mut imagic::prelude::ImagicContext) {
@@ -14,7 +16,7 @@ impl ImagicAppTrait for App {
         ComputeShader::execute(self, imagic);
     }
 
-    fn get_imagic_option(& self) -> imagic::prelude::ImagicOption {
+    fn get_imagic_option(&self) -> imagic::prelude::ImagicOption {
         ImagicOption {
             window_size: WindowSize::new(500.0, 500.0),
             window_title: "compute shader demo",
@@ -26,7 +28,8 @@ impl ComputeShader for App {
     fn execute(&mut self, imagic_context: &mut imagic::prelude::ImagicContext) {
         let arguments: [f32; 3] = [1.2, 2.3, 3.4];
         let device = imagic_context.graphics_context().get_device();
-        let module = device.create_shader_module(wgpu::include_wgsl!("assets/shaders/double_nums.wgsl"));
+        let module =
+            device.create_shader_module(wgpu::include_wgsl!("common/shaders/double_nums.wgsl"));
         let input_data_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("input data buffer"),
             contents: bytemuck::cast_slice(&arguments),
@@ -107,7 +110,7 @@ impl ComputeShader for App {
         });
 
         let mut encoder =
-        device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
         // A compute pass is a single series of compute operations. While we are recording a compute
         // pass, we cannot record to the encoder.
@@ -139,7 +142,10 @@ impl ComputeShader for App {
 
         let command_buffer = encoder.finish();
 
-        imagic_context.graphics_context().get_queue().submit([command_buffer]);
+        imagic_context
+            .graphics_context()
+            .get_queue()
+            .submit([command_buffer]);
 
         let buffer_slice = download_buffer.slice(..);
         buffer_slice.map_async(wgpu::MapMode::Read, |_| {

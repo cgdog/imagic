@@ -90,7 +90,7 @@ impl EquirectToCubeConverter {
             imagic_context.render_item_manager_mut(),
         );
 
-        let cube_rt = CubeRenderTexture::new(imagic_context, format, face_size, face_size);
+        let cube_rt = CubeRenderTexture::new(imagic_context, format, face_size, face_size, 1);
         let rt_texture_id = cube_rt.get_color_attachment_id();
         camera.set_viewport(Vec4::new(0.0, 0.0, 1.0, 1.0));
 
