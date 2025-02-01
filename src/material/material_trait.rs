@@ -17,7 +17,7 @@ pub trait MaterialTrait : Any {
         bind_group_layout_manager: &mut BindGroupLayoutManager,
     );
 
-    /// Create shader module.
+    /// Create shader module. It will be called when create renderpipeline.
     fn create_shader_module(&self, graphics_context: &GraphicsContext) -> wgpu::ShaderModule;
 
     /// create bind group.

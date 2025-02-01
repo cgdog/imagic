@@ -59,8 +59,8 @@ var<uniform> custom_uniforms: CustomUniforms;
 
 @fragment
 fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
-    // Note: if custom_uniforms.lod does not exist, it will sample lod 0.
-    // if custom_uniforms.lod exists, but without data, sample result will be black.
+    // Note: if the mipmap corresponding to custom_uniforms.lod does not exist, it will sample lod 0.
+    // if the mipmap exists, but without data, sample result will be black.
     let frag_color = textureSampleLevel(skybox_cube_texture, skybox_cube_sampler, fs_in.uv, custom_uniforms.lod);
     return frag_color;
 }

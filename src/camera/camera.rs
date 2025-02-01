@@ -3,10 +3,13 @@ use wgpu::{TextureFormat, TextureView};
 use crate::{
     math::{Mat4, Vec3, Vec4},
     prelude::{
-        bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
-        buffer::{GPUBufferManager, SyncBuffer}, render_item_manager::RenderItemManager,
-        texture_manager::TextureManager, GraphicsContext, ImagicContext, RenderTexture,
-        SceneObject, Texture, Transform, TransformManager, VertexOrIndexCount, INVALID_ID,
+        bind_group::BindGroupManager,
+        bind_group_layout::BindGroupLayoutManager,
+        buffer::{GPUBufferManager, SyncBuffer},
+        render_item_manager::RenderItemManager,
+        texture_manager::TextureManager,
+        GraphicsContext, ImagicContext, RenderTexture, SceneObject, Texture, Transform,
+        TransformManager, VertexOrIndexCount, INVALID_ID,
     },
     types::{Dirtyable, ID},
     window::WindowSize,
@@ -144,10 +147,16 @@ impl Camera {
             let color_attachment_views = rt.get_rt_views();
             let attachment_count = color_attachment_views.len();
             let color_attachment_format = rt.get_color_attachment_format();
+            let rt_depth_view = rt.get_depth_view();
             if attachment_count == 1 {
-                let depth_attachment = rt.get_depth_attachment_id();
-                self.depth_texture = depth_attachment;
-                self.render_to_attachments(context, &color_attachment_views[0], 0, Some(color_attachment_format), sync_buffer);
+                self.render_to_attachments(
+                    context,
+                    &color_attachment_views[0],
+                    0,
+                    Some(color_attachment_format),
+                    Some(rt_depth_view),
+                    sync_buffer,
+                );
             } else {
                 for (view_index, cur_rt_view) in color_attachment_views.iter().enumerate() {
                     // Update camera view matrix before rendering.
@@ -166,7 +175,14 @@ impl Camera {
                         &context.transform_manager().borrow(),
                         context.buffer_manager(),
                     );
-                    self.render_to_attachments(context, cur_rt_view, 0, Some(color_attachment_format), sync_buffer);
+                    self.render_to_attachments(
+                        context,
+                        cur_rt_view,
+                        0,
+                        Some(color_attachment_format),
+                        Some(rt_depth_view),
+                        sync_buffer,
+                    );
                 }
             }
         } else {
@@ -178,7 +194,7 @@ impl Camera {
             let surface_texture_view = surface_texture
                 .texture
                 .create_view(&wgpu::TextureViewDescriptor::default());
-            self.render_to_attachments(context, &surface_texture_view, 0, None, sync_buffer);
+            self.render_to_attachments(context, &surface_texture_view, 0, None, None, sync_buffer);
         }
     }
 
@@ -189,6 +205,7 @@ impl Camera {
         color_attachment_view: &TextureView,
         camera_index: usize,
         color_attachment_format: Option<TextureFormat>,
+        depth_attachment_view: Option<&TextureView>,
         sync_buffer: Option<&SyncBuffer>,
     ) {
         let mut encoder =
@@ -202,9 +219,15 @@ impl Camera {
         {
             let camera_clear_color = self.get_clear_color();
             let camera_depth_textue = self.get_depth_texture();
-            let dpeth_texture_view = context
-                .texture_manager()
-                .get_texture_view(camera_depth_textue);
+
+            let dpeth_texture_view = if let Some(depth_view) = depth_attachment_view {
+                depth_view
+            } else {
+                context
+                    .texture_manager()
+                    .get_texture_view(camera_depth_textue)
+            };
+
             let camera_layer_mask = self.layer_mask;
 
             let mut load_op = wgpu::LoadOp::Load;
@@ -250,10 +273,15 @@ impl Camera {
             let render_items = context.render_item_manager().render_items();
             for (item_id, item) in render_items.iter().enumerate() {
                 if item.is_visible && camera_layer_mask.contains(item.layer) {
-
                     let pipeline_manager = context.pipeline_manager();
-                    if pipeline_manager.borrow().get_render_pipeline(item_id).is_none() {
-                        let material = context.material_manager().get_material(item.get_material_id());
+                    if pipeline_manager
+                        .borrow()
+                        .get_render_pipeline(item_id)
+                        .is_none()
+                    {
+                        let material = context
+                            .material_manager()
+                            .get_material(item.get_material_id());
                         context.create_pipeline(item_id, color_attachment_format, material);
                     }
 
@@ -269,12 +297,16 @@ impl Camera {
                         lighting_bind_group_id, // Group 3
                     ];
 
-                    rpass.set_pipeline(pipeline_manager.borrow().get_render_pipeline(item_id).expect("item has no pipeline"));
+                    rpass.set_pipeline(
+                        pipeline_manager
+                            .borrow()
+                            .get_render_pipeline(item_id)
+                            .expect("item has no pipeline"),
+                    );
                     for (index, bind_group_id) in item_bind_groups.iter().enumerate() {
                         if *bind_group_id != INVALID_ID {
-                            let bind_group = context
-                                .bind_group_manager()
-                                .get_bind_group(*bind_group_id);
+                            let bind_group =
+                                context.bind_group_manager().get_bind_group(*bind_group_id);
                             rpass.set_bind_group(index as u32, bind_group, &[]);
                         }
                     }
@@ -317,7 +349,7 @@ impl Camera {
     pub fn on_init(
         &mut self,
         logical_size: &WindowSize,
-        physical_size:&WindowSize,
+        physical_size: &WindowSize,
         graphics_context: &GraphicsContext,
         bind_group_manager: &mut BindGroupManager,
         bind_group_layout_manager: &mut BindGroupLayoutManager,
@@ -373,7 +405,12 @@ impl Camera {
             return;
         }
         // TODO: release outdated depth_texture: self.depth_texture, which requires to refactor TextureManager class.
-        self.create_depth_texture(graphics_context, texture_manager, physical_width, physical_height);
+        self.create_depth_texture(
+            graphics_context,
+            texture_manager,
+            physical_width,
+            physical_height,
+        );
         self._compute_physical_viewport_aspect(physical_width as f32, physical_height as f32);
         self._compute_logical_viewport(logical_width as f32, logical_height as f32);
         self.update_uniform_buffers(graphics_context, transform_manager, buffer_manager);
@@ -620,7 +657,7 @@ impl Camera {
     ) {
         const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth24PlusStencil8;
         let dpeth_texture =
-            Texture::create_depth_texture(graphics_context, width, height, DEPTH_FORMAT);
+            Texture::create_depth_texture(graphics_context, width, height, DEPTH_FORMAT, true);
         self.depth_texture = texture_manager.add_texture(dpeth_texture);
     }
 

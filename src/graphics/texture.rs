@@ -257,12 +257,15 @@ impl Texture {
         width: u32,
         height: u32,
         format: TextureFormat,
+        is_create_view: bool,
     ) -> Self {
         let usage = wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING;
         let mut dpeth_texture = Texture::create(graphics_context, width, height, 1, format, usage, 1);
 
-        let texture_view = dpeth_texture.create_view(&wgpu::TextureViewDescriptor::default());
-        dpeth_texture.view = Some(texture_view);
+        if is_create_view {
+            let texture_view = dpeth_texture.create_view(&wgpu::TextureViewDescriptor::default());
+            dpeth_texture.view = Some(texture_view);
+        }
         dpeth_texture
     }
 

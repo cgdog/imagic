@@ -18,6 +18,8 @@ pub trait RenderTexture {
 
     /// Get depth attachment texture id.
     fn get_depth_attachment_id(&self) -> ID;
+    fn get_depth_view(&self) -> &TextureView;
+    fn set_depth_view(&mut self, depth_view: TextureView);
 
     /// Get render texture views. 2D rt has only one view, which is stored in its Texture instance.
     /// Cube Render Texture has 6 views.
@@ -35,18 +37,20 @@ pub trait RenderTexture {
 }
 
 /// Create a depth texture, used internally.
-fn create_depth_texture(imagic_context: &mut ImagicContext, width: u32, height: u32) -> ID {
+fn create_depth_texture(imagic_context: &mut ImagicContext, width: u32, height: u32) -> (ID, TextureView) {
     const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth24PlusStencil8;
     let dpeth_texture = Texture::create_depth_texture(
         imagic_context.graphics_context(),
         width,
         height,
         DEPTH_FORMAT,
+        false,
     );
+    let depth_view = dpeth_texture.create_view(&wgpu::TextureViewDescriptor::default());
     let depth_texture = imagic_context
         .texture_manager_mut()
         .add_texture(dpeth_texture);
-    depth_texture
+    (depth_texture, depth_view)
 }
 
 pub struct RenderTexture2D {
@@ -54,6 +58,7 @@ pub struct RenderTexture2D {
     color_attachment_format: wgpu::TextureFormat,
     color_attachment_view: [TextureView; 1],
     depth_attachment: ID,
+    depth_view: TextureView,
     width: f32,
     height: f32,
 }
@@ -94,6 +99,14 @@ impl RenderTexture for RenderTexture2D {
     fn get_per_face_camera_params(&self, _index: usize) -> (Vec3, Vec3, Vec3) {
         todo!()
     }
+    
+    fn get_depth_view(&self) -> &TextureView {
+        &self.depth_view
+    }
+    
+    fn set_depth_view(&mut self, depth_view: TextureView) {
+        self.depth_view = depth_view;
+    }
 }
 
 impl RenderTexture2D {
@@ -122,7 +135,7 @@ impl RenderTexture2D {
             .texture_manager_mut()
             .add_texture(texture);
 
-        let depth_attachment_id = create_depth_texture(imagic_context, width, height);
+        let (depth_attachment_id, depth_view) = create_depth_texture(imagic_context, width, height);
 
 
         Self {
@@ -130,6 +143,7 @@ impl RenderTexture2D {
             color_attachment_format: format,
             color_attachment_view: [rt_view],
             depth_attachment: depth_attachment_id,
+            depth_view,
             width: width as f32,
             height: height as f32,
         }
@@ -140,6 +154,7 @@ pub struct CubeRenderTexture {
     color_attachment: ID,
     color_attachment_format: wgpu::TextureFormat,
     depth_attachment: ID,
+    depth_view: TextureView,
     face_views: [TextureView; 6],
     face_size: f32,
     // view_matrices: [Mat4; 6],
@@ -183,6 +198,14 @@ impl RenderTexture for CubeRenderTexture {
         self.per_face_camera_params[index]
     }
 
+    fn get_depth_view(&self) -> &TextureView {
+        &self.depth_view
+    }
+
+    fn set_depth_view(&mut self, depth_view: TextureView) {
+        self.depth_view = depth_view;
+    }
+    
     // fn get_rt_view_matrix(&self, index: usize) -> &Mat4 {
     //     &self.view_matrices[index]
     // }
@@ -230,7 +253,7 @@ impl CubeRenderTexture {
             .texture_manager_mut()
             .add_texture(cube_texture);
 
-        let depth_attachment_id = create_depth_texture(imagic_context, width, height);
+        let (depth_attachment_id, depth_view) = create_depth_texture(imagic_context, width, height);
 
         // let view_matrices: [Mat4; 6] = [
         //         Mat4::look_at_rh(Vec3::ZERO, Vec3::new( 1.0,  0.0,  0.0), Vec3::new(0.0, -1.0,  0.0)),
@@ -279,10 +302,15 @@ impl CubeRenderTexture {
             color_attachment: color_attachment_id,
             color_attachment_format: format,
             depth_attachment: depth_attachment_id,
+            depth_view,
             face_views,
             face_size: width as f32,
             // view_matrices,
             per_face_camera_params,
         }
+    }
+
+    pub fn set_face_views(&mut self, face_views: [TextureView; 6]) {
+        self.face_views = face_views;
     }
 }
