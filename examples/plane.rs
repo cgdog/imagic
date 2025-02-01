@@ -123,36 +123,32 @@ impl ImagicAppTrait for App {
             .default_size([200.0, 10.0])
             .show(&ctx, |ui| {
                 if *self.show_brdf_lut {
-                    ui.label("Below is the brdf integration map, a HDR texture and upside down.");
-                } else {
-                    ui.label("Below is lena image.");
-                }
-
-                if *self.show_brdf_lut {
                     if ui.button("Show lena").clicked() {
                         *self.show_brdf_lut = !*self.show_brdf_lut;
                         self.show_brdf_lut.set();
                     }
+                    ui.label("Below is the brdf integration map, a HDR texture and upside down.");
                 } else {
                     if ui.button("Show brdf lut").clicked() {
                         *self.show_brdf_lut = !*self.show_brdf_lut;
                         self.show_brdf_lut.set();
                     }
+                    ui.label("Below is lena image.");
                 }
 
-                if *self.is_show_image {
-                    if ui.button("Hide image").clicked() {
-                        info!("Hide image.");
-                        *self.is_show_image = !*self.is_show_image;
-                        self.is_show_image.set();
-                    }
-                } else {
-                    if ui.button("Show image").clicked() {
-                        info!("Show image.");
-                        *self.is_show_image = !*self.is_show_image;
-                        self.is_show_image.set();
-                    }
-                }
+                // if *self.is_show_image {
+                //     if ui.button("Hide image").clicked() {
+                //         info!("Hide image.");
+                //         *self.is_show_image = !*self.is_show_image;
+                //         self.is_show_image.set();
+                //     }
+                // } else {
+                //     if ui.button("Show image").clicked() {
+                //         info!("Show image.");
+                //         *self.is_show_image = !*self.is_show_image;
+                //         self.is_show_image.set();
+                //     }
+                // }
 
                 // ui.separator();
                 // ui.label("This simple demo powered by wgpu renders full screen with a big triangle and a texture without Vertex buffer");
