@@ -6,11 +6,19 @@ use crate::{
     types::ID,
 };
 
+pub enum MipmapGeneratorType {
+    BilinearFilter,
+    GaussianFilter4x4,
+    /// not implemented, faded to BilinearFiler.
+    BoxAndMultiFilter,
+}
+
 pub struct CubeMipmapsGenerator {
     cube_without_mipmaps: ID,
     cube_with_mipmaps: ID,
     face_size: u32,
     format: wgpu::TextureFormat,
+    mipmap_generator_type: MipmapGeneratorType,
 }
 
 impl ComputeShader for CubeMipmapsGenerator {
@@ -53,12 +61,13 @@ impl ComputeShader for CubeMipmapsGenerator {
 }
 
 impl CubeMipmapsGenerator {
-    pub fn new(cube_without_mipmaps: ID, face_size: u32, format: wgpu::TextureFormat) -> Self {
+    pub fn new(cube_without_mipmaps: ID, face_size: u32, format: wgpu::TextureFormat, mipmap_generator_type: MipmapGeneratorType) -> Self {
         Self {
             cube_without_mipmaps,
             face_size,
             cube_with_mipmaps: INVALID_ID,
             format,
+            mipmap_generator_type
         }
     }
 
@@ -241,11 +250,20 @@ impl CubeMipmapsGenerator {
                 push_constant_ranges: &[],
             });
 
+        let entry_point = match self.mipmap_generator_type {
+            MipmapGeneratorType::BilinearFilter => {
+                Some("main_bilinear")
+            }
+            MipmapGeneratorType::GaussianFilter4x4 => {
+                Some("main_gaussian")
+            }
+            _ => Some("main_bilinear")
+        };
         let compute_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
             label: Some("Mipmap Compute Pipeline"),
             layout: Some(&compute_pipeline_layout),
             module: &compute_shader,
-            entry_point: Some("main"),
+            entry_point: entry_point,
             compilation_options: wgpu::PipelineCompilationOptions::default(),
             cache: None,
         });

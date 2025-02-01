@@ -51,6 +51,8 @@ impl App {
             self.ibl_data.background_cube_texture,
             512,
             wgpu::TextureFormat::Rgba32Float,
+            // MipmapGeneratorType::GaussianFilter4x4,
+            MipmapGeneratorType::BilinearFilter
         );
         cube_mipmaps_generator.execute(imagic_context);
         let mut custom_skybox_material = CustomSkyboxMaterial::new();

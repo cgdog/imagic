@@ -1,10 +1,16 @@
+/// Generate mipmaps.
+/// Capture the scene rendered by babylonjs https://playground.babylonjs.com/#NDQJBS,
+/// we can change the fragment shader and show the specific lod.
+/// It seems that openGL's or webgl's glGenerateMipmap() generates mipmaps similar something between 'main_bilinear()' and 'main_gaussian' below.
+
 @group(0) @binding(0)
 var input_tex: texture_2d_array<f32>;
 @group(0) @binding(1)
 var output_tex: texture_storage_2d_array<rgba32float, write>;
 
+// Bilinear filter.
 @compute @workgroup_size(8, 8, 1)
-fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+fn main_bilinear(@builtin(global_invocation_id) id: vec3<u32>) {
     if (id.z >= 6u) { return; }
     let cur_size = textureDimensions(output_tex);
     if (id.x >= cur_size.x || id.y >= cur_size.y) { return; }
@@ -31,3 +37,50 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     textureStore(output_tex, vec2<i32>(id.xy), i32(id.z), final_color);
     // textureStore(output_tex, vec2<i32>(id.xy), i32(id.z), vec4f(1.0, 1.0, 0.0, 1.0));
 }
+
+// Gaussian filter(4x4)
+@compute @workgroup_size(8, 8, 1)
+fn main_gaussian(@builtin(global_invocation_id) id: vec3<u32>) {
+    if (id.z >= 6u) { return; }
+
+    let output_size = textureDimensions(output_tex).xy;
+    if (id.x >= output_size.x || id.y >= output_size.y) { return; }
+
+    // last mip coord
+    let prev_size = textureDimensions(input_tex).xy;
+    let prev_coord = vec2<f32>(id.xy) * 2.0 + 0.5;
+
+    // gassian kernel（4x4）
+    let weights = array<f32, 16>(
+        0.05, 0.1,  0.1,  0.05,
+        0.1,  0.2,  0.2,  0.1,
+        0.1,  0.2,  0.2,  0.1,
+        0.05, 0.1,  0.1,  0.05
+    );
+
+    var sum = vec4<f32>(0.0);
+    var total_weight = 0.0;
+
+    // sample 4x4 region
+    for (var i = 0; i < 4; i++) {
+        for (var j = 0; j < 4; j++) {
+            let offset = vec2<i32>(i, j) - vec2<i32>(2, 2);
+            let sample_coord = vec2<i32>(prev_coord) + offset;
+            
+            let clamped_coord = clamp(
+                sample_coord,
+                vec2<i32>(0, 0),
+                vec2<i32>(prev_size) - vec2<i32>(1, 1)
+            );
+
+            let color = textureLoad(input_tex, clamped_coord, i32(id.z), 0);
+            let weight = weights[i * 4 + j];
+            sum += color * weight;
+            total_weight += weight;
+        }
+    }
+
+    let result = sum / total_weight;
+    textureStore(output_tex, vec2<i32>(id.xy), i32(id.z), result);
+}
+
