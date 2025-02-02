@@ -97,7 +97,11 @@ impl ImagicContext {
 
         self.input_manager.on_update();
 
-        self.material_manager.on_update(&self.graphics_context);
+        // self.material_manager.on_update(&self.graphics_context);
+    }
+
+    pub fn update_material(&mut self, material_id: ID) {
+        self.material_manager.get_material_mut(material_id).on_update(&self.graphics_context);
     }
 
     pub fn on_resize(

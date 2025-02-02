@@ -2,12 +2,18 @@ use crate::{
     camera::{Camera, Layer, LayerMask},
     math::{Vec3, Vec4},
     model::{Cube, Plane},
-    prelude::{BRDFIntegralMaterial, ImagicContext, RenderTexture, RenderTexture2D, INVALID_ID},
+    prelude::{
+        BRDFIntegralMaterial, ComputeShader, ImagicContext, RenderTexture, RenderTexture2D,
+        INVALID_ID,
+    },
     scene::SceneObject,
     types::{ID, RR},
 };
 
-use super::{EquirectToCubeConverter, IrradianceMapGenerator};
+use super::{
+    CubeMipmapsGenerator, CubeTexturePrefilter, EquirectToCubeConverter, IrradianceMapGenerator,
+    MipmapGeneratorType,
+};
 
 pub enum InputEquirect {
     Path(&'static str),
@@ -25,6 +31,7 @@ pub struct IBLBakerOptions {
     pub background_cube_map_size: u32,
     pub irradiance_cube_map_size: u32,
     pub reflection_cube_map_size: u32,
+    pub reflection_cube_map_mipmap_level_count: u32,
     pub brdf_lut_size: u32,
 
     pub rt_format: wgpu::TextureFormat,
@@ -42,6 +49,7 @@ impl Default for IBLBakerOptions {
             background_cube_map_size: 512,
             irradiance_cube_map_size: 32,
             reflection_cube_map_size: 128,
+            reflection_cube_map_mipmap_level_count: 5,
             brdf_lut_size: 512,
 
             rt_format: wgpu::TextureFormat::Rgba32Float,
@@ -108,17 +116,29 @@ impl IBLBaker {
         // sync_buffer.receive(imagic_context.graphics_context());
 
         // let sync_buffer2 = SyncBuffer::new(imagic_context.graphics_context());
-        self.generate_irradiance_cube_texture(
-            imagic_context,
-            &mut camera.borrow_mut(),
-            &mut cube,
-            // &sync_buffer2,
-        );
+        if self.options.is_bake_irradiance {
+            self.generate_irradiance_cube_texture(
+                imagic_context,
+                &mut camera.borrow_mut(),
+                &mut cube,
+                // &sync_buffer2,
+            );
+        }
         // sync_buffer2.receive(imagic_context.graphics_context());
 
+        if self.options.is_bake_reflection {
+            self.generate_prefiltered_cube_texture(
+                imagic_context,
+                &mut camera.borrow_mut(),
+                &mut cube,
+            );
+        }
+
         if self.options.is_generate_brdf_lut {
+            // Note: this function generate a full screen plane with layer of RenderTarget.
             self.generate_brdf_lut(imagic_context);
         }
+
         IBLData {
             background_cube_texture: self.background_cube_texture,
             irradiance_cube_texture: self.irradiance_cube_texture,
@@ -247,5 +267,33 @@ impl IBLBaker {
         camera.borrow_mut().set_render_texture(Box::new(rt));
         camera.borrow_mut().render(imagic_context, None);
         self.brdf_lut
+    }
+
+    fn generate_prefiltered_cube_texture(
+        &mut self,
+        imagic_context: &mut ImagicContext,
+        camera: &mut Camera,
+        cube: &mut Cube,
+        // sync_buffer: &SyncBuffer,
+    ) {
+        // generate mipmaps with compute shader, like openGL's glGenerateMipmap.
+        let mut cube_mipmaps_generator = CubeMipmapsGenerator::new(
+            self.background_cube_texture,
+            self.options.background_cube_map_size,
+            wgpu::TextureFormat::Rgba32Float,
+            // MipmapGeneratorType::GaussianFilter4x4,
+            MipmapGeneratorType::BilinearFilter,
+        );
+        cube_mipmaps_generator.execute(imagic_context);
+        let cube_map_with_mipmaps = cube_mipmaps_generator.get_cube_with_mipmap();
+        // self.refelction_cube_texture = cube_map_with_mipmaps;
+
+        let mut cube_texture_prefilter = CubeTexturePrefilter::new(
+            cube_map_with_mipmaps,
+            self.options.reflection_cube_map_mipmap_level_count,
+            self.options.reflection_cube_map_size,
+        );
+        self.refelction_cube_texture =
+            cube_texture_prefilter.prefilter(imagic_context, camera, cube, self.options.rt_format);
     }
 }

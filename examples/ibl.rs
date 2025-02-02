@@ -150,10 +150,12 @@ impl App {
             )),
             background_cube_map_size: 512,
             irradiance_cube_map_size: 32,
+            // is_generate_brdf_lut: false,
             ..Default::default()
         });
         self.ibl_data = ibl_baker.bake(imagic_context);
         self.skybox
+            // .init_with_cube_texture(imagic_context, self.ibl_data.refelction_cube_texture);
             .init_with_cube_texture(imagic_context, self.ibl_data.background_cube_texture);
             // .init_with_cube_texture(imagic_context, self.ibl_data.irradiance_cube_texture);
     }

@@ -24,14 +24,21 @@ impl Default for EnvironmentPrefilterMaterial {
             roughness: 0.0,
             max_mipmap_level: 5,
             bind_group_id: INVALID_ID,
-            cull_mode: wgpu::Face::Back,
+            cull_mode: wgpu::Face::Front,
             uniform_buffer: None,
         }
     }
 }
 
-#[allow(unused)]
 impl MaterialTrait for EnvironmentPrefilterMaterial {
+    fn set_cull_mode(&mut self, cull_mode: wgpu::Face) {
+        self.cull_mode = cull_mode;
+    }
+
+    fn get_cull_mode(&self) -> wgpu::Face {
+        self.cull_mode
+    }
+
     fn on_init(
         &mut self,
         graphics_context: &crate::prelude::GraphicsContext,
@@ -43,12 +50,20 @@ impl MaterialTrait for EnvironmentPrefilterMaterial {
 
     fn create_shader_module(&self, graphics_context: &crate::prelude::GraphicsContext) -> wgpu::ShaderModule {
         let shader = graphics_context.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("create skybox shader module"),
+            label: Some("create env prefilter shader module"),
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!(
                 "../shaders/environment_prefilter.wgsl"
             ))),
         });
         shader
+    }
+
+    fn on_update(&mut self, graphics_context: &GraphicsContext) {
+        graphics_context.get_queue().write_buffer(
+            self.uniform_buffer.as_ref().unwrap(),
+            0,
+            bytemuck::cast_slice(&[self.roughness]),
+        );
     }
 
     fn create_bind_group(
@@ -109,6 +124,10 @@ impl MaterialTrait for EnvironmentPrefilterMaterial {
 
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
+    }
+
+    fn enable_lights(&self) -> bool {
+        false
     }
 }
 
@@ -215,14 +234,6 @@ impl EnvironmentPrefilterMaterial {
 
     pub fn get_max_mipmap_level(&self) -> u32 {
         self.max_mipmap_level
-    }
-
-    pub fn set_cull_mode(&mut self, cull_mode: wgpu::Face) {
-        self.cull_mode = cull_mode;
-    }
-
-    pub fn get_cull_mode(&self) -> wgpu::Face {
-        self.cull_mode
     }
 
     pub fn get_cube_texture_sampler(&self) -> &wgpu::Sampler {

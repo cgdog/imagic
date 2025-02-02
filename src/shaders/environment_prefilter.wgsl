@@ -35,12 +35,16 @@ struct FSIn {
    @location(0) local_pos: vec3f,
 };
 
+struct FragmentUnifoms {
+    roughness: f32,
+}
+
 @group(2) @binding(0)
 var input_cube_texture: texture_cube<f32>;
 @group(2) @binding(1)
 var cube_sampler: sampler;
 @group(2) @binding(2)
-var roughness: f32;
+var<uniform> fragment_uniforms: FragmentUnifoms;
 
 const PI: f32 = 3.14159265359;
 
@@ -100,9 +104,13 @@ fn ImportanceSampleGGX(Xi: vec2f, N: vec3f, roughness: f32) -> vec3f
 	return normalize(sampleVec);
 }
 // ----------------------------------------------------------------------------
+// @fragment
+// fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
+//     return vec4f(1.0, 1.0, 0.0, 1.0);
+// }
 @fragment
 fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
-    let world_pos = fs_in.local_pos;
+    let WorldPos = fs_in.local_pos;
     let N = normalize(WorldPos);
     
     // make the simplifying assumption that V equals R equals the normal 
@@ -112,6 +120,8 @@ fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
     const SAMPLE_COUNT: u32 = 1024u;
     var prefilteredColor = vec3(0.0);
     var totalWeight: f32 = 0.0;
+
+    let roughness = fragment_uniforms.roughness;
     
     for(var i = 0u; i < SAMPLE_COUNT; i++)
     {
@@ -131,19 +141,22 @@ fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
 
             let resolution = 512.0; // resolution of source cubemap (per face)
             let saTexel  = 4.0 * PI / (6.0 * resolution * resolution);
-            let saSample = 1.0 / (float(SAMPLE_COUNT) * pdf + 0.0001);
+            let saSample = 1.0 / (f32(SAMPLE_COUNT) * pdf + 0.0001);
 
             // let mipLevel = roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel); 
-            let mipLevel = roughness == select(0.5 * log2(saSample / saTexel), 0.0, roughness == 0.0);
+            let mipLevel = select(0.5 * log2(saSample / saTexel), 0.0, roughness == 0.0);
             
-            // prefilteredColor += textureLod(environmentMap, L, mipLevel).rgb * NdotL;
-            prefilteredColor += textureSampleLevel(environmentMap, cube_sampler, L, mipLevel).rgb * NdotL;
+            // Note: the line below is used to correct cube texture upside down problem.
+            // I do not know the problem reason now.
+            let sample_dir = vec3f(L.x, -L.y, L.z);
+            prefilteredColor += textureSampleLevel(input_cube_texture, cube_sampler, sample_dir, mipLevel).rgb * NdotL;
             totalWeight      += NdotL;
         }
     }
 
     prefilteredColor = prefilteredColor / totalWeight;
 
-    let frag_color = vec4(prefilteredColor, 1.0);
+    let frag_color = vec4f(prefilteredColor, 1.0);
+    // let frag_color = vec4f(1.0, 1.0, 1.0, 1.0);
     return frag_color;
 }

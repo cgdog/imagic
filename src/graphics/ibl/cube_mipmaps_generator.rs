@@ -1,4 +1,3 @@
-use log::info;
 use wgpu::{BindGroup, BindGroupLayout, ComputePipeline, TextureAspect};
 
 use crate::{
@@ -32,9 +31,9 @@ impl ComputeShader for CubeMipmapsGenerator {
             .get_device()
             .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
 
-        info!("mip_level_count: {}", mip_level_count);
+        // info!("mip_level_count: {}", mip_level_count);
         for mip in 1..mip_level_count {
-            info!("mip: {}", mip);
+            // info!("mip: {}", mip);
             let bind_group = self.create_bind_group(imagic_context, mip, &bind_group_layout);
 
             let mut compute_pass =

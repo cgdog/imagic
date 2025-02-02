@@ -52,5 +52,7 @@ var skybox_cube_sampler: sampler;
 @fragment
 fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
     let frag_color = textureSample(skybox_cube_texture, skybox_cube_sampler, fs_in.uv);
+    // let frag_color = textureSampleLevel(skybox_cube_texture, skybox_cube_sampler, fs_in.uv, 4.0);
+    // let frag_color = vec4f(1.0, 0.0, 1.0, 1.0);
     return frag_color;
 }

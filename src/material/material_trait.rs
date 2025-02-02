@@ -54,6 +54,12 @@ pub trait MaterialTrait : Any {
         true
     }
 
+    /// Update material parameters, e.g., update uniform buffers.
+    /// 
+    /// Do not call this method directly.
+    /// 
+    /// Users should call ImagicContext.update_material(material_id) instead,
+    /// which will call this method and pass essential arguments. 
     #[allow(unused)]
     fn on_update(&mut self, graphics_context: &GraphicsContext) {
     }

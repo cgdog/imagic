@@ -49,11 +49,11 @@ impl MaterialManager {
         &mut self.materials[index]
     }
 
-    pub(crate) fn on_update(&mut self, graphics_context: &GraphicsContext) {
-        for material in self.materials.iter_mut() {
-            material.on_update(graphics_context);
-        }
-    }
+    // pub(crate) fn on_update(&mut self, graphics_context: &GraphicsContext) {
+    //     for material in self.materials.iter_mut() {
+    //         material.on_update(graphics_context);
+    //     }
+    // }
 
     // pub fn init_after_app(
     //     &mut self,

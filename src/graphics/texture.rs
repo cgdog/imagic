@@ -217,6 +217,12 @@ impl Texture {
         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
             label: Some("Cube Texture View"),
             dimension: Some(wgpu::TextureViewDimension::Cube),
+            format: Some(format),
+            base_mip_level: 0,
+            mip_level_count: Some(mip_level_count),
+            base_array_layer: 0,
+            array_layer_count: Some(6),
+
             ..Default::default()
         });
         texture.view = Some(texture_view);

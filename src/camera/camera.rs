@@ -137,6 +137,10 @@ impl Camera {
         self.render_texture = Some(render_texture);
     }
 
+    pub fn get_render_texture(&mut self) -> &mut Option<Box<dyn RenderTexture>> {
+        &mut self.render_texture
+    }
+
     /// Render the scene by current Camera.
     pub fn render(&mut self, context: &ImagicContext, sync_buffer: Option<&SyncBuffer>) {
         // let mut attachment_views: &[TextureView];
@@ -144,17 +148,17 @@ impl Camera {
             // draw to rt
             self.aspect = self.physical_view_port.z / self.physical_view_port.w;
 
-            let color_attachment_views = rt.get_rt_views();
+            let color_attachment_views = rt.get_color_attachment_views();
             let attachment_count = color_attachment_views.len();
             let color_attachment_format = rt.get_color_attachment_format();
-            let rt_depth_view = rt.get_depth_view();
+            let depth_attachment_views = rt.get_depth_attachment_views();
             if attachment_count == 1 {
                 self.render_to_attachments(
                     context,
                     &color_attachment_views[0],
                     0,
                     Some(color_attachment_format),
-                    Some(rt_depth_view),
+                    Some(&depth_attachment_views[0]),
                     sync_buffer,
                 );
             } else {
@@ -168,8 +172,8 @@ impl Camera {
                         .set_position(camera_pos);
                     self.target_pos = target_pos;
                     self.up = up;
-                    let depth_attachment = rt.get_depth_attachment_id();
-                    self.depth_texture = depth_attachment;
+                    // let depth_attachment = rt.get_depth_attachment_id();
+                    // self.depth_texture = depth_attachment;
                     self.update_uniform_buffers(
                         context.graphics_context(),
                         &context.transform_manager().borrow(),
@@ -180,7 +184,7 @@ impl Camera {
                         cur_rt_view,
                         0,
                         Some(color_attachment_format),
-                        Some(rt_depth_view),
+                        Some(&depth_attachment_views[view_index]),
                         sync_buffer,
                     );
                 }
@@ -238,6 +242,7 @@ impl Camera {
                     b: camera_clear_color.z as f64,
                     a: camera_clear_color.w as f64,
                 };
+                // let clear_color = wgpu::Color::BLUE;
                 load_op = wgpu::LoadOp::Clear(clear_color);
             }
 

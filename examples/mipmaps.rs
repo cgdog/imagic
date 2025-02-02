@@ -106,6 +106,7 @@ impl ImagicAppTrait for App {
             let custom_skybox_material = imagic_context.material_manager_mut().get_material_mut(self.custom_skybox_material_id);
             if let Some(custom_skybox_material) = custom_skybox_material.as_any_mut().downcast_mut::<CustomSkyboxMaterial>() {
                 custom_skybox_material.set_lod(*self.lod);
+                imagic_context.update_material(self.custom_skybox_material_id);
             }
         }
     }
