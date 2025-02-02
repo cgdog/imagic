@@ -78,7 +78,10 @@ impl LightManager {
 
         let lights_info_ref: &[u8] = bytemuck::cast_slice(&lights_storage_data);
 
-        let lights_ref = [light_count_ref, lights_info_ref].concat();
+        let mut lights_ref = [light_count_ref, lights_info_ref].concat();
+        // align with 32 bytes.
+        let padding_size = (32 - (lights_ref.len() % 32)) % 32;
+        lights_ref.extend(vec![0; padding_size]); 
 
         let lights_storage_buffer =
             graphics_context.create_buffer_init(&wgpu::util::BufferInitDescriptor {

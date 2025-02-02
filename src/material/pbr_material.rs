@@ -31,7 +31,9 @@ pub struct PBRMaterial {
     ao_texture: ID,
 
     irradiance_cube_texture: ID,
-
+    prefiltered_cube_texture: ID,
+    brdf_lut: ID,
+    
     texture2d_sampler: Option<wgpu::Sampler>,
     texture_cube_sampler: Option<wgpu::Sampler>,
 
@@ -49,6 +51,8 @@ impl Default for PBRMaterial {
             roughness_texture: Texture::white(),
             ao_texture: Texture::white(),
             irradiance_cube_texture: INVALID_ID,
+            prefiltered_cube_texture: INVALID_ID,
+            brdf_lut: INVALID_ID,
             texture2d_sampler: None,
             texture_cube_sampler: None,
 
@@ -155,6 +159,20 @@ impl MaterialTrait for PBRMaterial {
                 wgpu::BindGroupEntry {
                     binding: 8,
                     resource: wgpu::BindingResource::Sampler(&self.get_cube_texture_sampler()),
+                },
+                wgpu::BindGroupEntry {
+                    // prefiltered reflection map
+                    binding: 9,
+                    resource: wgpu::BindingResource::TextureView(
+                        texture_manager.get_texture_view(self.prefiltered_cube_texture),
+                    ),
+                },
+                wgpu::BindGroupEntry {
+                    // brdf lut
+                    binding: 10,
+                    resource: wgpu::BindingResource::TextureView(
+                        texture_manager.get_texture_view(self.brdf_lut),
+                    ),
                 },
             ],
         });
@@ -282,7 +300,7 @@ impl PBRMaterial {
                         count: None,
                     },
                     wgpu::BindGroupLayoutEntry {
-                        // reflection cube map
+                        // irradiance cube map
                         binding: 7,
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Texture {
@@ -299,6 +317,28 @@ impl PBRMaterial {
                         // This should match the filterable field of the
                         // corresponding Texture entry.
                         ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        // reflection cube map
+                        binding: 9,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::Cube,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        // brdflut map
+                        binding: 10,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
                         count: None,
                     },
                 ],
@@ -422,8 +462,24 @@ impl PBRMaterial {
         self.irradiance_cube_texture = irradiance_cube_texture;
     }
 
-    pub fn get_reflection_cube_texture(&self) -> ID {
+    pub fn get_irradiance_cube_texture(&self) -> ID {
         self.irradiance_cube_texture
+    }
+
+    pub fn set_prefiltered_cube_texture(&mut self, prefiltered_cube_texture: ID) {
+        self.prefiltered_cube_texture = prefiltered_cube_texture;
+    }
+
+    pub fn get_prefiltered_cube_texture(&self) -> ID {
+        self.prefiltered_cube_texture
+    }
+
+    pub fn set_brdf_lut(&mut self, brdf_lut: ID) {
+        self.brdf_lut = brdf_lut;
+    }
+
+    pub fn get_brdf_lut(&self) -> ID {
+        self.brdf_lut
     }
 
     pub fn get_2d_texture_sampler(&self) -> &wgpu::Sampler {

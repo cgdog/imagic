@@ -20,6 +20,7 @@ pub struct App {
     sphere_use_textured_pbr: Changeable<bool>,
     red_pbr_material_index: ID,
     textured_pbr_material_index: ID,
+    enable_point_lights: bool,
 }
 
 impl Default for App {
@@ -35,6 +36,7 @@ impl Default for App {
             sphere_use_textured_pbr: Changeable::new(false),
             red_pbr_material_index: INVALID_ID,
             textured_pbr_material_index: INVALID_ID,
+            enable_point_lights: false,
         }
     }
 }
@@ -126,7 +128,7 @@ impl App {
         pbr_material.set_roughness_texture(roughness_texture);
         let ao_texture = texture_manager.add_texture(ao_texture);
         pbr_material.set_ao_texture(ao_texture);
-        pbr_material.set_irradiance_cube_texture(self.ibl_data.irradiance_cube_texture);
+        self.set_pbr_ibl(&mut pbr_material);
 
         let pbr_material_index = imagic_context.add_material(pbr_material);
         pbr_material_index
@@ -136,11 +138,17 @@ impl App {
         let mut pbr_material = Box::new(PBRMaterial::new(
             Vec4::new(0.5, 0.0, 0.0, 1.0),
             1.0,
-            0.2,
+            0.0,
             1.0,
         ));
-        pbr_material.set_irradiance_cube_texture(self.ibl_data.irradiance_cube_texture);
+        self.set_pbr_ibl(&mut pbr_material);
         imagic_context.add_material(pbr_material)
+    }
+
+    fn set_pbr_ibl(&self, pbr_material: &mut Box<PBRMaterial>) {
+        pbr_material.set_irradiance_cube_texture(self.ibl_data.irradiance_cube_texture);
+        pbr_material.set_prefiltered_cube_texture(self.ibl_data.refelction_cube_texture);
+        pbr_material.set_brdf_lut(self.ibl_data.brdf_lut);
     }
 
     fn init_ibl(&mut self, imagic_context: &mut ImagicContext) {
@@ -186,7 +194,9 @@ impl ImagicAppTrait for App {
             camera_layer_mask,
             Some(*self.camera_controller_option),
         );
-        self.prepare_lights(imagic_context);
+        if self.enable_point_lights {
+            self.prepare_lights(imagic_context);
+        }
 
         self.textured_pbr_material_index = self.prepare_rusted_pbr_material(imagic_context);
         self.red_pbr_material_index = self.prepare_red_pbr_material(imagic_context);

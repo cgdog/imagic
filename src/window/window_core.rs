@@ -1,4 +1,3 @@
-use log::info;
 use std::sync::Arc;
 use winit::dpi::Size;
 
@@ -81,7 +80,7 @@ impl Window {
 
         let window = event_loop.create_window(window_attributes).unwrap();
         self.dpi = window.scale_factor();
-        info!("window dpi: {0}", self.dpi);
+        // info!("window dpi: {0}", self.dpi);
         let window = Arc::new(window);
 
         // let scale_factor = window.scale_factor();
@@ -104,7 +103,7 @@ impl Window {
                 event_loop.exit();
             }
             WindowEvent::Resized(new_physical_size) => {
-                info!("on resize...");
+                // info!("on resize...");
                 self.dpi = self.get().scale_factor();
                 let new_logical_size: LogicalSize<u32> = new_physical_size.to_logical(self.dpi);
 

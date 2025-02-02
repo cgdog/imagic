@@ -96,6 +96,10 @@ var t_ao: texture_2d<f32>;
 var t_irradiance_cube_map: texture_cube<f32>;
 @group(2) @binding(8)
 var s_cube_sampler: sampler;
+@group(2) @binding(9)
+var r_prefiltered_reflection_map: texture_cube<f32>;
+@group(2) @binding(10)
+var t_brdf_lut: texture_2d<f32>;
 
 @group(3) @binding(0)
 var<storage, read> lighting_infos: LightsInfo;
@@ -251,6 +255,7 @@ fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
     let world_normal = get_normal_from_map(fs_in.world_normal, fs_in.world_pos, fs_in.uv0);
     // let camera_pos = fragment_uniforms.camera_pos.xyz;
     let view_dir = normalize(camera_pos.xyz - fs_in.world_pos);
+    let reflection_dir = reflect(-view_dir, world_normal);
 
     let camera_props = CameraProps(
         view_dir,
@@ -305,11 +310,19 @@ fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
     // compute spot lighting
 
     // let ambient = vec3f(0.03) * albedo * surface_ao;
-    let kS = fresnel_schlick_roughness(max(dot(surface_props.world_normal, camera_props.view_dir), 0.0), f0, surface_props.roughness); 
-    let kD = vec3f(1.0) - kS;
+    let F = fresnel_schlick_roughness(max(dot(surface_props.world_normal, camera_props.view_dir), 0.0), surface_props.f0, surface_props.roughness); 
+    let kS = F;
+    var kD = vec3f(1.0) - kS;
+    kD *= 1.0 - surface_props.metallic;
     let irradiance = textureSample(t_irradiance_cube_map, s_cube_sampler, surface_props.world_normal).rgb;
     let diffuse    = irradiance * surface_props.albedo;
-    let ambient    = (kD * diffuse) * ao; 
+    // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
+    const MAX_REFLECTION_LOD: f32 = 4.0;
+    let prefiltered_color = textureSampleLevel(r_prefiltered_reflection_map, s_cube_sampler, reflection_dir,  surface_props.roughness * MAX_REFLECTION_LOD).rgb;    
+    let brdf  = textureSample(t_brdf_lut, s_sampler_0, vec2(max(dot(surface_props.world_normal, camera_props.view_dir), 0.0), surface_props.roughness)).rg;
+    let specular = prefiltered_color * (F * brdf.x + brdf.y);
+
+    let ambient    = (kD * diffuse + specular) * ao; 
 
     var color = ambient + lo;
 
