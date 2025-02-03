@@ -127,7 +127,7 @@ impl ImagicAppTrait for App {
                         *self.show_brdf_lut = !*self.show_brdf_lut;
                         self.show_brdf_lut.set();
                     }
-                    ui.label("Below is the brdf integration map, a HDR texture and upside down.");
+                    ui.label("Below is the brdf integration map, a HDR texture.");
                 } else {
                     if ui.button("Show brdf lut").clicked() {
                         *self.show_brdf_lut = !*self.show_brdf_lut;

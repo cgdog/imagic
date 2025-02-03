@@ -35,7 +35,7 @@ fn vs_main(
 ) -> VSOutput {
     var result: VSOutput;
     result.uv0 = vs_in.uv0;
-    result.world_normal = (model_matrix * vec4f(vs_in.normal, 1.0)).xyz;
+    result.world_normal = (model_matrix * vec4f(vs_in.normal, 0.0)).xyz;
     let world_pos = model_matrix * vec4f(vs_in.position, 1.0);
     result.world_pos = world_pos.xyz;
     result.position = vp_matrix.projection * vp_matrix.view * world_pos;
@@ -97,7 +97,7 @@ var t_irradiance_cube_map: texture_cube<f32>;
 @group(2) @binding(8)
 var s_cube_sampler: sampler;
 @group(2) @binding(9)
-var r_prefiltered_reflection_map: texture_cube<f32>;
+var t_prefiltered_reflection_map: texture_cube<f32>;
 @group(2) @binding(10)
 var t_brdf_lut: texture_2d<f32>;
 
@@ -265,7 +265,7 @@ fn ambient_lighting(surface_props: SurfaceProps, camera_props: CameraProps) -> v
     let diffuse    = irradiance * surface_props.albedo;
     // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
     const MAX_REFLECTION_LOD: f32 = 4.0;
-    let prefiltered_color = textureSampleLevel(r_prefiltered_reflection_map, s_cube_sampler, surface_props.reflection_dir,  surface_props.roughness * MAX_REFLECTION_LOD).rgb;    
+    let prefiltered_color = textureSampleLevel(t_prefiltered_reflection_map, s_cube_sampler, surface_props.reflection_dir,  surface_props.roughness * MAX_REFLECTION_LOD).rgb;    
     let brdf  = textureSample(t_brdf_lut, s_sampler_0, vec2(max(dot(surface_props.world_normal, camera_props.view_dir), 0.0), surface_props.roughness)).rg;
     let specular = prefiltered_color * (F * brdf.x + brdf.y);
 

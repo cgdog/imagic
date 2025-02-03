@@ -189,7 +189,7 @@ impl App {
             include_bytes!("./assets/pbr/gold/metallic.png"),
             include_bytes!("./assets/pbr/gold/roughness.png"),
             include_bytes!("./assets/pbr/gold/ao.png"),
-            2.0,
+            -2.0,
         );
 
         self.create_sphere(
@@ -199,7 +199,7 @@ impl App {
             include_bytes!("./assets/pbr/grass/metallic.png"),
             include_bytes!("./assets/pbr/grass/roughness.png"),
             include_bytes!("./assets/pbr/grass/ao.png"),
-            -2.0,
+            0.0,
         );
 
         self.create_sphere(
@@ -209,7 +209,7 @@ impl App {
             include_bytes!("./assets/pbr/plastic/metallic.png"),
             include_bytes!("./assets/pbr/plastic/roughness.png"),
             include_bytes!("./assets/pbr/plastic/ao.png"),
-            4.0,
+            2.0,
         );
 
         self.create_sphere(
@@ -219,7 +219,7 @@ impl App {
             include_bytes!("./assets/pbr/wall/metallic.png"),
             include_bytes!("./assets/pbr/wall/roughness.png"),
             include_bytes!("./assets/pbr/wall/ao.png"),
-            0.0,
+            4.0,
         );
     }
 }

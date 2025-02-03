@@ -145,7 +145,11 @@ struct FSIn {
 
 @fragment
 fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
-    var integratedBRDF = IntegrateBRDF(fs_in.uv.x, fs_in.uv.y);
+    // It seems that the result of "1.0 - fs_in.uv.y" is more similar to OpenGL's result.
+    // I do not know the exact reason. Maybe it's caused by some "flip y"?
+    // var integratedBRDF = IntegrateBRDF(fs_in.uv.x, fs_in.uv.y);
+    var integratedBRDF = IntegrateBRDF(fs_in.uv.x, 1.0 - fs_in.uv.y);
+    // Open the line below, you will get the same brdf lut as openGL.
     // integratedBRDF = pow(integratedBRDF, vec2f(2.2));
     return vec4f(integratedBRDF, 0.0, 1.0);
 }

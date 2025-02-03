@@ -213,17 +213,12 @@ impl ImagicAppTrait for App {
             self.white_pbr_material_index
         };
 
-        self.sphere.init(imagic_context, pbr_material_index);
+        self.sphere.init_with_transform(imagic_context, pbr_material_index, Transform {
+            // position: Vec3::new(-2.0, 0.0, 0.0),
+            position: Vec3::new(0.0, 0.0, 0.0),
+            ..Default::default()
+        });
 
-        // let ibl_baker = IBLBaker{};
-        // self.skybox.init_ldr_bytes(imagic_context, [
-        //     include_bytes!("./assets/skybox/right.jpg"),
-        //     include_bytes!("./assets/skybox/left.jpg"),
-        //     include_bytes!("./assets/skybox/top.jpg"),
-        //     include_bytes!("./assets/skybox/bottom.jpg"),
-        //     include_bytes!("./assets/skybox/front.jpg"),
-        //     include_bytes!("./assets/skybox/back.jpg"),
-        // ],);
     }
 
     fn on_update(&mut self, imagic_context: &mut ImagicContext) {
