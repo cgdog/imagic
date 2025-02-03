@@ -11,11 +11,9 @@ pub struct App {
     skybox: Skybox,
     sphere: Sphere,
     first_camera_id: ID,
-    second_camera_id: ID,
     window_size: WindowSize,
     camera_z: f32,
     camera_controller_option_1: CameraControllerOptions,
-    camera_controller_option_2: CameraControllerOptions,
     need_update_camera_controller: bool,
 }
 
@@ -26,11 +24,9 @@ impl Default for App {
             skybox: Skybox::default(),
             sphere: Sphere::new(1.0, 256, 256),
             first_camera_id: INVALID_ID,
-            second_camera_id: INVALID_ID,
             window_size: WindowSize::new(800.0, 500.0),
             camera_z: 8.0,
             camera_controller_option_1: CameraControllerOptions::new(Vec3::ZERO, true),
-            camera_controller_option_2: CameraControllerOptions::default(),
             need_update_camera_controller: false,
         }
     }
@@ -162,11 +158,10 @@ impl App {
         let near = 0.01;
         let far = 500.0;
         // first camera
-        let first_viewport = Vec4::new(0.0, 0.0, 0.5, 1.0);
+        let first_viewport = Vec4::new(0.0, 0.0, 1.0, 1.0);
         let first_clear_color = Color::new(0.1, 0.1, 0.1, 1.0);
         let first_camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
-        // TODO: 让 Cube 以天空盒的形式渲染
-        let first_camera_layer_mask = LayerMask::new(Layer::All.into());
+        let first_camera_layer_mask = LayerMask::new(Layer::Default.into());
         self.first_camera_id = create_camera(
             imagic_context,
             first_camera_pos,
@@ -178,23 +173,6 @@ impl App {
             far,
             first_camera_layer_mask,
             Some(self.camera_controller_option_1),
-        );
-
-        let second_viewport = Vec4::new(0.5, 0.0, 0.5, 1.0);
-        let second_clear_color = Color::new(0.1, 0.2, 0.3, 1.0);
-        let second_camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
-        let second_camera_layer_mask = LayerMask::new(Layer::Default.into());
-        self.second_camera_id = create_camera(
-            imagic_context,
-            second_camera_pos,
-            second_viewport,
-            second_clear_color,
-            fov,
-            aspect,
-            near,
-            far,
-            second_camera_layer_mask,
-            Some(self.camera_controller_option_2),
         );
     }
 }
@@ -219,7 +197,7 @@ impl ImagicAppTrait for App {
         let pbr_material_index = self.prepare_pbr_material(imagic_context);
         self.sphere.init(imagic_context, pbr_material_index);
         self.sphere
-            .set_layer(Layer::Custom1, imagic_context.render_item_manager_mut());
+            .set_layer(Layer::Default, imagic_context.render_item_manager_mut());
     }
 
     fn on_update(&mut self, imagic_context: &mut ImagicContext) {

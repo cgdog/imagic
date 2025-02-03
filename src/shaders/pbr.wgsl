@@ -109,11 +109,13 @@ const PI = 3.1415926;
 struct SurfaceProps {
     world_pos: vec3f,
     world_normal: vec3f,
+    reflection_dir: vec3f,
     uv0: vec2f,
     f0: vec3f,
     metallic: f32,
     roughness: f32,
     albedo: vec3f,
+    surface_ao: f32,
 }
 
 struct CameraProps {
@@ -126,11 +128,12 @@ struct FSIn {
     @location(2) uv0: vec2f,
 }
 
-const FEATURE_FLAG_ALBEDO_MAP: u32 = 1;
-const FEATURE_FLAG_NORMAL_MAP: u32 = 2;
-const FEATURE_FLAG_METALLIC_MAP: u32 = 4;
-const FEATURE_FLAG_ROUGHNESS_MAP: u32 = 8;
-const FEATURE_FLAG_AO_MAP: u32 = 16;
+const FEATURE_FLAG_ALBEDO_MAP: u32 = 1u << 0u;
+const FEATURE_FLAG_NORMAL_MAP: u32 = 1u << 1u;
+const FEATURE_FLAG_METALLIC_MAP: u32 = 1u << 2u;
+const FEATURE_FLAG_ROUGHNESS_MAP: u32 = 1u << 3u;
+const FEATURE_FLAG_AO_MAP: u32 = 1u << 4u;
+const FEATURE_FLAG_IBL: u32 = 1u << 5u;
 
 fn is_albedo_map_enabled() -> bool {
     return (fragment_uniforms.features.x & FEATURE_FLAG_ALBEDO_MAP) != 0;
@@ -150,6 +153,10 @@ fn is_roughness_map_enabled() -> bool {
 
 fn is_ao_map_enabled() -> bool {
     return (fragment_uniforms.features.x & FEATURE_FLAG_AO_MAP) != 0;
+}
+
+fn is_ibl_enabled() -> bool {
+    return (fragment_uniforms.features.x & FEATURE_FLAG_IBL) != 0;
 }
 
 
@@ -247,6 +254,25 @@ fn lighting_point(light_pos: vec3f, light_color: vec3f, surface_props: SurfacePr
     return (kD * surface_props.albedo / PI + specular) * radiance * NdotL;
 }
 
+// compute ambient lighting
+fn ambient_lighting(surface_props: SurfaceProps, camera_props: CameraProps) -> vec3f {
+    // let ambient = vec3f(0.03) * albedo * surface_ao;
+    let F = fresnel_schlick_roughness(max(dot(surface_props.world_normal, camera_props.view_dir), 0.0), surface_props.f0, surface_props.roughness); 
+    let kS = F;
+    var kD = vec3f(1.0) - kS;
+    kD *= 1.0 - surface_props.metallic;
+    let irradiance = textureSample(t_irradiance_cube_map, s_cube_sampler, surface_props.world_normal).rgb;
+    let diffuse    = irradiance * surface_props.albedo;
+    // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
+    const MAX_REFLECTION_LOD: f32 = 4.0;
+    let prefiltered_color = textureSampleLevel(r_prefiltered_reflection_map, s_cube_sampler, surface_props.reflection_dir,  surface_props.roughness * MAX_REFLECTION_LOD).rgb;    
+    let brdf  = textureSample(t_brdf_lut, s_sampler_0, vec2(max(dot(surface_props.world_normal, camera_props.view_dir), 0.0), surface_props.roughness)).rg;
+    let specular = prefiltered_color * (F * brdf.x + brdf.y);
+
+    let ambient = (kD * diffuse + specular) * surface_props.surface_ao;
+    return ambient;
+}
+
 @fragment
 fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
     
@@ -292,11 +318,13 @@ fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
     let surface_props = SurfaceProps(
         fs_in.world_pos,
         world_normal,
+        reflection_dir,
         fs_in.uv0,
         f0,
         surface_metallic,
         surface_roughness,
         surface_albedo,
+        surface_ao,
     );
 
     var lo = vec3f(0.0);
@@ -311,22 +339,11 @@ fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
     }
     // compute spot lighting
 
-    // let ambient = vec3f(0.03) * albedo * surface_ao;
-    let F = fresnel_schlick_roughness(max(dot(surface_props.world_normal, camera_props.view_dir), 0.0), surface_props.f0, surface_props.roughness); 
-    let kS = F;
-    var kD = vec3f(1.0) - kS;
-    kD *= 1.0 - surface_props.metallic;
-    let irradiance = textureSample(t_irradiance_cube_map, s_cube_sampler, surface_props.world_normal).rgb;
-    let diffuse    = irradiance * surface_props.albedo;
-    // sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
-    const MAX_REFLECTION_LOD: f32 = 4.0;
-    let prefiltered_color = textureSampleLevel(r_prefiltered_reflection_map, s_cube_sampler, reflection_dir,  surface_props.roughness * MAX_REFLECTION_LOD).rgb;    
-    let brdf  = textureSample(t_brdf_lut, s_sampler_0, vec2(max(dot(surface_props.world_normal, camera_props.view_dir), 0.0), surface_props.roughness)).rg;
-    let specular = prefiltered_color * (F * brdf.x + brdf.y);
-
-    let ambient = (kD * diffuse + specular) * ao; 
-
-    var color = ambient + lo;
+    var color = lo;
+    if is_ibl_enabled() {
+        let ambient = ambient_lighting(surface_props, camera_props);
+        color += ambient;
+    }
 
     // HDR tonemapping
     color = color / (color + vec3f(1.0));

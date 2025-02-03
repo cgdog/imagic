@@ -50,9 +50,9 @@ impl Default for PBRMaterial {
             metallic_texture: Texture::white(),
             roughness_texture: Texture::white(),
             ao_texture: Texture::white(),
-            irradiance_cube_texture: INVALID_ID,
-            prefiltered_cube_texture: INVALID_ID,
-            brdf_lut: INVALID_ID,
+            irradiance_cube_texture: Texture::cube_texture_placeholder(),
+            prefiltered_cube_texture: Texture::cube_texture_placeholder(),
+            brdf_lut: Texture::white(),
             texture2d_sampler: None,
             texture_cube_sampler: None,
 
@@ -491,11 +491,12 @@ impl PBRMaterial {
     }
 
     // PBR related features, corresponding to WGSL feature flags.
-    const FEATURE_FLAG_ALBEDO_MAP: u32 = 1;
-    const FEATURE_FLAG_NORMAL_MAP: u32 = 2;
-    const FEATURE_FLAG_METALLIC_MAP: u32 = 4;
-    const FEATURE_FLAG_ROUGHNESS_MAP: u32 = 8;
-    const FEATURE_FLAG_AO_MAP: u32 = 16;
+    const FEATURE_FLAG_ALBEDO_MAP: u32 = 1 << 0;
+    const FEATURE_FLAG_NORMAL_MAP: u32 = 1 << 1;
+    const FEATURE_FLAG_METALLIC_MAP: u32 = 1 << 2;
+    const FEATURE_FLAG_ROUGHNESS_MAP: u32 = 1 << 3;
+    const FEATURE_FLAG_AO_MAP: u32 = 1 << 4;
+    const FEATURE_FLAG_IBL: u32 = 1 << 5;
 
     pub fn get_enabled_features(&self) -> [u32; 4] {
         let mut features: u32 = 0;
@@ -515,6 +516,11 @@ impl PBRMaterial {
         if self.ao_texture != INVALID_ID && self.ao_texture != Texture::white() {
             features |= Self::FEATURE_FLAG_AO_MAP;
         }
+        if self.irradiance_cube_texture != INVALID_ID && self.irradiance_cube_texture != Texture::cube_texture_placeholder()
+         && self.prefiltered_cube_texture != INVALID_ID && self.prefiltered_cube_texture != Texture::cube_texture_placeholder()
+         && self.brdf_lut != INVALID_ID && self.brdf_lut != Texture::white() {
+            features |= Self::FEATURE_FLAG_IBL;
+         }
 
         [features, 0, 0, 0]
     }

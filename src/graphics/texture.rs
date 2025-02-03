@@ -15,7 +15,7 @@ impl Texture {
     pub fn get(&self) -> &wgpu::Texture {
         &self.texture
     }
-    
+
     pub fn set_view(&mut self, view: TextureView) {
         self.view = Some(view);
     }
@@ -212,7 +212,15 @@ impl Texture {
         usage: wgpu::TextureUsages,
         mip_level_count: u32,
     ) -> Self {
-        let mut texture = Texture::create(graphics_context, width, height, 6, format, usage, mip_level_count);
+        let mut texture = Texture::create(
+            graphics_context,
+            width,
+            height,
+            6,
+            format,
+            usage,
+            mip_level_count,
+        );
 
         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor {
             label: Some("Cube Texture View"),
@@ -266,7 +274,8 @@ impl Texture {
         is_create_view: bool,
     ) -> Self {
         let usage = wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING;
-        let mut dpeth_texture = Texture::create(graphics_context, width, height, 1, format, usage, 1);
+        let mut dpeth_texture =
+            Texture::create(graphics_context, width, height, 1, format, usage, 1);
 
         if is_create_view {
             let texture_view = dpeth_texture.create_view(&wgpu::TextureViewDescriptor::default());
@@ -313,6 +322,10 @@ impl Texture {
         Self::_internal_white(None, &mut None)
     }
 
+    pub fn cube_texture_placeholder() -> ID {
+        Self::_internal_cube_placeholder(None, &mut None)
+    }
+
     /// Get default 2x2 black texture.
     // pub fn black() -> ID {
     //     Self::_internal_black(None, &mut None)
@@ -332,6 +345,7 @@ impl Texture {
         Self::_internal_white(graphics_context, texture_manager);
         // Self::_internal_black(graphics_context, texture_manager);
         // Self::_internal_blue(graphics_context, texture_manager);
+        Self::_internal_cube_placeholder(graphics_context, texture_manager);
     }
 
     /// Get or create default a 2x2 white texture.
@@ -430,6 +444,31 @@ impl Texture {
                 }
             }
             BLACK_TEXTURE_ID
+        }
+    }
+
+    pub(crate) fn _internal_cube_placeholder(
+        graphics_context: Option<&GraphicsContext>,
+        texture_manager: &mut Option<&mut TextureManager>,
+    ) -> ID {
+        static mut CUBE_PLACE_HOLDER: ID = INVALID_ID;
+        unsafe {
+            if CUBE_PLACE_HOLDER == INVALID_ID {
+                if let (Some(graphics_context), Some(texture_manager)) =
+                    (graphics_context, texture_manager)
+                {
+                    let cube_texture = Self::create_cube_texture(
+                        graphics_context,
+                        wgpu::TextureFormat::Rgba8UnormSrgb,
+                        1,
+                        1,
+                        wgpu::TextureUsages::TEXTURE_BINDING,
+                        1,
+                    );
+                    CUBE_PLACE_HOLDER = texture_manager.add_texture(cube_texture);
+                }
+            }
+            CUBE_PLACE_HOLDER
         }
     }
 }
