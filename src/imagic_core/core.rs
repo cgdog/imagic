@@ -48,7 +48,7 @@ impl ApplicationHandler for Imagic {
             self.context.init(*self.window.get_logical_size(), *self.window.get_physical_size());
 
             let ui_renderer = UIRenderer::new(self.context.graphics_context().get_device(), 
-                self.context.graphics_context().get_swapchian_format(), None, 1, &self.window.get());
+                self.context.graphics_context().get_swapchain_format(), None, 1, &self.window.get());
             self.renderer.set_ui_renderer(Some(ui_renderer));
 
             self.app.init(&mut self.context);

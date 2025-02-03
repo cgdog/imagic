@@ -85,8 +85,11 @@ impl RenderPipelineManager {
 
         let swapchain_format = match color_attachment_format {
             Some(color_attachment_format_) => color_attachment_format_,
-            _ => graphics_context.get_swapchian_format(),
+            _ => graphics_context.get_swapchain_format(),
         };
+
+        // graphics_context.get_swapchian_format() return Bgra8UnormSrgb.
+        // info!("swapchain format: {:?}", graphics_context.get_swapchian_format());
 
         let shader = material.create_shader_module(graphics_context);
         // TODO: optimize pipeline creation, e.g., render itmes with same pipeline layout, 
@@ -147,7 +150,7 @@ pub fn create_default_render_pipeline(
             push_constant_ranges: &[],
         });
 
-    let swapchain_format = graphics_context.get_swapchian_format();
+    let swapchain_format = graphics_context.get_swapchain_format();
 
     let render_pipeline =
         graphics_context.create_render_pipeline(&wgpu::RenderPipelineDescriptor {

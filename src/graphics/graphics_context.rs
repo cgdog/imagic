@@ -99,7 +99,7 @@ impl GraphicsContext {
         self.surface.configure(self.get_device());
     }
 
-    pub fn get_swapchian_format(&self) -> TextureFormat {
+    pub fn get_swapchain_format(&self) -> TextureFormat {
         let swapchain_capabilities = self
             .surface
             .get_capabilities(self.adapter.as_ref().unwrap());

@@ -278,8 +278,10 @@ fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
         surface_ao *= textureSample(t_ao, s_sampler_0, fs_in.uv0).r;
     }
 
+    // var surface_albedo = pow(fragment_uniforms.albedo.rgb, vec3f(2.2));
     var surface_albedo = fragment_uniforms.albedo.rgb;
     if is_albedo_map_enabled() {
+        // Note: albedo texture has format of Rgba8UnormSrgb, which will convert sRGB color to linear space automatically.
         let albedo_texl = textureSample(t_albedo, s_sampler_0, fs_in.uv0);
         surface_albedo *= albedo_texl.rgb;
     }
@@ -322,14 +324,16 @@ fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
     let brdf  = textureSample(t_brdf_lut, s_sampler_0, vec2(max(dot(surface_props.world_normal, camera_props.view_dir), 0.0), surface_props.roughness)).rg;
     let specular = prefiltered_color * (F * brdf.x + brdf.y);
 
-    let ambient    = (kD * diffuse + specular) * ao; 
+    let ambient = (kD * diffuse + specular) * ao; 
 
     var color = ambient + lo;
 
     // HDR tonemapping
     color = color / (color + vec3f(1.0));
-    // gamma correct
-    color = pow(color, vec3f(1.0/2.2));
+    // the gamma correction below is not necessary, because the swapchain format is Bgra8UnormSrgb, 
+    // which will covert linear space color to sRGB.
+    // gamma correction
+    // color = pow(color, vec3f(1.0/2.2));
 
     let frag_color = vec4f(color, 1.0);
     return frag_color;

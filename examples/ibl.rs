@@ -136,7 +136,7 @@ impl App {
 
     fn prepare_red_pbr_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let mut pbr_material = Box::new(PBRMaterial::new(
-            Vec4::new(0.5, 0.0, 0.0, 1.0),
+            Vec4::new(1.0, 1.0, 1.0, 1.0),
             1.0,
             0.0,
             1.0,
