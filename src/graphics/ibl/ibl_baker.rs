@@ -1,10 +1,12 @@
+use glam::Vec4;
+
 use crate::{
     camera::{Camera, Layer, LayerMask},
-    math::{Vec3, Vec4},
+    math::Vec3,
     model::{Cube, Plane},
     prelude::{
-        BRDFIntegralMaterial, ComputeShader, ImagicContext, RenderTexture, RenderTexture2D,
-        INVALID_ID,
+        BRDFIntegralMaterial, ComputeShader, CubeRenderTexture, ImagicContext, RenderTexture,
+        RenderTexture2D, SrgbCubeToLinearMaterial, Texture, INVALID_ID,
     },
     scene::SceneObject,
     types::{ID, RR},
@@ -15,14 +17,15 @@ use super::{
     MipmapGeneratorType,
 };
 
-pub enum InputEquirect {
+pub enum InputBackgroundType {
     Path(&'static str),
-    Bytes(&'static [u8]),
+    HDRBytes(&'static [u8]),
+    LDRBytes([&'static [u8]; 6]),
     None,
 }
 
 pub struct IBLBakerOptions {
-    pub input_equirect_image: InputEquirect,
+    pub input_background_type: InputBackgroundType,
     pub is_flip_y: bool,
     pub is_bake_irradiance: bool,
     pub is_bake_reflection: bool,
@@ -40,7 +43,7 @@ pub struct IBLBakerOptions {
 impl Default for IBLBakerOptions {
     fn default() -> Self {
         Self {
-            input_equirect_image: InputEquirect::None,
+            input_background_type: InputBackgroundType::None,
             is_flip_y: false,
             is_bake_irradiance: true,
             is_bake_reflection: true,
@@ -156,8 +159,8 @@ impl IBLBaker {
     ) {
         let background_cube_texture_generator =
             EquirectToCubeConverter::new(self.options.is_flip_y);
-        match self.options.input_equirect_image {
-            InputEquirect::Path(image_path) => {
+        match self.options.input_background_type {
+            InputBackgroundType::Path(image_path) => {
                 self.background_cube_texture = background_cube_texture_generator.convert(
                     image_path,
                     imagic_context,
@@ -168,7 +171,7 @@ impl IBLBaker {
                     // sync_buffer
                 );
             }
-            InputEquirect::Bytes(image_bytes) => {
+            InputBackgroundType::HDRBytes(image_bytes) => {
                 self.background_cube_texture = background_cube_texture_generator.convert_by_bytes(
                     &image_bytes,
                     imagic_context,
@@ -178,6 +181,53 @@ impl IBLBaker {
                     cube,
                     // sync_buffer
                 );
+            }
+            InputBackgroundType::LDRBytes(ldr_bytes) => {
+                let cube_texture = Texture::create_cube_texture_from_bytes(
+                    imagic_context.graphics_context(),
+                    ldr_bytes,
+                    wgpu::TextureFormat::Rgba8UnormSrgb,
+                    1,
+                );
+                let size = cube_texture.get_size();
+                let ldr_background_cube_texture = imagic_context
+                    .texture_manager_mut()
+                    .add_texture(cube_texture);
+                let srgb_cube_to_linear_material =
+                    SrgbCubeToLinearMaterial::new(ldr_background_cube_texture);
+                let srgb_cube_to_linear_material_id =
+                    imagic_context.add_material(Box::new(srgb_cube_to_linear_material));
+                cube.init(imagic_context, srgb_cube_to_linear_material_id);
+                cube.set_layer(
+                    Layer::RenderTarget,
+                    imagic_context.render_item_manager_mut(),
+                );
+
+                let hdr_background_rt = CubeRenderTexture::new(
+                    imagic_context,
+                    wgpu::TextureFormat::Rgba32Float,
+                    size.width,
+                    size.height,
+                    1,
+                );
+                // info!("wgpu::TextureFormat::Rgba32Float: {:?}", wgpu::TextureFormat::Rgba32Float);
+                self.background_cube_texture =
+                    hdr_background_rt.get_color_attachment_id();
+                camera.set_render_texture(Box::new(hdr_background_rt));
+                camera.set_viewport(Vec4::new(0.0, 0.0, 1.0, 0.0));
+                camera.set_logical_viewport(Vec4::new(
+                    0.0,
+                    0.0,
+                    size.width as f32,
+                    size.height as f32,
+                ));
+                camera.set_physical_viewport(Vec4::new(
+                    0.0,
+                    0.0,
+                    size.width as f32,
+                    size.height as f32,
+                ));
+                camera.render(imagic_context, None);
             }
             _ => (),
         }
@@ -280,6 +330,7 @@ impl IBLBaker {
         let mut cube_mipmaps_generator = CubeMipmapsGenerator::new(
             self.background_cube_texture,
             self.options.background_cube_map_size,
+            // note: Rgba8UnormSrgb format does not support StorageBinding
             wgpu::TextureFormat::Rgba32Float,
             // MipmapGeneratorType::GaussianFilter4x4,
             MipmapGeneratorType::BilinearFilter,

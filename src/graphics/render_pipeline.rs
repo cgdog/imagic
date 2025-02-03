@@ -89,7 +89,7 @@ impl RenderPipelineManager {
         };
 
         // graphics_context.get_swapchian_format() return Bgra8UnormSrgb.
-        // info!("swapchain format: {:?}", graphics_context.get_swapchian_format());
+        // info!("swapchain format: {:?}", swapchain_format);
 
         let shader = material.create_shader_module(graphics_context);
         // TODO: optimize pipeline creation, e.g., render itmes with same pipeline layout, 

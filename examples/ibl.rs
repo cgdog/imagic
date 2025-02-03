@@ -18,7 +18,7 @@ pub struct App {
     camera_z: f32,
     camera_controller_option: Changeable<CameraControllerOptions>,
     sphere_use_textured_pbr: Changeable<bool>,
-    red_pbr_material_index: ID,
+    white_pbr_material_index: ID,
     textured_pbr_material_index: ID,
     enable_point_lights: bool,
 }
@@ -34,7 +34,7 @@ impl Default for App {
             camera_z: 8.0,
             camera_controller_option: Changeable::new(CameraControllerOptions::default()),
             sphere_use_textured_pbr: Changeable::new(false),
-            red_pbr_material_index: INVALID_ID,
+            white_pbr_material_index: INVALID_ID,
             textured_pbr_material_index: INVALID_ID,
             enable_point_lights: false,
         }
@@ -134,7 +134,7 @@ impl App {
         pbr_material_index
     }
 
-    fn prepare_red_pbr_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
+    fn prepare_white_pbr_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
         let mut pbr_material = Box::new(PBRMaterial::new(
             Vec4::new(1.0, 1.0, 1.0, 1.0),
             1.0,
@@ -153,7 +153,7 @@ impl App {
 
     fn init_ibl(&mut self, imagic_context: &mut ImagicContext) {
         let mut ibl_baker = IBLBaker::new(IBLBakerOptions {
-            input_equirect_image: InputEquirect::Bytes(include_bytes!(
+            input_background_type: InputBackgroundType::HDRBytes(include_bytes!(
                 "./assets/pbr/hdr/newport_loft.hdr"
             )),
             background_cube_map_size: 512,
@@ -199,12 +199,12 @@ impl ImagicAppTrait for App {
         }
 
         self.textured_pbr_material_index = self.prepare_rusted_pbr_material(imagic_context);
-        self.red_pbr_material_index = self.prepare_red_pbr_material(imagic_context);
+        self.white_pbr_material_index = self.prepare_white_pbr_material(imagic_context);
 
         let pbr_material_index = if *self.sphere_use_textured_pbr {
             self.textured_pbr_material_index
         } else {
-            self.red_pbr_material_index
+            self.white_pbr_material_index
         };
 
         self.sphere.init(imagic_context, pbr_material_index);
@@ -232,7 +232,7 @@ impl ImagicAppTrait for App {
             let pbr_material_index = if *self.sphere_use_textured_pbr {
                 self.textured_pbr_material_index
             } else {
-                self.red_pbr_material_index
+                self.white_pbr_material_index
             };
 
             imagic_context
@@ -266,7 +266,7 @@ impl ImagicAppTrait for App {
                 }
 
                 let sphere_material_text = if *self.sphere_use_textured_pbr {
-                    "Use red pbr"
+                    "Use white pbr"
                 } else {
                     "Use textured pbr"
                 };

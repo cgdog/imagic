@@ -142,13 +142,25 @@ impl Cube {
     }
 
     pub fn init(&mut self, imagic_context: &mut ImagicContext, material_index: usize) {
+        let mut cube_item = self.create_transform_render_item(imagic_context);
+        cube_item.set_material_id(material_index);
+        self.render_item_id = imagic_context.add_render_item(cube_item);
+    }
+
+    pub fn init_transform_render_item(&mut self, imagic_context: &mut ImagicContext) {
+
+        let cube_item = self.create_transform_render_item(imagic_context);
+        self.render_item_id = imagic_context.add_render_item(cube_item);
+    }
+
+    fn create_transform_render_item(&mut self, imagic_context: &mut ImagicContext) -> RenderItem {
         let transform_manager = imagic_context.transform_manager();
         let transform = Transform::default();
         let transform_index = transform_manager.borrow_mut().add_transform(transform);
         self.transform = transform_index;
 
         let (vertex_buffer_id, index_buffer_id, index_count) = self.create_buffer(imagic_context);
-        let mut cube_item = RenderItem::new(
+        let cube_item = RenderItem::new(
             VertexOrIndexCount::IndexCount {
                 index_count,
                 base_vertex: 0,
@@ -160,8 +172,7 @@ impl Cube {
             transform_index,
             true,
         );
-        cube_item.set_material_id(material_index);
-        self.render_item_id = imagic_context.add_render_item(cube_item);
+        cube_item
     }
 
     pub fn create_buffer(&mut self, imagic_context: &mut ImagicContext) -> (usize, usize, u32) {

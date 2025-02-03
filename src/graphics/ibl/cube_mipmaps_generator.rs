@@ -168,7 +168,7 @@ impl CubeMipmapsGenerator {
                         visibility: wgpu::ShaderStages::COMPUTE,
                         ty: wgpu::BindingType::StorageTexture {
                             access: wgpu::StorageTextureAccess::WriteOnly,
-                            format: wgpu::TextureFormat::Rgba32Float,
+                            format: self.format,//wgpu::TextureFormat::Rgba32Float,
                             view_dimension: wgpu::TextureViewDimension::D2Array,
                         },
                         count: None,

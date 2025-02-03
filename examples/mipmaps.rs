@@ -39,7 +39,7 @@ impl Default for App {
 impl App {
     fn init_ibl(&mut self, imagic_context: &mut ImagicContext) {
         let mut ibl_baker = IBLBaker::new(IBLBakerOptions {
-            input_equirect_image: InputEquirect::Bytes(include_bytes!(
+            input_background_type: InputBackgroundType::HDRBytes(include_bytes!(
                 "./assets/pbr/hdr/newport_loft.hdr"
             )),
             background_cube_map_size: 512,

@@ -6,10 +6,6 @@ use crate::{
 
 /// Skybox representation. It includes a background cube texture and an environment refelction cube texture.
 pub struct Skybox {
-    background_texture_id: ID,
-    /// TODO: utilize environment reflection cube texture in pbr shader.
-    #[allow(unused)]
-    environment_reflection_texture_id: ID,
     skybox_material_id: ID,
     cube: Cube,
 }
@@ -17,8 +13,7 @@ pub struct Skybox {
 impl Default for Skybox {
     fn default() -> Self {
         Self {
-            background_texture_id: INVALID_ID,
-            environment_reflection_texture_id: INVALID_ID,
+            // background_texture_id: INVALID_ID,
             skybox_material_id: INVALID_ID,
             cube: Cube::default(),
         }
@@ -45,7 +40,6 @@ impl Skybox {
 
         self.cube.init(imagic_context, skybox_material_id);
 
-        self.background_texture_id = cube_texture_id;
         self.skybox_material_id = skybox_material_id;
     }
 
@@ -62,7 +56,6 @@ impl Skybox {
 
         self.cube.init(imagic_context, skybox_material_id);
 
-        self.background_texture_id = background_cube_texture;
         self.skybox_material_id = skybox_material_id;
     }
 

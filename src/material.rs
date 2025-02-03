@@ -7,6 +7,7 @@ pub mod skybox_material;
 pub mod irradiance_map_gen_material;
 pub mod brdf_integral_material;
 pub mod environment_prefilter_material;
+pub mod srgb_cube_to_linear_material;
 
 pub use pbr_material::*;
 pub use material_manager::*;
@@ -17,3 +18,4 @@ pub use skybox_material::*;
 pub use irradiance_map_gen_material::*;
 pub use brdf_integral_material::*;
 pub use environment_prefilter_material::*;
+pub use srgb_cube_to_linear_material::*;

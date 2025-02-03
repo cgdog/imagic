@@ -16,6 +16,10 @@ impl Texture {
         &self.texture
     }
 
+    pub fn get_size(&self) -> wgpu::Extent3d {
+        self.size
+    }
+
     pub fn set_view(&mut self, view: TextureView) {
         self.view = Some(view);
     }

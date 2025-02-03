@@ -1,31 +1,28 @@
-use std::{borrow::Cow, usize};
+use std::borrow::Cow;
 
-use crate::{
-    prelude::{bind_group_layout::BindGroupLayoutManager, GraphicsContext, INVALID_ID},
-    types::ID,
-};
+use crate::{prelude::{bind_group_layout::BindGroupLayoutManager, GraphicsContext, INVALID_ID}, types::ID};
 
 use super::MaterialTrait;
 
-pub struct SkyboxMaterial {
-    skybox_map: ID,
+pub struct SrgbCubeToLinearMaterial {
+    input_sgb_cube_texture: ID,
     texture_cube_sampler: Option<wgpu::Sampler>,
-    bind_group_id: ID,
     cull_mode: wgpu::Face,
+    bind_group_id: ID,
 }
 
-impl Default for SkyboxMaterial {
+impl Default for SrgbCubeToLinearMaterial {
     fn default() -> Self {
         Self {
-            skybox_map: INVALID_ID,
+            input_sgb_cube_texture: INVALID_ID,
             texture_cube_sampler: None,
-            bind_group_id: INVALID_ID,
             cull_mode: wgpu::Face::Front,
+            bind_group_id: INVALID_ID,
         }
     }
 }
 
-impl MaterialTrait for SkyboxMaterial {
+impl MaterialTrait for SrgbCubeToLinearMaterial {
     fn on_init(
         &mut self,
         graphics_context: &crate::prelude::GraphicsContext,
@@ -33,6 +30,18 @@ impl MaterialTrait for SkyboxMaterial {
     ) {
         self.create_texture_sampler(graphics_context);
         Self::try_create_bind_group_layout(graphics_context, bind_group_layout_manager);
+    }
+
+    fn enable_lights(&self) -> bool {
+        false
+    }
+
+    fn create_shader_module(&self, graphics_context: &crate::prelude::GraphicsContext) -> wgpu::ShaderModule {
+        let shader = graphics_context.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("create srgb cube to linear shader module"),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../shaders/srgb_cube_to_linear.wgsl"))),
+        });
+        shader
     }
 
     fn create_bind_group(
@@ -52,7 +61,7 @@ impl MaterialTrait for SkyboxMaterial {
                     // albedo map
                     binding: 0,
                     resource: wgpu::BindingResource::TextureView(
-                        texture_manager.get_texture_view(self.skybox_map),
+                        texture_manager.get_texture_view(self.input_sgb_cube_texture),
                     ),
                 },
                 wgpu::BindGroupEntry {
@@ -75,17 +84,6 @@ impl MaterialTrait for SkyboxMaterial {
         self.bind_group_id
     }
 
-    fn create_shader_module(
-        &self,
-        graphics_context: &crate::prelude::GraphicsContext,
-    ) -> wgpu::ShaderModule {
-        let shader = graphics_context.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("create skybox shader module"),
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../shaders/skybox.wgsl"))),
-        });
-        shader
-    }
-
     fn set_cull_mode(&mut self, cull_mode: wgpu::Face) {
         self.cull_mode = cull_mode;
     }
@@ -95,9 +93,12 @@ impl MaterialTrait for SkyboxMaterial {
     }
 }
 
-impl SkyboxMaterial {
-    pub fn new() -> Self {
-        Default::default()
+impl SrgbCubeToLinearMaterial {
+    pub fn new(input_sgb_cube_texture: ID) -> Self {
+        Self {
+            input_sgb_cube_texture,
+            ..Default::default()
+        }
     }
 
     fn create_texture_sampler(&mut self, graphics_context: &GraphicsContext) {
@@ -119,13 +120,8 @@ impl SkyboxMaterial {
         }
     }
 
-    fn internal_bind_group_layout_id(new_id: usize) -> ID {
-        // All SkyboxMaterial instances share the same bind group layout.
-        static mut LAYOUT_ID: ID = INVALID_ID;
-        if new_id != INVALID_ID {
-            unsafe { LAYOUT_ID = new_id };
-        }
-        unsafe { LAYOUT_ID }
+    pub fn get_cube_texture_sampler(&self) -> &wgpu::Sampler {
+        self.texture_cube_sampler.as_ref().unwrap()
     }
 
     fn try_create_bind_group_layout(
@@ -138,6 +134,15 @@ impl SkyboxMaterial {
             let layout_id = bind_group_layout_manager.add_bind_group_layout(bind_group_layout);
             Self::internal_bind_group_layout_id(layout_id);
         }
+    }
+
+    fn internal_bind_group_layout_id(new_id: usize) -> ID {
+        // All SkyboxMaterial instances share the same bind group layout.
+        static mut LAYOUT_ID: ID = INVALID_ID;
+        if new_id != INVALID_ID {
+            unsafe { LAYOUT_ID = new_id };
+        }
+        unsafe { LAYOUT_ID }
     }
 
     fn create_bind_group_layout(graphics_context: &GraphicsContext) -> wgpu::BindGroupLayout {
@@ -168,17 +173,5 @@ impl SkyboxMaterial {
                 label: Some("SkyboxMaterial_bind_group_layout"),
             });
         bind_group_layout
-    }
-
-    pub fn set_skybox_map(&mut self, skybox_map: usize) {
-        self.skybox_map = skybox_map;
-    }
-
-    pub fn get_skybox_map(&self) -> ID {
-        self.skybox_map
-    }
-
-    pub fn get_cube_texture_sampler(&self) -> &wgpu::Sampler {
-        self.texture_cube_sampler.as_ref().unwrap()
     }
 }

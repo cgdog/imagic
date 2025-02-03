@@ -8,6 +8,7 @@ use imagic::window::WindowSize;
 mod common;
 
 pub struct App {
+    ibl_data: IBLData,
     skybox: Skybox,
     sphere: Sphere,
     first_camera_id: ID,
@@ -20,6 +21,7 @@ pub struct App {
 impl Default for App {
     fn default() -> Self {
         Self {
+            ibl_data: IBLData::default(),
             // cube: Cube::new(1.0, 1.0, 1.0, 1, 1, 1),
             skybox: Skybox::default(),
             sphere: Sphere::new(1.0, 256, 256),
@@ -120,6 +122,8 @@ impl App {
         let ao_texture = texture_manager.add_texture(ao_texture);
         pbr_material.set_ao_texture(ao_texture);
 
+        self.set_pbr_ibl(&mut pbr_material);
+
         let pbr_material_index = imagic_context.add_material(pbr_material);
         pbr_material_index
     }
@@ -175,24 +179,51 @@ impl App {
             Some(self.camera_controller_option_1),
         );
     }
-}
 
-impl ImagicAppTrait for App {
-    fn init(&mut self, imagic_context: &mut ImagicContext) {
-        self.prepare_cameras(imagic_context);
-        self.skybox.init_ldr_bytes(
-            imagic_context,
-            [
+    fn set_pbr_ibl(&self, pbr_material: &mut Box<PBRMaterial>) {
+        pbr_material.set_irradiance_cube_texture(self.ibl_data.irradiance_cube_texture);
+        pbr_material.set_prefiltered_cube_texture(self.ibl_data.refelction_cube_texture);
+        pbr_material.set_brdf_lut(self.ibl_data.brdf_lut);
+    }
+
+    fn init_ibl(&mut self, imagic_context: &mut ImagicContext) {
+        // self.skybox.init_ldr_bytes(
+        //     imagic_context,
+        //     [
+        //         include_bytes!("./assets/skybox/right.jpg"),
+        //         include_bytes!("./assets/skybox/left.jpg"),
+        //         include_bytes!("./assets/skybox/top.jpg"),
+        //         include_bytes!("./assets/skybox/bottom.jpg"),
+        //         include_bytes!("./assets/skybox/front.jpg"),
+        //         include_bytes!("./assets/skybox/back.jpg"),
+        //     ],
+        // );
+
+        let mut ibl_baker = IBLBaker::new(IBLBakerOptions {
+            input_background_type: InputBackgroundType::LDRBytes([
                 include_bytes!("./assets/skybox/right.jpg"),
                 include_bytes!("./assets/skybox/left.jpg"),
                 include_bytes!("./assets/skybox/top.jpg"),
                 include_bytes!("./assets/skybox/bottom.jpg"),
                 include_bytes!("./assets/skybox/front.jpg"),
                 include_bytes!("./assets/skybox/back.jpg"),
-            ],
-        );
+            ]),
+            reflection_cube_map_size: 128,
+            irradiance_cube_map_size: 32,
+            // rt_format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            // is_generate_brdf_lut: false,
+            ..Default::default()
+        });
+        self.ibl_data = ibl_baker.bake(imagic_context);
+        self.skybox.init_with_cube_texture(imagic_context, self.ibl_data.background_cube_texture);
+    }
+}
 
+impl ImagicAppTrait for App {
+    fn init(&mut self, imagic_context: &mut ImagicContext) {
+        self.prepare_cameras(imagic_context);
         self.prepare_lights(imagic_context);
+        self.init_ibl(imagic_context);
 
         let pbr_material_index = self.prepare_pbr_material(imagic_context);
         self.sphere.init(imagic_context, pbr_material_index);
