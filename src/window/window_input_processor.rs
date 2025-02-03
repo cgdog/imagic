@@ -30,6 +30,7 @@ impl WindowInputProcessor {
         event_loop: &winit::event_loop::ActiveEventLoop,
         dpi: f64,
         input_manager: &mut InputManager,
+        is_ui_interacting: bool,
     ) {
         match event {
             WindowEvent::KeyboardInput {
@@ -45,21 +46,27 @@ impl WindowInputProcessor {
                 state,
                 button,
             } => {
-                self.process_mouse_button_event(button, state, input_manager);
+                if !is_ui_interacting {
+                    self.process_mouse_button_event(button, state, input_manager);
+                }
             }
             WindowEvent::MouseWheel {
                 device_id: _,
                 delta,
                 phase,
             } => {
-                self.process_mouse_scroll_event(delta, phase, dpi, input_manager);
+                if !is_ui_interacting {
+                    self.process_mouse_scroll_event(delta, phase, dpi, input_manager);
+                }
             }
             WindowEvent::CursorMoved {
                 device_id: _,
                 position,
             } => {
                 // info!("cursor position: {:?}", position);
-                self.process_mouse_move_event(dpi, position.x, position.y, input_manager);
+                if !is_ui_interacting {
+                    self.process_mouse_move_event(dpi, position.x, position.y, input_manager);
+                }
             }
             // WindowEvent::PinchGesture {
             //     device_id: _,

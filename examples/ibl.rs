@@ -21,6 +21,9 @@ pub struct App {
     white_pbr_material_index: ID,
     textured_pbr_material_index: ID,
     enable_point_lights: bool,
+    white_pbr_metallic: Changeable<f32>,
+    white_pbr_roughness: Changeable<f32>,
+    white_pbr_albedo_color: Changeable<[f32; 3]>,
 }
 
 impl Default for App {
@@ -37,6 +40,9 @@ impl Default for App {
             white_pbr_material_index: INVALID_ID,
             textured_pbr_material_index: INVALID_ID,
             enable_point_lights: false,
+            white_pbr_metallic: Changeable::new(1.0),
+            white_pbr_roughness: Changeable::new(0.0),
+            white_pbr_albedo_color: Changeable::new([1.0, 1.0, 1.0]),
         }
     }
 }
@@ -165,7 +171,7 @@ impl App {
         self.skybox
             // .init_with_cube_texture(imagic_context, self.ibl_data.refelction_cube_texture);
             .init_with_cube_texture(imagic_context, self.ibl_data.background_cube_texture);
-            // .init_with_cube_texture(imagic_context, self.ibl_data.irradiance_cube_texture);
+        // .init_with_cube_texture(imagic_context, self.ibl_data.irradiance_cube_texture);
     }
 }
 
@@ -245,6 +251,34 @@ impl ImagicAppTrait for App {
                 .get_render_item_mut(self.sphere.render_item_id())
                 .set_material_id(pbr_material_index);
         }
+
+        if !*self.sphere_use_textured_pbr {
+            if self.white_pbr_metallic.is_changed() || self.white_pbr_roughness.is_changed()
+                || self.white_pbr_albedo_color.is_changed() {
+                let white_pbr_material = imagic_context
+                    .material_manager_mut()
+                    .get_material_mut(self.white_pbr_material_index);
+                if let Some(pbr_material) = white_pbr_material
+                    .as_any_mut()
+                    .downcast_mut::<PBRMaterial>()
+                {
+                    if self.white_pbr_metallic.is_changed() {
+                        self.white_pbr_metallic.reset();
+                        pbr_material.set_metallic(*self.white_pbr_metallic);
+                    }
+                    if self.white_pbr_roughness.is_changed() {
+                        self.white_pbr_roughness.reset();
+                        pbr_material.set_roughness(*self.white_pbr_roughness);
+                    }
+
+                    if self.white_pbr_albedo_color.is_changed() {
+                        self.white_pbr_albedo_color.reset();
+                        pbr_material.set_albedo_color_rgb(&self.white_pbr_albedo_color);
+                    }
+                    imagic_context.update_material(self.white_pbr_material_index);
+                }
+            }
+        }
     }
 
     fn on_render_ui(&mut self, ctx: &egui::Context) {
@@ -252,7 +286,7 @@ impl ImagicAppTrait for App {
             .resizable(true)
             .vscroll(true)
             .default_open(false)
-            .default_size([100.0, 5.0])
+            .default_size([100.0, 150.0])
             .show(&ctx, |ui| {
                 let rotate_button_text = if self.camera_controller_option.is_auto_rotate {
                     "Stop Auto Rotate"
@@ -270,6 +304,35 @@ impl ImagicAppTrait for App {
                 } else {
                     "Use textured pbr"
                 };
+
+                if !*self.sphere_use_textured_pbr {
+                    if ui
+                        .add(
+                            egui::Slider::new(&mut *self.white_pbr_metallic, 0.0..=1.0)
+                                .text("metallic"),
+                        )
+                        .changed()
+                    {
+                        // info!("lod changed to: {}", *self.lod);
+                        self.white_pbr_metallic.set();
+                    }
+                    if ui
+                        .add(
+                            egui::Slider::new(&mut *self.white_pbr_roughness, 0.0..=1.0)
+                                .text("roughness"),
+                        )
+                        .changed()
+                    {
+                        // info!("lod changed to: {}", *self.lod);
+                        self.white_pbr_roughness.set();
+                    }
+
+                    ui.label("albedo color");
+                    if egui::color_picker::color_edit_button_rgb(ui, &mut *self.white_pbr_albedo_color).changed() {
+                        self.white_pbr_albedo_color.set();
+                    }
+                }
+
                 if ui.button(sphere_material_text).clicked() {
                     *self.sphere_use_textured_pbr = !*self.sphere_use_textured_pbr;
                     self.sphere_use_textured_pbr.set();

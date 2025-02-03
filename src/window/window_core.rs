@@ -28,7 +28,7 @@ impl Default for Window {
             logical_size: WindowSize::default(),
             physical_size: WindowSize::default(),
             dpi: 1.0,
-            window_input_processor: Default::default()
+            window_input_processor: Default::default(),
         }
     }
 }
@@ -70,10 +70,7 @@ impl Window {
         let (logical_width, logical_height) = window_size.get();
         self.set_logical_size(logical_width, logical_height);
         // create the window.
-        let logical_size = LogicalSize::new(
-            logical_width as f64,
-            logical_height as f64,
-        );
+        let logical_size = LogicalSize::new(logical_width as f64, logical_height as f64);
         let window_attributes = WindowWinit::default_attributes()
             .with_title(window_title)
             .with_inner_size(Size::Logical(logical_size));
@@ -123,7 +120,17 @@ impl Window {
                 self.get().request_redraw();
             }
             others => {
-                self.window_input_processor.process_window_input(others, event_loop, self.dpi, context.input_manager_mut());
+                let is_ui_interacting = renderer.ui_renderer().state().egui_ctx().wants_pointer_input();
+                // if is_ui_interacting {
+                //     info!("ui_interacting: {}", is_ui_interacting);
+                // }
+                self.window_input_processor.process_window_input(
+                    others,
+                    event_loop,
+                    self.dpi,
+                    context.input_manager_mut(),
+                    is_ui_interacting,
+                );
             }
         }
     }

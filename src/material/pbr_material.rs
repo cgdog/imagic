@@ -33,11 +33,13 @@ pub struct PBRMaterial {
     irradiance_cube_texture: ID,
     prefiltered_cube_texture: ID,
     brdf_lut: ID,
-    
+
     texture2d_sampler: Option<wgpu::Sampler>,
     texture_cube_sampler: Option<wgpu::Sampler>,
 
     bind_group_id: ID,
+
+    fragment_uniform_buffer: Option<wgpu::Buffer>,
 }
 
 impl Default for PBRMaterial {
@@ -57,6 +59,7 @@ impl Default for PBRMaterial {
             texture_cube_sampler: None,
 
             bind_group_id: INVALID_ID,
+            fragment_uniform_buffer: None,
         }
     }
 }
@@ -78,6 +81,28 @@ impl MaterialTrait for PBRMaterial {
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../shaders/pbr.wgsl"))),
         });
         shader
+    }
+
+    fn on_update(&mut self, graphics_context: &GraphicsContext) {
+        let fragment_uniforms = PBRFragmentUniforms {
+            features: self.get_enabled_features(),
+            albedo: self.albedo_color.to_array(),
+            metallic_roughness_ao: self.metallic_roughness_ao.to_array(),
+        };
+
+        graphics_context.get_queue().write_buffer(
+            self.fragment_uniform_buffer.as_ref().unwrap(),
+            0,
+            bytemuck::cast_slice(&[fragment_uniforms]),
+        );
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
     }
 
     fn create_bind_group(
@@ -176,6 +201,7 @@ impl MaterialTrait for PBRMaterial {
                 },
             ],
         });
+        self.fragment_uniform_buffer = Some(fragment_uniform_buffer);
         let bind_group_id = bind_group_manager.add_bind_group(bind_group);
         self.bind_group_id = bind_group_id;
         self.bind_group_id
@@ -386,6 +412,13 @@ impl PBRMaterial {
         self.albedo_color = albedo_color;
     }
 
+    pub fn set_albedo_color_rgb(&mut self, rgb: &[f32; 3]) {
+        self.albedo_color.x = rgb [0];
+        self.albedo_color.y = rgb [1];
+        self.albedo_color.z = rgb [2];
+        self.albedo_color.w = 1.0;
+    }
+
     pub fn get_albedo_color(&self) -> Vec4 {
         self.albedo_color
     }
@@ -516,11 +549,15 @@ impl PBRMaterial {
         if self.ao_texture != INVALID_ID && self.ao_texture != Texture::white() {
             features |= Self::FEATURE_FLAG_AO_MAP;
         }
-        if self.irradiance_cube_texture != INVALID_ID && self.irradiance_cube_texture != Texture::cube_texture_placeholder()
-         && self.prefiltered_cube_texture != INVALID_ID && self.prefiltered_cube_texture != Texture::cube_texture_placeholder()
-         && self.brdf_lut != INVALID_ID && self.brdf_lut != Texture::white() {
+        if self.irradiance_cube_texture != INVALID_ID
+            && self.irradiance_cube_texture != Texture::cube_texture_placeholder()
+            && self.prefiltered_cube_texture != INVALID_ID
+            && self.prefiltered_cube_texture != Texture::cube_texture_placeholder()
+            && self.brdf_lut != INVALID_ID
+            && self.brdf_lut != Texture::white()
+        {
             features |= Self::FEATURE_FLAG_IBL;
-         }
+        }
 
         [features, 0, 0, 0]
     }

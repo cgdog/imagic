@@ -47,6 +47,10 @@ impl UIRenderer {
         }
     }
 
+    pub fn state(&self) -> &egui_winit::State {
+        &self.state
+    }
+
     pub fn set_ui_scale_factor(&mut self, ui_scale_factor: f32) {
         self.ui_scale_factor = ui_scale_factor;
     }

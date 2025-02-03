@@ -1,10 +1,12 @@
 use std::f32::consts;
 
+use glam::Vec3;
 use imagic::{prelude::*, window::WindowSize};
 use log::info;
 
 pub struct App {
-    sphere: Sphere,
+    ibl_data: IBLData,
+    skybox: Skybox,
     camera: usize,
     window_size: WindowSize,
 }
@@ -12,14 +14,38 @@ pub struct App {
 impl Default for App {
     fn default() -> Self {
         Self {
-            sphere: Sphere::new(1.0, 256, 256),
+            ibl_data: IBLData::default(),
+            skybox: Skybox::default(),
             camera: INVALID_ID,
-            window_size: WindowSize::new(500.0, 500.0),
+            window_size: WindowSize::new(1280.0, 720.0),
         }
     }
 }
 
 impl App {
+    fn set_pbr_ibl(&self, pbr_material: &mut Box<PBRMaterial>) {
+        pbr_material.set_irradiance_cube_texture(self.ibl_data.irradiance_cube_texture);
+        pbr_material.set_prefiltered_cube_texture(self.ibl_data.refelction_cube_texture);
+        pbr_material.set_brdf_lut(self.ibl_data.brdf_lut);
+    }
+
+    fn init_ibl(&mut self, imagic_context: &mut ImagicContext) {
+        let mut ibl_baker = IBLBaker::new(IBLBakerOptions {
+            input_background_type: InputBackgroundType::HDRBytes(include_bytes!(
+                "./assets/pbr/hdr/newport_loft.hdr"
+            )),
+            background_cube_map_size: 512,
+            irradiance_cube_map_size: 32,
+            // is_generate_brdf_lut: false,
+            ..Default::default()
+        });
+        self.ibl_data = ibl_baker.bake(imagic_context);
+        self.skybox
+            // .init_with_cube_texture(imagic_context, self.ibl_data.refelction_cube_texture);
+            .init_with_cube_texture(imagic_context, self.ibl_data.background_cube_texture);
+        // .init_with_cube_texture(imagic_context, self.ibl_data.irradiance_cube_texture);
+    }
+
     fn prepare_lights(&mut self, imagic_context: &mut ImagicContext) {
         let transform_manager = imagic_context.transform_manager();
         let point_light_0 = PointLight::new(
@@ -50,7 +76,15 @@ impl App {
         light_manager.add_point_light(point_light_3);
     }
 
-    fn prepare_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
+    fn prepare_material(
+        &mut self,
+        imagic_context: &mut ImagicContext,
+        albedo_map_buffer: &[u8],
+        normal_map_buffer: &[u8],
+        metallic_map_buffer: &[u8],
+        roughness_map_buffer: &[u8],
+        ao_map_buffer: &[u8],
+    ) -> ID {
         let graphics_context = imagic_context.graphics_context();
         let mut pbr_material = Box::new(PBRMaterial::new(
             Vec4::new(1.0, 1.0, 1.0, 1.0),
@@ -60,35 +94,35 @@ impl App {
         ));
         let albedo_texture = Texture::create_from_bytes(
             graphics_context,
-            include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_basecolor.png"),
+            albedo_map_buffer,
             wgpu::TextureFormat::Rgba8UnormSrgb,
             false,
             1,
         );
         let normal_texture = Texture::create_from_bytes(
             graphics_context,
-            include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_normal.png"),
+            normal_map_buffer,
             wgpu::TextureFormat::Rgba8Unorm,
             false,
             1,
         );
         let metallic_texture = Texture::create_from_bytes(
             graphics_context,
-            include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_metallic.png"),
+            metallic_map_buffer,
             wgpu::TextureFormat::Rgba8Unorm,
             false,
             1,
         );
         let roughness_texture = Texture::create_from_bytes(
             graphics_context,
-            include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_roughness.png"),
+            roughness_map_buffer,
             wgpu::TextureFormat::Rgba8Unorm,
             false,
             1,
         );
         let ao_texture = Texture::create_from_bytes(
             graphics_context,
-            include_bytes!("./assets/pbr/rustediron1-alt2-bl/ao.png"),
+            ao_map_buffer,
             wgpu::TextureFormat::Rgba8Unorm,
             false,
             1,
@@ -107,45 +141,105 @@ impl App {
         let ao_texture = texture_manager.add_texture(ao_texture);
         pbr_material.set_ao_texture(ao_texture);
 
-        // let skybox_texture = self.prepare_skybox(imagic.context_mut());
-        // pbr_material.set_albedo_texture(skybox_texture);
-
+        self.set_pbr_ibl(&mut pbr_material);
         let pbr_material_index = imagic_context.add_material(pbr_material);
         pbr_material_index
     }
 
-    fn prepare_skybox(&mut self, imagic_context: &mut ImagicContext) -> ID {
-        let mut hdr_loader = HDRLoader::default();
-        let cwd = std::env::current_dir().unwrap();
-        let hdr_path = cwd.join("examples/assets/pbr/hdr/newport_loft.hdr");
-        let hdr_texture = hdr_loader.load(
-            hdr_path.to_str().unwrap(),
-            imagic_context.graphics_context(),
+    fn create_sphere(
+        &mut self,
+        imagic_context: &mut ImagicContext,
+        albedo_map_buffer: &[u8],
+        normal_map_buffer: &[u8],
+        metallic_map_buffer: &[u8],
+        roughness_map_buffer: &[u8],
+        ao_map_buffer: &[u8],
+        x_pos: f32,
+    ) {
+        let pbr_material_index = self.prepare_material(
+            imagic_context,
+            albedo_map_buffer,
+            normal_map_buffer,
+            metallic_map_buffer,
+            roughness_map_buffer,
+            ao_map_buffer,
         );
-        let hdr_texture_index = imagic_context
-            .texture_manager_mut()
-            .add_texture(hdr_texture);
-        hdr_texture_index
+        let mut sphere = Sphere::new(1.0, 256, 256);
+        sphere.init_with_transform(imagic_context, pbr_material_index, Transform {
+            position: Vec3::new(x_pos, 0.0, 0.0),
+            ..Default::default()
+        });
+    }
+
+    fn create_spheres(&mut self, imagic_context: &mut ImagicContext) {
+        self.create_sphere(
+            imagic_context,
+            include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_basecolor.png"),
+            include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_normal.png"),
+            include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_metallic.png"),
+            include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_roughness.png"),
+            include_bytes!("./assets/pbr/rustediron1-alt2-bl/ao.png"),
+            -4.0,
+        );
+
+        self.create_sphere(
+            imagic_context,
+            include_bytes!("./assets/pbr/gold/albedo.png"),
+            include_bytes!("./assets/pbr/gold/normal.png"),
+            include_bytes!("./assets/pbr/gold/metallic.png"),
+            include_bytes!("./assets/pbr/gold/roughness.png"),
+            include_bytes!("./assets/pbr/gold/ao.png"),
+            2.0,
+        );
+
+        self.create_sphere(
+            imagic_context,
+            include_bytes!("./assets/pbr/grass/albedo.png"),
+            include_bytes!("./assets/pbr/grass/normal.png"),
+            include_bytes!("./assets/pbr/grass/metallic.png"),
+            include_bytes!("./assets/pbr/grass/roughness.png"),
+            include_bytes!("./assets/pbr/grass/ao.png"),
+            -2.0,
+        );
+
+        self.create_sphere(
+            imagic_context,
+            include_bytes!("./assets/pbr/plastic/albedo.png"),
+            include_bytes!("./assets/pbr/plastic/normal.png"),
+            include_bytes!("./assets/pbr/plastic/metallic.png"),
+            include_bytes!("./assets/pbr/plastic/roughness.png"),
+            include_bytes!("./assets/pbr/plastic/ao.png"),
+            4.0,
+        );
+
+        self.create_sphere(
+            imagic_context,
+            include_bytes!("./assets/pbr/wall/albedo.png"),
+            include_bytes!("./assets/pbr/wall/normal.png"),
+            include_bytes!("./assets/pbr/wall/metallic.png"),
+            include_bytes!("./assets/pbr/wall/roughness.png"),
+            include_bytes!("./assets/pbr/wall/ao.png"),
+            0.0,
+        );
     }
 }
 
 impl ImagicAppTrait for App {
     fn init(&mut self, imagic_context: &mut ImagicContext) {
-        self.prepare_skybox(imagic_context);
         self.prepare_lights(imagic_context);
+        self.init_ibl(imagic_context);
 
         self.camera = Camera::new(
-            Vec3::new(0.0, 1.0, 4.0),
+            Vec3::new(0.0, 1.0, 6.0),
             consts::FRAC_PI_4,
             self.window_size.get_aspect() as f32,
-            1.0,
-            10.0,
+            0.1,
+            100.0,
             Some(CameraControllerOptions::default()),
             imagic_context,
         );
 
-        let pbr_material_index = self.prepare_material(imagic_context);
-        self.sphere.init(imagic_context, pbr_material_index);
+        self.create_spheres(imagic_context);
     }
 
     fn on_update(&mut self, _imagic_context: &mut ImagicContext) {}

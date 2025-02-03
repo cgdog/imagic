@@ -2,13 +2,10 @@ use std::f32::consts::{PI, TAU};
 use wgpu::util::DeviceExt;
 
 use crate::{
-    camera::Layer,
-    prelude::{
+    camera::Layer, prelude::{
         render_item_manager::RenderItemManager, ImagicContext, RenderItem, VertexOrIndexCount,
         INVALID_ID,
-    },
-    scene::{scene_object::SceneObject, transform::Transform},
-    types::ID,
+    }, scene::{scene_object::SceneObject, transform::Transform}, types::ID
 };
 
 use super::vertex_attribute::Vertex;
@@ -117,8 +114,12 @@ impl Sphere {
     }
 
     pub fn init(&mut self, imagic_context: &mut ImagicContext, pbr_material_index: usize) {
-        let transform_manager = imagic_context.transform_manager();
         let transform = Transform::default();
+        self.init_with_transform(imagic_context, pbr_material_index, transform);
+    }
+
+    pub fn init_with_transform(&mut self, imagic_context: &mut ImagicContext, pbr_material_index: ID, transform: Transform,) {
+        let transform_manager = imagic_context.transform_manager();
         let transform_index = transform_manager.borrow_mut().add_transform(transform);
         self.transform = transform_index;
 
