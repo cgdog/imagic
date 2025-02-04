@@ -1,5 +1,6 @@
 # Intro
-*Imagic* is a thin rendering framework, powered by Rust and WGPU.
+*Imagic* is a thin rendering framework, implemented by Rust and WGPU.
+> 中文简介：https://zhuanlan.zhihu.com/p/21310925935
 
 For the moment, *Imagic* is at the startup stage, which supports only a few features:
 - Materials
@@ -22,13 +23,15 @@ For the moment, *Imagic* is at the startup stage, which supports only a few feat
 - ~~Compete PBR with Imaged Based Lighting~~
 - **Improve scene object management. Maybe ECS is a good candidate**
 - **Solve flicker of rendering results when camera moves**
-- Improve compute shader user experience
+- Improve user experience of compute shader
 - Improve multi camera (clear color)
 > Now only the first camera's clear color is supported. I will fix this problem.
 - More rendering feature and effects, for example:
     - **Directional light, spot light**
+    - Shadows
+    - Transparent
     - Water
-    - SSS
+    - SSS (Sub-Surface Scattering)
     - Image Processing
     - Terrain generation
     - Light Probes
@@ -47,6 +50,7 @@ For the moment, *Imagic* is at the startup stage, which supports only a few feat
 In theory, it will be easy to support Android, iOS and Web, thanks to Rust and WGPU. I will complete this some day.
 
 # Examples
+You can watch these videos of these examples on [Youtube](https://www.youtube.com/watch?v=IbN8F0Dl8Yk&list=PLTnkZwAEijdJPh3AwY7dxzEqH47MjslDh&index=2) or [Bilibili](https://space.bilibili.com/31428391/upload/video).
 - [PBR](examples/pbr.rs)
 ```shell
 cargo run --example pbr
@@ -67,6 +71,7 @@ cargo run --example skybox
 ```
 This example shows LDR skybox. And the sphere in the scene is affetctd by 4 point lights and IBL baked from the LDR skybox.
 > Other examples use HDR skybox.
+
 ![LDR skybox](./assets/pbr/ldr_skybox.jpeg)
 
 - [multi_camera](examples/multi_camera.rs)
