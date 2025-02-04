@@ -2,6 +2,17 @@
 name = "imagic"
 version = "0.1.0"
 edition = "2021"
+authors = ["lxycg <leixinyuethu@gmail.com>"]
+description = "A thin rendering framework, implemented by Rust and WGPU"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/cgdog/imagic"
+keywords = ["rendering", "wgpu", "3D", "RenderingEngine", "GameEngine"]
+categories = ["rendering", "rendering::engine","games", "graphics", "game-engines"]
+
+exclude = [
+    "examples/",
+    "target/",
+]
 
 [dependencies]
 log = { version = "0.4.25"}
