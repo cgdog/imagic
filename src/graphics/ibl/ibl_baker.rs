@@ -38,6 +38,7 @@ pub struct IBLBakerOptions {
     pub brdf_lut_size: u32,
 
     pub rt_format: wgpu::TextureFormat,
+    pub mipmap_generator_type: MipmapGeneratorType,
 }
 
 impl Default for IBLBakerOptions {
@@ -56,6 +57,7 @@ impl Default for IBLBakerOptions {
             brdf_lut_size: 512,
 
             rt_format: wgpu::TextureFormat::Rgba32Float,
+            mipmap_generator_type: MipmapGeneratorType::GaussianFilter4x4,
         }
     }
 }
@@ -344,7 +346,8 @@ impl IBLBaker {
             // note: Rgba8UnormSrgb format does not support StorageBinding
             wgpu::TextureFormat::Rgba32Float,
             // MipmapGeneratorType::GaussianFilter4x4,
-            MipmapGeneratorType::BilinearFilter,
+            // MipmapGeneratorType::BilinearFilter,
+            self.options.mipmap_generator_type,
         );
         cube_mipmaps_generator.execute(imagic_context);
         let cube_map_with_mipmaps = cube_mipmaps_generator.get_cube_with_mipmap();

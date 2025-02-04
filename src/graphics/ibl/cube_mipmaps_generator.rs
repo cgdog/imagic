@@ -5,8 +5,12 @@ use crate::{
     types::ID,
 };
 
+#[derive(Debug, Clone, Copy)]
 pub enum MipmapGeneratorType {
+    /// Effect on windows has some problem, but macos is ok.
+    /// Someday I will fix it.
     BilinearFilter,
+    /// It seems that effect of gaussian filter is better on windows
     GaussianFilter4x4,
     /// not implemented, faded to BilinearFiler.
     BoxAndMultiFilter,
