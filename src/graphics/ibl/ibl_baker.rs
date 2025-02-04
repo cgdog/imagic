@@ -142,6 +142,12 @@ impl IBLBaker {
             self.generate_brdf_lut(imagic_context);
         }
 
+        // TODO: Delete this cube when baking finished.
+        imagic_context
+            .render_item_manager_mut()
+            .get_render_item_mut(cube.render_item_id())
+            .is_visible = false;
+
         IBLData {
             background_cube_texture: self.background_cube_texture,
             irradiance_cube_texture: self.irradiance_cube_texture,
@@ -211,8 +217,7 @@ impl IBLBaker {
                     1,
                 );
                 // info!("wgpu::TextureFormat::Rgba32Float: {:?}", wgpu::TextureFormat::Rgba32Float);
-                self.background_cube_texture =
-                    hdr_background_rt.get_color_attachment_id();
+                self.background_cube_texture = hdr_background_rt.get_color_attachment_id();
                 camera.set_render_texture(Box::new(hdr_background_rt));
                 camera.set_viewport(Vec4::new(0.0, 0.0, 1.0, 0.0));
                 camera.set_logical_viewport(Vec4::new(
@@ -316,6 +321,12 @@ impl IBLBaker {
             .set_physical_viewport(Vec4::new(0.0, 0.0, rt_size, rt_size));
         camera.borrow_mut().set_render_texture(Box::new(rt));
         camera.borrow_mut().render(imagic_context, None);
+
+        // TODO: Delete this plane when baking finished.
+        imagic_context
+            .render_item_manager_mut()
+            .get_render_item_mut(plane.render_item_id())
+            .is_visible = false;
         self.brdf_lut
     }
 

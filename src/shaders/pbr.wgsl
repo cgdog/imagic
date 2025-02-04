@@ -35,7 +35,7 @@ fn vs_main(
 ) -> VSOutput {
     var result: VSOutput;
     result.uv0 = vs_in.uv0;
-    result.world_normal = (model_matrix * vec4f(vs_in.normal, 0.0)).xyz;
+    result.world_normal = normalize((model_matrix * vec4f(vs_in.normal, 0.0)).xyz);
     let world_pos = model_matrix * vec4f(vs_in.position, 1.0);
     result.world_pos = world_pos.xyz;
     result.position = vp_matrix.projection * vp_matrix.view * world_pos;
