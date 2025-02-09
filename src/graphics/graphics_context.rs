@@ -1,9 +1,7 @@
 use crate::window::window_core::Window;
 use log::info;
 use wgpu::{
-    util::DeviceExt, Adapter, BindGroup, BindGroupLayout, BindGroupLayoutDescriptor, CommandBuffer,
-    CommandEncoder, Device, Instance, PipelineLayout, Queue, RenderPipeline, ShaderModule,
-    SubmissionIndex, TextureFormat,
+    util::DeviceExt, Adapter, BindGroup, BindGroupLayout, BindGroupLayoutDescriptor, CommandBuffer, CommandEncoder, Device, Instance, PipelineLayout, Queue, RenderPipeline, ShaderModule, SubmissionIndex, TextureFormat
 };
 use winit::dpi::PhysicalSize;
 
@@ -32,6 +30,12 @@ impl GraphicsContext {
             .create_surface(window.get())
             .expect("Instance failed to create surface.");
         self.surface.set(Some(surface));
+
+        // let candidate_adapters = self.instance.enumerate_adapters(Backends::all());
+        // for candidate_adapter in candidate_adapters {
+        //     let adapter_info = candidate_adapter.get_info();
+        //     info!("adapter_info: {:?}", adapter_info);
+        // }
 
         let adapter = self
             .instance
