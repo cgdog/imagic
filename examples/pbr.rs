@@ -97,35 +97,35 @@ impl App {
             albedo_map_buffer,
             wgpu::TextureFormat::Rgba8UnormSrgb,
             false,
-            1,
+            true,
         );
         let normal_texture = Texture::create_from_bytes(
             graphics_context,
             normal_map_buffer,
             wgpu::TextureFormat::Rgba8Unorm,
             false,
-            1,
+            true,
         );
         let metallic_texture = Texture::create_from_bytes(
             graphics_context,
             metallic_map_buffer,
             wgpu::TextureFormat::Rgba8Unorm,
             false,
-            1,
+            true,
         );
         let roughness_texture = Texture::create_from_bytes(
             graphics_context,
             roughness_map_buffer,
             wgpu::TextureFormat::Rgba8Unorm,
             false,
-            1,
+            true,
         );
         let ao_texture = Texture::create_from_bytes(
             graphics_context,
             ao_map_buffer,
             wgpu::TextureFormat::Rgba8Unorm,
             false,
-            1,
+            true,
         );
 
         let texture_manager = imagic_context.texture_manager_mut();

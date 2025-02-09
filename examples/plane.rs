@@ -36,7 +36,7 @@ impl App {
             include_bytes!("./assets/lena.png"),
             wgpu::TextureFormat::Rgba8UnormSrgb,
             true,
-            1,
+            true,
         );
         let albedo_texture_index = imagic_context
             .texture_manager_mut()

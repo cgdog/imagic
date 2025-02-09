@@ -1,7 +1,7 @@
 use image::{ImageBuffer, Rgba};
-use wgpu::{TextureFormat, TextureView, TextureViewDescriptor};
+use wgpu::{TextureFormat, TextureUsages, TextureView, TextureViewDescriptor};
 
-use crate::{prelude::INVALID_ID, types::ID};
+use crate::{prelude::{Mipmaps2DGenerator, INVALID_ID}, types::ID};
 
 use super::{texture_manager::TextureManager, GraphicsContext};
 
@@ -42,6 +42,11 @@ impl Texture {
             height,
             depth_or_array_layers: depth,
         };
+        // let mut view_formats: &[wgpu::TextureFormat] = &[];
+        // if mip_level_count > 1 && format == wgpu::TextureFormat::Rgba8UnormSrgb {
+        //     // This view format is used to generate mipmaps by compute shader.
+        //     view_formats = &[wgpu::TextureFormat::Rgba8Unorm];
+        // }
         let texture = graphics_context
             .get_device()
             .create_texture(&wgpu::TextureDescriptor {
@@ -68,7 +73,7 @@ impl Texture {
         buffer: &[u8],
         format: wgpu::TextureFormat,
         is_flip_y: bool,
-        mip_level_count: u32,
+        is_generate_mipmaps: bool,
     ) -> Self {
         let mut img = image::load_from_memory(buffer).unwrap();
         if is_flip_y {
@@ -77,19 +82,28 @@ impl Texture {
         let img_rgba = img.to_rgba8();
         use image::GenericImageView;
         let dimensions = img.dimensions();
+        let mut mip_level_count = 1;
+        let mut usage: TextureUsages = TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST;
+        if is_generate_mipmaps {
+            mip_level_count = dimensions.0.ilog2().min(dimensions.1.ilog2()) + 1;
+            usage |= TextureUsages::COPY_SRC
+        }
         let mut texture = Texture::create(
             graphics_context,
             dimensions.0,
             dimensions.1,
             1,
             format,
-            wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            usage,
             mip_level_count,
         );
         texture.fill_content(graphics_context, &img_rgba, Some(dimensions.0 * 4));
-
+        
         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
         texture.view = Some(texture_view);
+        if is_generate_mipmaps {
+            Mipmaps2DGenerator::generate_mipmaps(graphics_context, &mut texture, mip_level_count);
+        }
         texture
     }
 

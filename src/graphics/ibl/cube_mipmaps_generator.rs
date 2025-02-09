@@ -56,10 +56,10 @@ impl ComputeShader for CubeMipmapsGenerator {
             .get_queue()
             .submit(Some(encoder.finish()));
 
-        imagic_context
-            .graphics_context()
-            .get_device()
-            .poll(wgpu::Maintain::Wait);
+        // imagic_context
+        //     .graphics_context()
+        //     .get_device()
+        //     .poll(wgpu::Maintain::Wait);
     }
 }
 
