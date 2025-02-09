@@ -186,7 +186,7 @@ impl Texture {
 
         for (i, img) in imgs_data.iter().enumerate() {
             graphics_context.get_queue().write_texture(
-                wgpu::ImageCopyTexture {
+                wgpu::TexelCopyTextureInfo {
                     texture: &self.texture,
                     mip_level: 0,
                     origin: wgpu::Origin3d {
@@ -197,7 +197,7 @@ impl Texture {
                     aspect: wgpu::TextureAspect::All,
                 },
                 img,
-                wgpu::ImageDataLayout {
+                wgpu::TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(4 * self.size.width),
                     rows_per_image: Some(self.size.height),
@@ -296,14 +296,14 @@ impl Texture {
         bytes_per_row: Option<u32>,
     ) {
         graphics_context.get_queue().write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &self.texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             &content,
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row,
                 rows_per_image: Some(self.size.height),

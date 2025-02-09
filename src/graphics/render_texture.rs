@@ -75,6 +75,7 @@ pub(crate) fn create_cube_color_attachment_views(
                 base_array_layer: i,
                 array_layer_count: Some(1),
                 format: Some(format),
+                usage: Some(CubeRenderTexture::TEXTURE_USAGE),
             })
         })
         .collect::<Vec<_>>();
@@ -96,6 +97,7 @@ pub(crate) fn create_cube_depth_views(
                 base_array_layer: i,
                 array_layer_count: Some(1),
                 format: Some(wgpu::TextureFormat::Depth24PlusStencil8),
+                usage: Some(CubeRenderTexture::TEXTURE_USAGE),
             })
         })
         .collect::<Vec<_>>();
@@ -275,6 +277,7 @@ impl RenderTexture for CubeRenderTexture {
 }
 
 impl CubeRenderTexture {
+    const TEXTURE_USAGE: wgpu::TextureUsages = TextureUsages::RENDER_ATTACHMENT.union(TextureUsages::TEXTURE_BINDING.union(TextureUsages::COPY_SRC));
     /// Create a cube render texture.
     pub fn new(
         imagic_context: &mut ImagicContext,
@@ -283,9 +286,7 @@ impl CubeRenderTexture {
         height: u32,
         mip_level_count: u32,
     ) -> Self {
-        let usage = TextureUsages::RENDER_ATTACHMENT
-            | TextureUsages::TEXTURE_BINDING
-            | TextureUsages::COPY_SRC;
+        let usage = Self::TEXTURE_USAGE;
         let cube_texture = Texture::create_cube_texture(
             imagic_context.graphics_context(),
             format,

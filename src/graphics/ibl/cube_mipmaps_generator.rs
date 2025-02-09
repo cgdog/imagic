@@ -64,6 +64,16 @@ impl ComputeShader for CubeMipmapsGenerator {
 }
 
 impl CubeMipmapsGenerator {
+    const TEXTURE_USAGE: wgpu::TextureUsages = wgpu::TextureUsages::TEXTURE_BINDING.union(
+        wgpu::TextureUsages::STORAGE_BINDING.union(
+            wgpu::TextureUsages::COPY_DST.union(
+                wgpu::TextureUsages::COPY_SRC.union(
+                    wgpu::TextureUsages::RENDER_ATTACHMENT
+                )
+            )
+        )
+    );
+    
     pub fn new(cube_without_mipmaps: ID, face_size: u32, format: wgpu::TextureFormat, mipmap_generator_type: MipmapGeneratorType) -> Self {
         Self {
             cube_without_mipmaps,
@@ -85,11 +95,12 @@ impl CubeMipmapsGenerator {
             self.format,
             self.face_size,
             self.face_size,
-            wgpu::TextureUsages::TEXTURE_BINDING
-                | wgpu::TextureUsages::STORAGE_BINDING
-                | wgpu::TextureUsages::COPY_DST
-                | wgpu::TextureUsages::COPY_SRC
-                | wgpu::TextureUsages::RENDER_ATTACHMENT,
+            // wgpu::TextureUsages::TEXTURE_BINDING
+            //     | wgpu::TextureUsages::STORAGE_BINDING
+            //     | wgpu::TextureUsages::COPY_DST
+            //     | wgpu::TextureUsages::COPY_SRC
+            //     | wgpu::TextureUsages::RENDER_ATTACHMENT,
+            Self::TEXTURE_USAGE,
             mip_level_count,
         );
 
@@ -105,7 +116,7 @@ impl CubeMipmapsGenerator {
             });
         for layer in 0..6 {
             encoder.copy_texture_to_texture(
-                wgpu::ImageCopyTexture {
+                wgpu::TexelCopyTextureInfo {
                     texture: original_cube_texture.get(),
                     mip_level: 0,
                     origin: wgpu::Origin3d {
@@ -115,7 +126,7 @@ impl CubeMipmapsGenerator {
                     },
                     aspect: TextureAspect::All,
                 },
-                wgpu::ImageCopyTexture {
+                wgpu::TexelCopyTextureInfo {
                     texture: cube_map_with_mipmap.get(),
                     mip_level: 0,
                     origin: wgpu::Origin3d {
@@ -201,6 +212,7 @@ impl CubeMipmapsGenerator {
                 dimension: Some(wgpu::TextureViewDimension::D2Array),
                 format: Some(self.format),
                 aspect: TextureAspect::All,
+                usage: Some(Self::TEXTURE_USAGE),
             });
 
         let output_texture_view =
@@ -213,6 +225,7 @@ impl CubeMipmapsGenerator {
                 dimension: Some(wgpu::TextureViewDimension::D2Array),
                 format: Some(self.format),
                 aspect: TextureAspect::All,
+                usage: Some(Self::TEXTURE_USAGE),
             });
 
         let bind_group = imagic_context
