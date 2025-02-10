@@ -22,7 +22,8 @@ For the moment, *Imagic* is at the startup stage, which supports only a few feat
 # To do list
 - ~~Compete PBR with Imaged Based Lighting~~
 - **Improve scene object management. Maybe ECS is a good candidate**
-- **Solve flicker of rendering results when camera moves**
+- ~~**Solve flicker of rendering results when camera moves**~~
+> The flicker is caused by the lack of 2d texture mipmaps.
 - Improve user experience of compute shader
 - Improve multi camera (clear color)
 > Now only the first camera's clear color is supported. I will fix this problem.
