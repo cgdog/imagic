@@ -36,3 +36,12 @@ pub mod prelude {
     pub use crate::input::*;
     pub use crate::utils::*;
 }
+
+pub use wgpu;
+pub use winit;
+pub use egui;
+pub use glam;
+pub use image;
+pub use hecs;
+pub use log;
+pub use env_logger;

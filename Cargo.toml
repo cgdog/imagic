@@ -27,6 +27,7 @@ egui = { version = "0.31.0", default-features = false, features = ["default_font
 egui-wgpu = { version = "0.31.0",features = ["winit"] }
 egui-winit = { version = "0.31.0"}
 bytemuck = { version = "1.16.1", features = ["derive"] }
+hecs = "0.10.5"
 
 [profile.release]
 strip = true
