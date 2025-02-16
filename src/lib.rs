@@ -43,5 +43,7 @@ pub use egui;
 pub use glam;
 pub use image;
 pub use hecs;
+pub use assets_manager;
+pub use naga_oil;
 pub use log;
 pub use env_logger;
