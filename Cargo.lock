@@ -177,6 +177,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "assets_manager"
+version = "0.12.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ace748e030e290ec2f9b634f65f77089b7c552265ebc8be9236ec382e2ae71e9"
+dependencies = [
+ "ahash",
+ "hashbrown 0.15.2",
+ "log",
+]
+
+[[package]]
 name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1020,6 +1031,7 @@ dependencies = [
 name = "imagic"
 version = "0.1.0"
 dependencies = [
+ "assets_manager",
  "bytemuck",
  "egui",
  "egui-wgpu",

@@ -28,6 +28,7 @@ egui-wgpu = { version = "0.31.0",features = ["winit"] }
 egui-winit = { version = "0.31.0"}
 bytemuck = { version = "1.16.1", features = ["derive"] }
 hecs = "0.10.5"
+assets_manager = "0.12.4"
 
 [profile.release]
 strip = true
