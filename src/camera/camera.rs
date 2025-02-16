@@ -322,6 +322,7 @@ impl Camera {
                             vertex_count,
                             instance_count,
                         } => {
+                            // TODO: set vertex buffer?
                             rpass.draw(0..*vertex_count, 0..*instance_count);
                         }
                         VertexOrIndexCount::IndexCount {

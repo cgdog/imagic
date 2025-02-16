@@ -2,6 +2,7 @@ use std::f32::consts;
 use std::usize;
 
 use common::create_camera;
+use imagic::asset::loaders::hdr_loader::{HDRLoader, HDRLoaderOptions};
 use imagic::prelude::*;
 use imagic::window::WindowSize;
 use log::info;

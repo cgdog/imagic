@@ -1,15 +1,10 @@
 use core::f32;
 
 use crate::{
-    camera::{Camera, Layer},
-    math::Vec4,
-    model::Cube,
-    prelude::{
-        CubeRenderTexture, EquirectangularToCubeMaterial, HDRLoader,
-        HDRLoaderOptions, ImagicContext, MaterialTrait, RenderTexture, Texture,
-    },
-    scene::SceneObject,
-    types::ID,
+    asset::loaders::hdr_loader::{HDRLoader, HDRLoaderOptions}, camera::{Camera, Layer}, math::Vec4, model::Cube, prelude::{
+        CubeRenderTexture, EquirectangularToCubeMaterial,
+        ImagicContext, MaterialTrait, RenderTexture, Texture,
+    }, scene::SceneObject, types::ID
 };
 
 pub struct EquirectToCubeConverter {

@@ -15,20 +15,31 @@ exclude = [
 ]
 
 [dependencies]
-log = { version = "0.4.25"}
+log = { version = "0.4.26"}
 env_logger = { version = "0.11.6" }
 wgpu = "^24.0.1"
 winit = { version = "^0.30.9", default-features = false, features = ["rwh_06"] }
-glam = "0.29.2"
+glam = "0.30.0"
 pollster = "0.4.0"
 image = { version = "0.25.5", default-features = false, features = ["png", "jpeg", "hdr"]}
 # egui
 egui = { version = "0.31.0", default-features = false, features = ["default_fonts"] }
 egui-wgpu = { version = "0.31.0",features = ["winit"] }
 egui-winit = { version = "0.31.0"}
-bytemuck = { version = "1.16.1", features = ["derive"] }
+bytemuck = { version = "1.22.0", features = ["derive"] }
+naga_oil = "0.17"
+gltf = "1.4.1"
 hecs = "0.10.5"
-assets_manager = "0.12.4"
+serde = "1.0.218"
+ron = "0.8.1"
 
 [profile.release]
+opt-level = 3 # “z” optimize volume, but slow speed(include runtime speed).
 strip = true
+lto = true         # 启用链接时优化
+# 该配置将整个 crate 作为单个代码生成单元处理，允许编译器进行全局优化（如跨模块内联、冗余代码消除），可减少约 5-15% 的二进制体积
+codegen-units = 1   # 体积优化优先（适合正式发布）
+# 默认 release 模式使用 16 个并行单元（codegen-units = 16），设为 1 会禁用编译并行化，导致编译时间增加 20-50%
+# codegen-units = 16  # 编译速度优先（适合开发调试）
+panic = "abort"    # 禁用堆栈展开
+debug = false      # 关闭调试符号

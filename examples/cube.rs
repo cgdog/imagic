@@ -1,6 +1,6 @@
 use std::f32::consts;
 
-use imagic::{prelude::*, window::WindowSize};
+use imagic::{asset::loaders::hdr_loader::HDRLoader, prelude::*, window::WindowSize};
 use log::info;
 
 pub struct App {

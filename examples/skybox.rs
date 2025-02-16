@@ -2,6 +2,7 @@ use std::f32::consts;
 
 use common::create_camera;
 use glam::Vec3;
+use imagic::asset::loaders::hdr_loader::HDRLoader;
 use imagic::prelude::*;
 use imagic::window::WindowSize;
 
