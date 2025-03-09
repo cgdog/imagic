@@ -89,6 +89,17 @@ cargo run --example mipmaps
 This example provides slider to change lod and show mipmaps of CubeTexture.
 This example also shows how to custom material. It provide a [custom skybox material](examples/common//materials/custom_skybox_material.rs), which exposed lod parameter.
 
+- [raytracer](examples/raytracer.rs)
+```shell
+cargo run --example raytracer
+```
+This example implements a tiny raytracer according to [ssloy/tinyraytracer](https://github.com/ssloy/tinyraytracer).
+
+It is not physically based now. I have a plan to make it be a hard core physically based raytracer. I also plan to implement global illumination for imagic.
+
+![raytracer_1.png](./assets/raytracer/raytracer_1.png)
+
+
 > The name 'Imagic' comes from words 'image' and 'magic'. Initially, I intended to implement an image processing library accelerated with GPU. In fact, I previously created a repository named "imagetoy" locally also powered by Rust and WGPU. I believe Rust and WGPU can do more interesting things beyond just image processing, so I create 'imagic' which provides some basic infrastructures to help me and others deal with more complicated and imaginative things.
 
 Usefull links:

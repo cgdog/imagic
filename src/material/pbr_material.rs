@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use crate::{
-    math::{Color, Vec4},
+    math::{color::Color, Vec4},
     prelude::{
         bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
         texture_manager::TextureManager, GraphicsContext, Texture, INVALID_ID,

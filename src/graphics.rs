@@ -11,6 +11,7 @@ pub mod render_texture;
 pub mod ibl;
 pub mod compute;
 pub mod full_screen_renderer;
+pub mod raytracer;
 
 pub use surface_wrapper::SurfaceWrapper;
 pub use graphics_context::GraphicsContext;

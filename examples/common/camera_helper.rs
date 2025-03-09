@@ -2,7 +2,7 @@ use std::f32::consts::FRAC_PI_4;
 
 use imagic::{
     camera::{Camera, CameraControllerOptions, LayerMask},
-    math::{Color, Vec3, Vec4},
+    math::{color::Color, Vec3, Vec4},
     prelude::ImagicContext,
     types::ID,
 };

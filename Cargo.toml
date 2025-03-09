@@ -16,7 +16,7 @@ exclude = [
 
 [dependencies]
 log = { version = "0.4.26"}
-env_logger = { version = "0.11.6" }
+env_logger = { version = "0.11.7" }
 wgpu = "^24.0.1"
 winit = { version = "^0.30.9", default-features = false, features = ["rwh_06"] }
 glam = "0.30.0"
@@ -24,13 +24,13 @@ pollster = "0.4.0"
 image = { version = "0.25.5", default-features = false, features = ["png", "jpeg", "hdr"]}
 # egui
 egui = { version = "0.31.0", default-features = false, features = ["default_fonts"] }
-egui-wgpu = { version = "0.31.0",features = ["winit"] }
-egui-winit = { version = "0.31.0"}
+egui-wgpu = { version = "^0.31.1",features = ["winit"] }
+egui-winit = { version = "^0.31.1"}
 bytemuck = { version = "1.22.0", features = ["derive"] }
 naga_oil = "0.17"
 gltf = "1.4.1"
 hecs = "0.10.5"
-serde = "1.0.218"
+serde = "1.0.219"
 ron = "0.8.1"
 
 [profile.release]
