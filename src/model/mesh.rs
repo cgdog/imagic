@@ -1,10 +1,13 @@
 use wgpu::{util::DeviceExt, Buffer, BufferSlice, Device};
+// use std::hash::{Hash, Hasher};
 
-use crate::prelude::VertexOrIndexCount;
+use crate::{asset::asset::Asset, prelude::VertexOrIndexCount};
 
 use super::Vertex;
 
+#[derive(Clone)]
 pub struct Mesh {
+    // id: Handle::<Mesh>,
     vertex_buffer: Option<Buffer>,
     index_buffer: Option<Buffer>,
     vertices: Vec<Vertex>,
@@ -19,6 +22,7 @@ impl Mesh {
         vertex_or_index_count: VertexOrIndexCount,
     ) -> Self {
         Self {
+            // id: Handle::<Mesh>::generate(),
             vertex_buffer: None,
             index_buffer: None,
             vertices,
@@ -74,4 +78,22 @@ impl Mesh {
     pub fn get_vertex_or_index_count(&self) -> &VertexOrIndexCount {
         &self.vertex_or_index_count
     }
+}
+
+// impl Hash for Mesh {
+//     fn hash<H: Hasher>(&self, state: &mut H) {
+//         // self.id.hash(state);
+//         // self.vertices.hash(state);
+//         // if let Some(indices) = &self.indices {
+//         //     indices.hash(state);
+//         // }
+//     }
+// }
+
+impl Asset for Mesh {
+    // type ID = Handle::<Mesh>;
+
+    // fn get_id(&self) -> Self::ID {
+    //     self.id.clone()
+    // }
 }

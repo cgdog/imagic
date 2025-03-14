@@ -4,6 +4,7 @@ use crate::{camera::Layer, prelude::INVALID_ID, types::ID};
 
 pub mod render_item_manager;
 
+#[derive(Clone, Copy)]
 pub enum VertexOrIndexCount {
     VertexCount{vertex_count: u32, instance_count: u32},
     IndexCount{index_count: u32, base_vertex: i32, instance_count: u32, index_format: wgpu::IndexFormat},
