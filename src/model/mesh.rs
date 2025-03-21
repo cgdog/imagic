@@ -1,15 +1,15 @@
-use wgpu::{util::DeviceExt, Buffer, BufferSlice, Device};
+use wgpu::{util::DeviceExt, Buffer, Device};
 // use std::hash::{Hash, Hasher};
 
-use crate::{asset::asset::Asset, prelude::VertexOrIndexCount};
+use crate::{asset::{asset::{Asset, Handle}, asset_manager::AssetManager}, prelude::VertexOrIndexCount};
 
 use super::Vertex;
 
 #[derive(Clone)]
 pub struct Mesh {
     // id: Handle::<Mesh>,
-    vertex_buffer: Option<Buffer>,
-    index_buffer: Option<Buffer>,
+    vertex_buffer: Option<Handle<Buffer>>,
+    index_buffer: Option<Handle<Buffer>>,
     vertices: Vec<Vertex>,
     indices: Option<Vec<u32>>,
     vertex_or_index_count: VertexOrIndexCount,
@@ -31,13 +31,14 @@ impl Mesh {
         }
     }
 
-    pub fn upload(&mut self, device: &Device) {
+    pub fn upload(&mut self, device: &Device, asset_manager: &mut AssetManager) {
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Mesh Vertex Buffer"),
             contents: bytemuck::cast_slice(&self.vertices),
             usage: wgpu::BufferUsages::VERTEX,
         });
-        self.vertex_buffer = Some(vertex_buffer);
+        let vertex_buffer_handle = asset_manager.add(vertex_buffer);
+        self.vertex_buffer = Some(vertex_buffer_handle);
 
         if let Some(indices) = &self.indices {
             let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -45,7 +46,8 @@ impl Mesh {
                 contents: bytemuck::cast_slice(&indices),
                 usage: wgpu::BufferUsages::INDEX,
             });
-            self.index_buffer = Some(index_buffer);
+            let index_buffer_handle = asset_manager.add(index_buffer);
+            self.index_buffer = Some(index_buffer_handle);
         }
     }
 
@@ -57,22 +59,12 @@ impl Mesh {
         &self.indices
     }
 
-    pub fn get_vertex_buffer_slice(&self) -> Option<BufferSlice> {
-        match &self.vertex_buffer {
-            Some(vertex_buffer) => {
-                Some(vertex_buffer.slice(..))
-            }
-            None => None
-        }
+    pub fn get_vertex_buffer(&self) -> &Option<Handle<Buffer>> {
+        &self.vertex_buffer
     }
 
-    pub fn get_index_buffer_slice(&self) -> Option<BufferSlice> {
-        match &self.index_buffer {
-            Some(index_buffer) => {
-                Some(index_buffer.slice(..))
-            }
-            None => None
-        }
+    pub fn get_index_buffer(&self) -> &Option<Handle<Buffer>> {
+        &self.index_buffer
     }
 
     pub fn get_vertex_or_index_count(&self) -> &VertexOrIndexCount {

@@ -12,7 +12,20 @@ pub struct AssetManager {
     asset_stores: HashMap<TypeId, Box<dyn AssetStore>>,
 }
 
+impl Default for AssetManager {
+    fn default() -> Self {
+        Self {
+            asset_stores: HashMap::new(),
+        }
+    }
+}
+
 impl AssetManager {
+    pub fn new() -> Self {
+        Self {
+            asset_stores: HashMap::new(),
+        }
+    }
     /// Add an asset.
     pub fn add<T: Asset>(&mut self, asset: T) -> Handle<T> {
         let type_id = TypeId::of::<T>();

@@ -6,6 +6,10 @@ use std::{hash::{Hash, Hasher}, marker::PhantomData, u32};
 pub trait Asset: 'static {
 }
 
+// enum AssetID {
+
+// }
+
 /// The handle of a type of asset.
 /// 
 /// It will be a ECS component for entities which use the coressponding asset.
@@ -15,7 +19,12 @@ pub struct Handle<T: Asset> {
 }
 
 impl<T: Asset> Handle<T> {
-    pub const INVALID_ID: u32 = u32::MAX;
+    const INVALID_ID: u32 = u32::MAX;
+    pub const INVALID: Handle<T> = Self {
+        id: Self::INVALID_ID,
+        phantom_data: PhantomData,
+    };
+    
     fn next_valid_id() -> u32 {
         static mut CUR_AVAIABLE_ID: u32 = 0;
 

@@ -4,6 +4,9 @@ use crate::types::ID;
 
 use super::{MouseEvent, MouseInputListener};
 
+/// Input manager.
+/// 
+/// It manages all input listeners.
 pub struct InputManager {
     mouse_input_listeners: HashMap<ID, Box<dyn MouseInputListener>>,
     next_id: ID,

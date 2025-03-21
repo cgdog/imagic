@@ -1,7 +1,7 @@
 use log::info;
 use winit::{application::ApplicationHandler, event_loop::{ControlFlow, EventLoop}};
 
-use crate::{graphics, ui::ui_renderer::UIRenderer, window::{Window, WindowSize}};
+use crate::{ecs::world::World, graphics, ui::ui_renderer::UIRenderer, window::{Window, WindowSize}};
 use super::{imagic_app::ImagicAppTrait, imagic_context::ImagicContext};
 
 pub struct ImagicOption {
@@ -35,6 +35,7 @@ pub struct Imagic {
     window: Window,
     context: ImagicContext,
     renderer: graphics::Renderer,
+    world: World,
     is_inited: bool,
 }
 
@@ -86,6 +87,7 @@ impl Imagic {
             window: Default::default(),
             context: Default::default(),
             renderer: Default::default(),
+            world: Default::default(),
             is_inited: false,
         }
     }

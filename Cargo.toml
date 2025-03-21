@@ -29,9 +29,10 @@ egui-winit = { version = "^0.31.1"}
 bytemuck = { version = "1.22.0", features = ["derive"] }
 naga_oil = "0.17"
 gltf = "1.4.1"
-hecs = "0.10.5"
 serde = "1.0.219"
-ron = "0.8.1"
+ron = "0.9.0"
+uuid = "1.16.0"
+imagic_macros = { path = "./imagic_macros"}
 
 [profile.release]
 opt-level = 3 # “z” optimize volume, but slow speed(include runtime speed).

@@ -14,6 +14,7 @@ pub mod math;
 pub mod types;
 pub mod input;
 pub mod utils;
+pub mod ecs;
 
 pub mod prelude {
     pub use crate::graphics::*;
@@ -42,8 +43,6 @@ pub use winit;
 pub use egui;
 pub use glam;
 pub use image;
-pub use hecs;
-// pub use assets_manager;
 pub use naga_oil;
 pub use log;
 pub use env_logger;

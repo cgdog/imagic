@@ -19,6 +19,9 @@ pub enum MouseEventType {
     Move,
 }
 
+/// Mouse event.
+/// 
+/// It includes mouse position and event type.
 #[derive(Debug, Copy, Clone)]
 pub struct MouseEvent {
     /// Logical position.
@@ -45,6 +48,9 @@ impl MouseEvent {
     }
 }
 
+/// Mouse input listener trait.
+/// 
+/// Structs implemented this trait can listen mouse input.
 pub trait MouseInputListener : Any{
     fn on_mouse_input(&mut self, mouse_event: MouseEvent);
     fn on_update(&mut self) {}

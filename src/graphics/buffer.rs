@@ -1,8 +1,10 @@
 use wgpu::{util::{align_to, DeviceExt}, CommandEncoder};
 
-use crate::types::ID;
+use crate::{asset::asset::Asset, types::ID};
 
 use super::GraphicsContext;
+
+impl Asset for wgpu::Buffer {}
 
 pub struct GPUBufferManager {
     buffers: Vec<wgpu::Buffer>,
