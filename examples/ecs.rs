@@ -82,6 +82,17 @@ fn main() {
         info!("pos: {:?}", pos);
     }
 
+    info!("test world.query_mut::<Position>() :");
+    for (_, pos) in world.query_mut::<Position>() {
+        pos.x = -pos.x;
+        pos.y = -pos.y;
+    }
+
+    info!("test world.query::<Position>() :");
+    for (_, pos) in world.query::<Position>() {
+        info!("pos: {:?}", pos);
+    }
+
 
     // world.query_all::<(i32, f32, &str, u32, &mut Position, Velocity)>();
     // world.query_all::<(Position, &Position, &mut Position, & mut Position, Position)>();

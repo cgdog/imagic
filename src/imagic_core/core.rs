@@ -2,7 +2,7 @@ use log::info;
 use winit::{application::ApplicationHandler, event_loop::{ControlFlow, EventLoop}};
 
 use crate::{ecs::world::World, graphics, ui::ui_renderer::UIRenderer, window::{Window, WindowSize}};
-use super::{imagic_app::ImagicAppTrait, imagic_context::ImagicContext};
+use super::imagic_app::ImagicAppTrait;
 
 pub struct ImagicOption {
     // window logical size.
@@ -33,7 +33,7 @@ pub struct Imagic {
     app: Box<dyn ImagicAppTrait>,
     option: ImagicOption,
     window: Window,
-    context: ImagicContext,
+    // context: ImagicContext,
     renderer: graphics::Renderer,
     world: World,
     is_inited: bool,
@@ -44,18 +44,18 @@ impl ApplicationHandler for Imagic {
         if !self.is_inited {
             // When first resumed, we create window.
             self.window.init(&event_loop, self.option.window_size, self.option.window_title);
-            pollster::block_on(self.context.graphics_context_mut().init(&self.window));
+            pollster::block_on(self.world.context_mut().graphics_context_mut().init(&self.window));
 
-            self.context.init(*self.window.get_logical_size(), *self.window.get_physical_size());
+            self.world.context_mut().init(*self.window.get_logical_size(), *self.window.get_physical_size());
 
-            let ui_renderer = UIRenderer::new(self.context.graphics_context().get_device(), 
-                self.context.graphics_context().get_swapchain_format(), None, 1, &self.window.get());
+            let ui_renderer = UIRenderer::new(self.world.context().graphics_context().get_device(), 
+                self.world.context().graphics_context().get_swapchain_format(), None, 1, &self.window.get());
             self.renderer.set_ui_renderer(Some(ui_renderer));
 
-            self.app.init(&mut self.context);
+            self.app.init(self.world.context_mut());
 
             // TODO: optimize lightmanager logic
-            self.context.init_after_app();
+            self.world.context_mut().init_after_app();
 
             self.is_inited = true;
             info!("Imagic init() finished.");
@@ -72,7 +72,7 @@ impl ApplicationHandler for Imagic {
             event_loop,
             event,
             &mut self.renderer,
-            &mut self.context,
+            self.world.context_mut(),
             &mut self.app,
         );
     }
@@ -85,19 +85,19 @@ impl Imagic {
             app,
             option: option,
             window: Default::default(),
-            context: Default::default(),
+            // context: Default::default(),
             renderer: Default::default(),
             world: Default::default(),
             is_inited: false,
         }
     }
 
-    pub fn context(&self) -> &ImagicContext {
-        &self.context
-    }
-    pub fn context_mut(&mut self) -> &mut ImagicContext {
-        &mut self.context
-    }
+    // pub fn context(&self) -> &ImagicContext {
+    //     &self.world.context()
+    // }
+    // pub fn context_mut(&mut self) -> &mut ImagicContext {
+    //     self.world.context_mut()
+    // }
 
     pub fn run(&mut self) {
         info!("Imagic init() begin.");

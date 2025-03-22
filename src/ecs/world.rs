@@ -1,6 +1,4 @@
-use log::info;
-
-use crate::asset::asset_manager::AssetManager;
+use crate::{asset::asset_manager::AssetManager, prelude::ImagicContext};
 
 use super::{component::Components, entity::{Entities, Entity}, types::TupleTypesInfo};
 
@@ -9,11 +7,19 @@ pub struct World {
     entities: Entities,
     components: Components,
     asset_manager: AssetManager,
+    context: ImagicContext,
 }
 
 impl World {
     pub fn new() -> Self {
         World::default()
+    }
+
+    pub fn context(&self) -> &ImagicContext {
+        &self.context
+    }
+    pub fn context_mut(&mut self) -> &mut ImagicContext {
+        &mut self.context
     }
 
     pub fn spawn(&mut self) -> Entity {
@@ -63,12 +69,12 @@ impl World {
         self.components.iter_mut()
     }
 
-    pub fn query_all<T: TupleTypesInfo>(&self) {
-        let type_ids = T::type_ids();
-        let type_names = T::type_names();
-        info!("type ids: {:?}", type_ids);
-        info!("type names: {:?}", type_names);
-    }
+    // pub fn query_all<T: TupleTypesInfo>(&self) {
+    //     let type_ids = T::type_ids();
+    //     let type_names = T::type_names();
+    //     info!("type ids: {:?}", type_ids);
+    //     info!("type names: {:?}", type_names);
+    // }
 
     pub fn get_asset_manager(&self) -> &AssetManager {
         &self.asset_manager
