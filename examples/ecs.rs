@@ -1,5 +1,3 @@
-use std::any::TypeId;
-
 use imagic::ecs::world::World;
 use log::info;
 
@@ -26,6 +24,7 @@ impl Position {
     }
 }
 
+#[allow(unused)]
 #[derive(Debug)]
 struct Velocity {
     speed: f32,
@@ -50,6 +49,10 @@ fn main() {
     world.add_component(entity_b, Position::new(-1.0, 0.0));
     world.add_component(entity_b, Velocity::new(-1.0));
 
+    if let Some(pos_a) = world.get_mut::<Position>(entity_a) {
+        info!("pos_a: {:?}", pos_a);
+        pos_a.x = 10.0;
+    }
     if let Some(pos_a) = world.get::<Position>(entity_a) {
         info!("pos_a: {:?}", pos_a);
     }
@@ -58,10 +61,34 @@ fn main() {
         info!("entity name: {:?}", name);
     }
 
+    let tmp = world.get_all::<(Name, Position)>();
+    info!("tmp: {:?}", tmp.is_none());
+    info!("test world.get_all::<(Name, Position)>() :");
+    if let Some(entities) = world.get_all::<(Name, Position)>() {
+        for entity in entities {
+            if let Some(name) = world.get::<Name>(entity) {
+                info!("name: {}", name.name);
+            }
+            if let Some(pos) = world.get_mut::<Position>(entity) {
+                info!("position: {:?}", *pos);
+                pos.x += 100.0;
+                pos.y += 1001.0;
+            }
+        }
+    }
+
+    info!("test world.query::<Position>() :");
+    for (_, pos) in world.query::<Position>() {
+        info!("pos: {:?}", pos);
+    }
+
+
     // world.query_all::<(i32, f32, &str, u32, &mut Position, Velocity)>();
     // world.query_all::<(Position, &Position, &mut Position, & mut Position, Position)>();
     // world.query_all::<(i32, &i32, &mut i32)>();
-    println!("{:?}", TypeId::of::<i32>());
-    println!("{:?}", TypeId::of::<& i32>());
-    println!("{:?}", TypeId::of::<&mut i32>());
+    // println!("{:?}", TypeId::of::<i32>());
+    // println!("{:?}", TypeId::of::<& i32>());
+    // println!("{:?}", TypeId::of::<&mut i32>());
+
+    info!("end");
 }

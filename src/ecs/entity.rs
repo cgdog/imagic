@@ -1,6 +1,6 @@
 type EntityID = u32;
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Hash, Eq)]
 pub struct Entity {
     pub id: EntityID,
     pub generation: u32,

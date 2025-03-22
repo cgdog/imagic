@@ -33,7 +33,7 @@ impl Query {
         self
     }
 
-    pub fn query(world: &World) {
+    pub fn query(_world: &World) {
 
     }
 }

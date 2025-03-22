@@ -48,6 +48,13 @@ impl World {
         self.components.get_mut(entity)
     }
 
+    /// Get all entities with all given components.
+    /// 
+    /// Usage: let entities = get_all<(i32, Transform, u32)>();
+    pub fn get_all<T: TupleTypesInfo>(&self) -> Option<Vec<Entity>> {
+        self.components.get_all::<T>()
+    }
+
     pub fn query<T: 'static>(&self) -> impl Iterator<Item = (&Entity, & T)> {
         self.components.iter()
     }
