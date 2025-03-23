@@ -2,18 +2,16 @@
 use std::num::NonZeroU64;
 
 use imagic::{
-    prelude::{ComputeShader, ImagicAppTrait, ImagicOption},
-    window::WindowSize,
-    Imagic,
+    ecs::world::World, prelude::{ComputeShader, ImagicAppTrait, ImagicOption}, window::WindowSize, Imagic
 };
 use wgpu::util::DeviceExt;
 
 pub struct App {}
 
 impl ImagicAppTrait for App {
-    fn init(&mut self, imagic: &mut imagic::prelude::ImagicContext) {
+    fn init(&mut self, world: &mut World) {
         // Corrected to call the specific init method for ComputeShader
-        ComputeShader::execute(self, imagic);
+        ComputeShader::execute(self, world.context_mut());
     }
 
     fn get_imagic_option(&self) -> imagic::prelude::ImagicOption {

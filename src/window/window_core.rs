@@ -6,9 +6,9 @@ use winit::{dpi::LogicalSize, event_loop::ActiveEventLoop};
 
 use winit::window::Window as WindowWinit;
 
+use crate::ecs::world::World;
 use crate::graphics;
 use crate::imagic_core::imagic_app::ImagicAppTrait;
-use crate::imagic_core::imagic_context::ImagicContext;
 
 use super::{WindowInputProcessor, WindowSize};
 
@@ -91,7 +91,7 @@ impl Window {
         event_loop: &winit::event_loop::ActiveEventLoop,
         event: winit::event::WindowEvent,
         renderer: &mut graphics::Renderer,
-        context: &mut ImagicContext,
+        world: &mut World,
         app: &mut Box<dyn ImagicAppTrait>,
     ) {
         renderer.ui_renderer().handle_input(&self.get(), &event);
@@ -104,7 +104,7 @@ impl Window {
                 self.dpi = self.get().scale_factor();
                 let new_logical_size: LogicalSize<u32> = new_physical_size.to_logical(self.dpi);
 
-                context.on_resize(new_physical_size, new_logical_size);
+                world.context_mut().on_resize(new_physical_size, new_logical_size);
                 self.get().request_redraw();
             }
             WindowEvent::ScaleFactorChanged {
@@ -114,9 +114,9 @@ impl Window {
                 self.dpi = scale_factor;
             }
             WindowEvent::RedrawRequested => {
-                app.on_update(context);
-                context.on_update();
-                renderer.render(context, &self.get(), app);
+                app.on_update(world);
+                world.context_mut().on_update();
+                renderer.render(world, &self.get(), app);
                 self.get().request_redraw();
             }
             others => {
@@ -128,7 +128,7 @@ impl Window {
                     others,
                     event_loop,
                     self.dpi,
-                    context.input_manager_mut(),
+                    world.context_mut().input_manager_mut(),
                     is_ui_interacting,
                 );
             }

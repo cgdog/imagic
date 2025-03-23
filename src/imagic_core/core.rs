@@ -33,7 +33,6 @@ pub struct Imagic {
     app: Box<dyn ImagicAppTrait>,
     option: ImagicOption,
     window: Window,
-    // context: ImagicContext,
     renderer: graphics::Renderer,
     world: World,
     is_inited: bool,
@@ -52,7 +51,7 @@ impl ApplicationHandler for Imagic {
                 self.world.context().graphics_context().get_swapchain_format(), None, 1, &self.window.get());
             self.renderer.set_ui_renderer(Some(ui_renderer));
 
-            self.app.init(self.world.context_mut());
+            self.app.init(&mut self.world);
 
             // TODO: optimize lightmanager logic
             self.world.context_mut().init_after_app();
@@ -72,7 +71,7 @@ impl ApplicationHandler for Imagic {
             event_loop,
             event,
             &mut self.renderer,
-            self.world.context_mut(),
+            &mut self.world,
             &mut self.app,
         );
     }
@@ -85,19 +84,11 @@ impl Imagic {
             app,
             option: option,
             window: Default::default(),
-            // context: Default::default(),
             renderer: Default::default(),
             world: Default::default(),
             is_inited: false,
         }
     }
-
-    // pub fn context(&self) -> &ImagicContext {
-    //     &self.world.context()
-    // }
-    // pub fn context_mut(&mut self) -> &mut ImagicContext {
-    //     self.world.context_mut()
-    // }
 
     pub fn run(&mut self) {
         info!("Imagic init() begin.");

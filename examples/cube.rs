@@ -1,6 +1,6 @@
 use std::f32::consts;
 
-use imagic::{asset::loaders::hdr_loader::HDRLoader, prelude::*, window::WindowSize};
+use imagic::{asset::loaders::hdr_loader::HDRLoader, ecs::world::World, prelude::*, window::WindowSize};
 use log::info;
 
 pub struct App {
@@ -59,7 +59,7 @@ impl App {
 }
 
 impl ImagicAppTrait for App {
-    fn init(&mut self, imagic_context: &mut ImagicContext) {
+    fn init(&mut self, world: &mut World) {
         // self.prepare_lights(imagic_context);
         self.camera = Camera::new(
             Vec3::new(0.0, 5.0, 5.0),
@@ -68,11 +68,11 @@ impl ImagicAppTrait for App {
             1.0,
             100.0,
             Some(CameraControllerOptions::new(Vec3::ZERO, false)),
-            imagic_context,
+            world.context_mut(),
         );
 
-        let material_index = self.prepare_material(imagic_context);
-        self.cube.init(imagic_context, material_index);
+        let material_index = self.prepare_material(world.context_mut());
+        self.cube.init(world.context_mut(), material_index);
     }
 
     fn get_imagic_option(&self) -> ImagicOption {

@@ -1,7 +1,7 @@
 use std::f32::consts;
 
 use glam::Vec3;
-use imagic::{prelude::*, window::WindowSize};
+use imagic::{ecs::world::World, prelude::*, window::WindowSize};
 use log::info;
 
 pub struct App {
@@ -225,9 +225,9 @@ impl App {
 }
 
 impl ImagicAppTrait for App {
-    fn init(&mut self, imagic_context: &mut ImagicContext) {
-        self.prepare_lights(imagic_context);
-        self.init_ibl(imagic_context);
+    fn init(&mut self, world: &mut World) {
+        self.prepare_lights(world.context_mut());
+        self.init_ibl(world.context_mut());
 
         self.camera = Camera::new(
             Vec3::new(0.0, 1.0, 6.0),
@@ -236,13 +236,13 @@ impl ImagicAppTrait for App {
             0.1,
             100.0,
             Some(CameraControllerOptions::default()),
-            imagic_context,
+            world.context_mut(),
         );
 
-        self.create_spheres(imagic_context);
+        self.create_spheres(world.context_mut());
     }
 
-    fn on_update(&mut self, _imagic_context: &mut ImagicContext) {}
+    fn on_update(&mut self, _world: &mut World) {}
 
     fn get_imagic_option(&self) -> ImagicOption {
         ImagicOption::new(self.window_size, "pbr Demo")

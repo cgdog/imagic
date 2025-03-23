@@ -3,6 +3,7 @@ use std::usize;
 
 use common::create_camera;
 use imagic::asset::loaders::hdr_loader::{HDRLoader, HDRLoaderOptions};
+use imagic::ecs::world::World;
 use imagic::prelude::*;
 use imagic::window::WindowSize;
 use log::info;
@@ -89,7 +90,7 @@ impl App {
 }
 
 impl ImagicAppTrait for App {
-    fn init(&mut self, imagic_context: &mut ImagicContext) {
+    fn init(&mut self, world: &mut World) {
         let fov = consts::FRAC_PI_4;
         let aspect = self.window_size.get_half_width() / self.window_size.get_height();
         let near = 0.01;
@@ -100,7 +101,7 @@ impl ImagicAppTrait for App {
         let first_clear_color = Vec4::new(0.1, 0.1, 0.1, 1.0);
         let first_camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
         self.first_camera_id = create_camera(
-            imagic_context,
+            world.context_mut(),
             first_camera_pos,
             first_viewport,
             first_clear_color,
@@ -116,7 +117,7 @@ impl ImagicAppTrait for App {
         let second_clear_color = Vec4::new(0.1, 0.2, 0.3, 1.0);
         let second_camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
         self.second_camera_id = create_camera(
-            imagic_context,
+            world.context_mut(),
             second_camera_pos,
             second_viewport,
             second_clear_color,
@@ -128,14 +129,14 @@ impl ImagicAppTrait for App {
             Some(self.camera_controller_option_2),
         );
 
-        let material_index = self.prepare_material(imagic_context);
-        self.cube.init(imagic_context, material_index);
+        let material_index = self.prepare_material(world.context_mut());
+        self.cube.init(world.context_mut(), material_index);
     }
 
-    fn on_update(&mut self, imagic_context: &mut ImagicContext) {
+    fn on_update(&mut self, world: &mut World) {
         if self.need_update_camera_controller {
             self.need_update_camera_controller = false;
-            imagic_context
+            world.context_mut()
                 .change_camera_controller(self.first_camera_id, &self.camera_controller_option_1);
         }
     }

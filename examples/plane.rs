@@ -1,7 +1,7 @@
 use std::f32::consts;
 
 use changeable::Changeable;
-use imagic::{prelude::*, window::WindowSize};
+use imagic::{ecs::world::World, prelude::*, window::WindowSize};
 use log::info;
 
 pub struct App {
@@ -70,7 +70,7 @@ impl App {
 }
 
 impl ImagicAppTrait for App {
-    fn init(&mut self, imagic_context: &mut ImagicContext) {
+    fn init(&mut self, world: &mut World) {
         self.camera = Camera::new(
             Vec3::new(0.0, 0.0, 5.0),
             consts::FRAC_PI_4,
@@ -78,17 +78,17 @@ impl ImagicAppTrait for App {
             1.0,
             100.0,
             None,
-            imagic_context,
+            world.context_mut(),
         );
 
-        let material_index = self.prepare_material(imagic_context);
-        self.plane.init(imagic_context, material_index);
+        let material_index = self.prepare_material(world.context_mut());
+        self.plane.init(world.context_mut(), material_index);
     }
 
-    fn on_update(&mut self, imagic_context: &mut ImagicContext) {
+    fn on_update(&mut self, world: &mut World) {
         if self.is_show_image.is_changed() {
             self.is_show_image.reset();
-            let render_item = imagic_context
+            let render_item = world.context_mut()
                 .render_item_manager_mut()
                 .get_render_item_mut(self.plane.render_item_id());
             render_item.is_visible = *self.is_show_image;
@@ -103,12 +103,12 @@ impl ImagicAppTrait for App {
                 self.lena_unlit
             };
 
-            imagic_context
+            world.context_mut()
                 .pipeline_manager()
                 .borrow_mut()
                 .remove_render_pipeline(self.plane.render_item_id());
 
-            imagic_context
+            world.context_mut()
                 .render_item_manager_mut()
                 .get_render_item_mut(self.plane.render_item_id())
                 .set_material_id(unlit_material_index);

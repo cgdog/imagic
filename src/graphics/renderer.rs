@@ -1,7 +1,7 @@
 use wgpu::TextureView;
 use winit::window::Window as WindowWinit;
 
-use crate::prelude::{ImagicAppTrait, ImagicContext, UIRenderer};
+use crate::{ecs::world::World, prelude::{ImagicAppTrait, ImagicContext, UIRenderer}};
 
 pub struct Renderer {
     ui_renderer: Option<UIRenderer>,
@@ -24,11 +24,11 @@ impl Renderer {
 
     pub fn render(
         &mut self,
-        context: &mut ImagicContext,
+        world: &mut World,
         window: &WindowWinit,
         app: &mut Box<dyn ImagicAppTrait>,
     ) {
-        let surface_texture = context
+        let surface_texture = world.context_mut()
             .graphics_context()
             .get_surface()
             .get_current_texture();
@@ -36,16 +36,16 @@ impl Renderer {
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
-        let cameras = context.camera_manager().get_cameras();
+        let cameras = world.context().camera_manager().get_cameras();
         for (index, camera) in cameras.iter().enumerate() {
             if camera.borrow().draw_manually {
                 continue;
             }
             // self.render_with_camera(context, camera, index, &surface_texture_view);
-            camera.borrow().render_to_attachments(context, &surface_texture_view, index, None, None, None);
+            camera.borrow().render_to_attachments(world.context(), &surface_texture_view, index, None, None, None);
         }
 
-        self.render_ui(context, window, &surface_texture_view, app);
+        self.render_ui(world.context_mut(), window, &surface_texture_view, app);
         surface_texture.present();
     }
 

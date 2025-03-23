@@ -4,6 +4,7 @@ use changeable::Changeable;
 use common::create_camera;
 use common::materials::custom_skybox_material::CustomSkyboxMaterial;
 use ibl::ibl_baker::IBLBaker;
+use imagic::ecs::world::World;
 use imagic::prelude::*;
 use imagic::window::WindowSize;
 use std::f32::consts::FRAC_PI_4;
@@ -68,8 +69,8 @@ impl App {
 }
 
 impl ImagicAppTrait for App {
-    fn init(&mut self, imagic_context: &mut ImagicContext) {
-        self.init_ibl(imagic_context);
+    fn init(&mut self, world: &mut World) {
+        self.init_ibl(world.context_mut());
 
         let fov = FRAC_PI_4;
         let aspect = self.window_size.get_half_width() / self.window_size.get_height();
@@ -81,7 +82,7 @@ impl ImagicAppTrait for App {
         let camera_pos = Vec3::new(0.0, 0.0, self.camera_z);
         let camera_layer_mask = LayerMask::new(Layer::Default.into());
         self.camera_id = create_camera(
-            imagic_context,
+            world.context_mut(),
             camera_pos,
             viewport,
             clear_color,
@@ -94,19 +95,19 @@ impl ImagicAppTrait for App {
         );
     }
 
-    fn on_update(&mut self, imagic_context: &mut ImagicContext) {
+    fn on_update(&mut self, world: &mut World) {
         if self.camera_controller_option.is_changed() {
             self.camera_controller_option.reset();
-            imagic_context.change_camera_controller(self.camera_id, &self.camera_controller_option);
+            world.context_mut().change_camera_controller(self.camera_id, &self.camera_controller_option);
         }
 
         if self.lod.is_changed() {
             self.lod.reset();
             // info!("lod changed! to: {}", *self.lod);
-            let custom_skybox_material = imagic_context.material_manager_mut().get_material_mut(self.custom_skybox_material_id);
+            let custom_skybox_material = world.context_mut().material_manager_mut().get_material_mut(self.custom_skybox_material_id);
             if let Some(custom_skybox_material) = custom_skybox_material.as_any_mut().downcast_mut::<CustomSkyboxMaterial>() {
                 custom_skybox_material.set_lod(*self.lod);
-                imagic_context.update_material(self.custom_skybox_material_id);
+                world.context_mut().update_material(self.custom_skybox_material_id);
             }
         }
     }

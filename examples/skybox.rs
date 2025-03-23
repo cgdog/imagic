@@ -3,6 +3,7 @@ use std::f32::consts;
 use common::create_camera;
 use glam::Vec3;
 use imagic::asset::loaders::hdr_loader::HDRLoader;
+use imagic::ecs::world::World;
 use imagic::prelude::*;
 use imagic::window::WindowSize;
 
@@ -221,21 +222,21 @@ impl App {
 }
 
 impl ImagicAppTrait for App {
-    fn init(&mut self, imagic_context: &mut ImagicContext) {
-        self.prepare_cameras(imagic_context);
-        self.prepare_lights(imagic_context);
-        self.init_ibl(imagic_context);
+    fn init(&mut self, world: &mut World) {
+        self.prepare_cameras(world.context_mut());
+        self.prepare_lights(world.context_mut());
+        self.init_ibl(world.context_mut());
 
-        let pbr_material_index = self.prepare_pbr_material(imagic_context);
-        self.sphere.init(imagic_context, pbr_material_index);
+        let pbr_material_index = self.prepare_pbr_material(world.context_mut());
+        self.sphere.init(world.context_mut(), pbr_material_index);
         self.sphere
-            .set_layer(Layer::Default, imagic_context.render_item_manager_mut());
+            .set_layer(Layer::Default, world.context_mut().render_item_manager_mut());
     }
 
-    fn on_update(&mut self, imagic_context: &mut ImagicContext) {
+    fn on_update(&mut self, world: &mut World) {
         if self.need_update_camera_controller {
             self.need_update_camera_controller = false;
-            imagic_context
+            world.context_mut()
                 .change_camera_controller(self.first_camera_id, &self.camera_controller_option_1);
         }
     }

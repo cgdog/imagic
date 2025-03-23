@@ -1,12 +1,14 @@
-use super::{core::ImagicOption, imagic_context::ImagicContext};
+use crate::ecs::world::World;
+
+use super::core::ImagicOption;
 
 pub trait ImagicAppTrait {
-    fn init(&mut self, imagic: &mut ImagicContext);
+    fn init(&mut self, world: &mut World);
 
     fn get_imagic_option(& self) -> ImagicOption;
     
     #[allow(unused)]
-    fn on_update(&mut self, imagic_context: &mut ImagicContext) {
+    fn on_update(&mut self, world: &mut World) {
 
     }
 
