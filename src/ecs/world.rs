@@ -32,6 +32,14 @@ impl World {
         Entity { id, generation }
     }
 
+    pub fn despawn(&mut self, entity: Entity) {
+        if self.entities.is_valid(&entity){
+            self.components.remove_all(entity);
+            self.entities.generations[entity.id as usize] += 1;
+            self.entities.free_list.push(entity.id);
+        }
+    }
+
     pub fn spawn_with_component<T: 'static>(&mut self, component: T) -> Entity {
         let entity = self.spawn();
         self.add_component(entity, component);

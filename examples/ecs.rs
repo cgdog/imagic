@@ -1,4 +1,4 @@
-use imagic::ecs::world::World;
+use imagic::ecs::{system::systems::{ScheduleStage, Systems}, world::World};
 use log::info;
 
 #[derive(Debug)]
@@ -35,6 +35,52 @@ impl Velocity {
         Self { speed }
     }
 }
+
+fn system_1(world: &mut World) {
+    info!("test system 1");
+    let entities_with_name = world.get_all::<(Name, Position)>();
+    if let Some(entities) = entities_with_name {
+        for entity in entities.iter() {
+            let name = world.get::<Name>(*entity);
+            let position = world.get::<Position>(*entity);
+            info!("name: {:?} , position: {:?}", name.unwrap(), position.unwrap());
+        }
+    }
+}
+
+fn system_2(world: &mut World) {
+    info!("test system 2");
+    let entities_with_velocity = world.query::<Velocity>();
+    for (_, (_, velocity)) in entities_with_velocity.enumerate() {
+        info!("velocity: {:?}", velocity);
+    }
+}
+
+struct ObjectSystem {
+    data: i32,
+}
+
+impl ObjectSystem {
+    pub fn new(data: i32) -> Self {
+        Self { data }
+    }
+
+    pub fn object_system_1(&mut self, world: &mut World) {
+        info!("object_system_1, data: {}", self.data);
+        self.data += 1;
+        for (_, name) in world.query::<Name>() {
+            info!("object_system_1, name: {:?}", name);
+        }
+    }
+
+    pub fn object_system_2(&mut self, world: &mut World) {
+        info!("object_system_1, data: {}", self.data);
+        for (_, pos) in world.query::<Position>() {
+            info!("object_system_1, position: {:?}", pos);
+        }
+    }
+}
+
 fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
@@ -101,5 +147,17 @@ fn main() {
     // println!("{:?}", TypeId::of::<& i32>());
     // println!("{:?}", TypeId::of::<&mut i32>());
 
+    let mut systems = Systems::new();
+    systems.register_system(ScheduleStage::Update, system_1);
+    systems.register_system(ScheduleStage::Update, system_2);
+    let object_system = ObjectSystem::new(100);
+    systems.register_object_system::<ObjectSystem>(object_system, 
+        vec![(ScheduleStage::Update, ObjectSystem::object_system_1), (ScheduleStage::Update, ObjectSystem::object_system_2)]);
+    systems.run_schedule(&ScheduleStage::Update, &mut world);
+
+    info!("despawn entity_b");
+    // TODO:despawn has bug.
+    world.despawn(entity_b);
+    systems.run_schedule(&ScheduleStage::Update, &mut world);
     info!("end");
 }

@@ -20,3 +20,9 @@ impl Default for Entities {
         Self { generations: Vec::new(), free_list: Vec::new() }
     }
 }
+
+impl Entities {
+    pub fn is_valid(&self, entity: &Entity) -> bool {
+        (entity.id as usize) < self.generations.len() && entity.generation == self.generations[entity.id as usize]
+    }
+}

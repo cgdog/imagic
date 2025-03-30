@@ -5,6 +5,7 @@ use super::{entity::Entity, sparse_set::SparseSet, types::TupleTypesInfo};
 trait ComponentStore {
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
+    fn remove(&mut self, entity: Entity) -> bool;
 }
 pub struct ConcreteComponentStore<T: 'static> {
     component_data: SparseSet<T>,
@@ -24,6 +25,14 @@ impl<T> ComponentStore for ConcreteComponentStore<T> {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
+    
+    fn remove(&mut self, entity: Entity) -> bool {
+        match self.remove(entity) {
+            Some(_) => true,
+            None => false,
+        }
+    }
+
 }
 
 impl<T> ConcreteComponentStore<T> {
@@ -92,6 +101,7 @@ pub struct Components {
     component_type_to_id: HashMap<TypeId, ComponentId>,
     // Something like archetypes.
     component_masks_to_entities: HashMap<ComponentMask, HashSet<Entity>>,
+    component_masks_to_type_ids: HashMap<ComponentMask, HashSet<TypeId>>,
     entity_to_component_masks: HashMap<Entity, ComponentMask>,
 }
 
@@ -102,6 +112,7 @@ impl Default for Components {
             ref_meta_info_map: HashMap::new(),
             component_type_to_id: HashMap::new(),
             component_masks_to_entities: HashMap::new(),
+            component_masks_to_type_ids: HashMap::new(),
             entity_to_component_masks: HashMap::new(),
         }
     }
@@ -117,7 +128,7 @@ impl Components {
                     if let Some(component_id) = self.component_type_to_id.get(&original_type_id) {
                         self.set_entity_component_mask(entity, *component_id);
                     } else {
-                        panic!("Failed to get entit component mask, unexpectecdlly.");
+                        panic!("Failed to get entity component mask, unexpectecdlly.");
                     }
                 } else {
                     panic!("No component component store is found, unexpectedlly.");
@@ -133,12 +144,19 @@ impl Components {
                 self.ref_meta_info_map.insert(mut_ref_type_id, ComponentRefMetaInfo::new_mut_ref(original_type_id, type_name::<&mut T>()));
                 let component_id = ComponentIdGenerator::generate_component_handle();
                 self.component_type_to_id.insert(original_type_id, component_id);
-                self.set_entity_component_mask(entity, component_id);
+                let component_mask = self.set_entity_component_mask(entity, component_id);
+                if let Some(type_ids) = self.component_masks_to_type_ids.get_mut(&component_mask) {
+                    type_ids.insert(original_type_id);
+                } else {
+                    let mut type_ids = HashSet::new();
+                    type_ids.insert(original_type_id);
+                    self.component_masks_to_type_ids.insert(component_mask, type_ids);
+                }
             }
         }
     }
 
-    fn set_entity_component_mask(&mut self, entity: Entity, component_id: u32) {
+    fn set_entity_component_mask(&mut self, entity: Entity, component_id: u32) -> ComponentMask {
         if let Some(component_mask) = self.entity_to_component_masks.get_mut(&entity) {
             *component_mask |= 1 << component_id;
             if let Some(mask_entities) = self.component_masks_to_entities.get_mut(&component_mask) {
@@ -148,12 +166,14 @@ impl Components {
                 entities.insert(entity);
                 self.component_masks_to_entities.insert(*component_mask, entities);
             }
+            *component_mask
         } else {
             let component_mask = 1 << component_id;
             self.entity_to_component_masks.insert(entity, component_mask);
             let mut entities = HashSet::new();
             entities.insert(entity);
             self.component_masks_to_entities.insert(component_mask, entities);
+            component_mask
         }
     }
 
@@ -174,11 +194,25 @@ impl Components {
 
     pub(crate) fn remove<T: 'static>(&mut self, entity: Entity) {
         let type_id = TypeId::of::<T>();
+        self.remove_component_by_type_id(&type_id, entity);
+    }
+
+    fn remove_component_by_type_id(&mut self, type_id: &TypeId, entity: Entity) {
         if let Some(component_store) = self.component_stores.get_mut(&type_id) {
-            if let Some(concrete_component_store) = component_store.as_any_mut().downcast_mut::<ConcreteComponentStore<T>>() {
-                concrete_component_store.remove(entity);
+            if component_store.remove(entity) {
                 if let Some(component_id) = self.component_type_to_id.get(&type_id) {
                     self.unset_entity_component_mask(entity, *component_id);
+                }
+            }
+        }
+    }
+
+    pub(crate) fn remove_all(&mut self, entity: Entity) {
+        if let Some(component_mask) = self.entity_to_component_masks.get(&entity) {
+            if let Some(component_type_ids) = self.component_masks_to_type_ids.get(component_mask) {
+                let type_ids: Vec<_> = component_type_ids.iter().cloned().collect();
+                for component_type_id in type_ids {
+                    self.remove_component_by_type_id(&component_type_id, entity);
                 }
             }
         }
