@@ -1,22 +1,18 @@
 use crate::{
-    camera::Camera,
-    math::Vec4,
-    model::Cube,
-    prelude::{
+    asset::asset::Handle, camera::Camera, math::Vec4, model::Cube, prelude::{
         create_cube_color_attachment_views, create_cube_depth_views, CubeRenderTexture,
-        EnvironmentPrefilterMaterial, ImagicContext, MaterialTrait, RenderTexture,
-    },
-    types::ID,
+        EnvironmentPrefilterMaterial, ImagicContext, MaterialTrait, RenderTexture, Texture,
+    }, types::ID
 };
 
 pub struct CubeTexturePrefilter {
-    input_cube_texture: ID,
+    input_cube_texture: Handle<Texture>,
     mipmap_level_count: u32,
     face_size: u32,
 }
 
 impl CubeTexturePrefilter {
-    pub fn new(input_cube_texture: ID, mipmap_level_count: u32, face_size: u32) -> Self {
+    pub fn new(input_cube_texture: Handle<Texture>, mipmap_level_count: u32, face_size: u32) -> Self {
         Self {
             input_cube_texture,
             mipmap_level_count,
@@ -30,7 +26,7 @@ impl CubeTexturePrefilter {
         camera: &mut Camera,
         cube: &mut Cube,
         rt_format: wgpu::TextureFormat,
-    ) -> ID {
+    ) -> Handle<Texture> {
         let prefilter_material_id = self.get_prefilter_material(imagic_context);
         let box_item_id = cube.render_item_id();
 
@@ -53,7 +49,7 @@ impl CubeTexturePrefilter {
             total_mipmaps_count,
         );
 
-        let rt_color_attachment = cube_rt.get_color_attachment_id();
+        let rt_color_attachment = cube_rt.get_color_attachment_handle();
 
         camera.set_render_texture(Box::new(cube_rt));
 
@@ -66,17 +62,17 @@ impl CubeTexturePrefilter {
 
             if let Some(rt) = camera.get_render_texture() {
                 if mip != 0 {
-                    let depth_texture_id = rt.get_depth_attachment_id();
+                    let depth_texture_handle = rt.get_depth_attachment_id();
                     let depth_texture = imagic_context
-                        .texture_manager_mut()
-                        .get_texture(depth_texture_id);
+                        .asset_manager()
+                        .get(&depth_texture_handle).unwrap();
                     let new_depth_views = create_cube_depth_views(depth_texture, mip);
                     rt.set_depth_attachment_views(new_depth_views);
 
-                    let color_attachment_id = rt.get_color_attachment_id();
+                    let color_attachment_id = rt.get_color_attachment_handle();
                     let color_texture = imagic_context
-                        .texture_manager_mut()
-                        .get_texture(color_attachment_id);
+                        .asset_manager()
+                        .get(&color_attachment_id).unwrap();
                     let new_color_attachment_views =
                         create_cube_color_attachment_views(color_texture, mip, rt_format);
                     rt.set_color_attachment_views(new_color_attachment_views);
@@ -106,7 +102,7 @@ impl CubeTexturePrefilter {
 
     fn get_prefilter_material(&self, imagic_context: &mut ImagicContext) -> ID {
         let mut prefilter_material =
-            EnvironmentPrefilterMaterial::new(self.input_cube_texture, self.mipmap_level_count);
+            EnvironmentPrefilterMaterial::new(self.input_cube_texture.clone(), self.mipmap_level_count);
         prefilter_material.set_cull_mode(wgpu::Face::Front);
         imagic_context.add_material(Box::new(prefilter_material))
     }

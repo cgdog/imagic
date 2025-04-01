@@ -1,9 +1,7 @@
 use crate::{
-    prelude::{
-        bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
-        texture_manager::TextureManager, GraphicsContext,
-    },
-    types::ID,
+    asset::asset_manager::AssetManager, prelude::{
+        bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, GraphicsContext,
+    }, types::ID
 };
 
 use super::material_trait::MaterialTrait;
@@ -27,14 +25,15 @@ impl MaterialManager {
         graphics_context: &GraphicsContext,
         bind_group_manager: &mut BindGroupManager,
         bind_group_layout_manager: &mut BindGroupLayoutManager,
-        texture_manager: &TextureManager,
+        // texture_manager: &TextureManager,
+        asset_manager: &AssetManager,
     ) -> ID {
         material.on_init(graphics_context, bind_group_layout_manager);
         material.create_bind_group(
             graphics_context,
             bind_group_manager,
             bind_group_layout_manager,
-            texture_manager,
+            asset_manager,
         );
         let index = self.materials.len();
         self.materials.push(material);

@@ -1,13 +1,13 @@
 use std::borrow::Cow;
 
-use crate::{prelude::{bind_group_layout::BindGroupLayoutManager, GraphicsContext, INVALID_ID}, types::ID};
+use crate::{asset::{asset::Handle, asset_manager::AssetManager}, prelude::{bind_group_layout::BindGroupLayoutManager, GraphicsContext, Texture, INVALID_ID}, types::ID};
 
 use super::MaterialTrait;
 
 
 /// Use to generate prefiltered environment map.
 pub struct EnvironmentPrefilterMaterial {
-    input_cube_texture: ID,
+    input_cube_texture: Handle<Texture>,
     texture_cube_sampler: Option<wgpu::Sampler>,
     roughness: f32,
     max_mipmap_level: u32,
@@ -19,7 +19,7 @@ pub struct EnvironmentPrefilterMaterial {
 impl Default for EnvironmentPrefilterMaterial {
     fn default() -> Self {
         Self {
-            input_cube_texture: INVALID_ID,
+            input_cube_texture: Handle::INVALID,
             texture_cube_sampler: None,
             roughness: 0.0,
             max_mipmap_level: 5,
@@ -71,7 +71,7 @@ impl MaterialTrait for EnvironmentPrefilterMaterial {
         graphics_context: &crate::prelude::GraphicsContext,
         bind_group_manager: &mut crate::prelude::bind_group::BindGroupManager,
         bind_group_layout_manager: &mut crate::prelude::bind_group_layout::BindGroupLayoutManager,
-        texture_manager: &crate::prelude::texture_manager::TextureManager,
+        asset_manager: &AssetManager,
     ) -> ID {
         let uniform_buffer =
             graphics_context.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -89,7 +89,7 @@ impl MaterialTrait for EnvironmentPrefilterMaterial {
                 wgpu::BindGroupEntry {
                     binding: 0,
                     resource: wgpu::BindingResource::TextureView(
-                        texture_manager.get_texture_view(self.input_cube_texture),
+                        asset_manager.get(&self.input_cube_texture).expect("failed to get environment prefilter input_cube_texture").get_texture_view(),
                     ),
                 },
                 wgpu::BindGroupEntry {
@@ -132,7 +132,7 @@ impl MaterialTrait for EnvironmentPrefilterMaterial {
 }
 
 impl EnvironmentPrefilterMaterial {
-    pub fn new(input_cube_texture: ID, max_mipmap_level: u32) -> Self {
+    pub fn new(input_cube_texture: Handle<Texture>, max_mipmap_level: u32) -> Self {
         Self {
             input_cube_texture,
             max_mipmap_level,

@@ -1,11 +1,11 @@
 use std::borrow::Cow;
 
-use crate::{prelude::{bind_group_layout::BindGroupLayoutManager, GraphicsContext, INVALID_ID}, types::ID};
+use crate::{asset::{asset::Handle, asset_manager::AssetManager}, prelude::{bind_group_layout::BindGroupLayoutManager, GraphicsContext, Texture, INVALID_ID}, types::ID};
 
 use super::MaterialTrait;
 
 pub struct SrgbCubeToLinearMaterial {
-    input_sgb_cube_texture: ID,
+    input_sgb_cube_texture: Handle<Texture>,
     texture_cube_sampler: Option<wgpu::Sampler>,
     cull_mode: wgpu::Face,
     bind_group_id: ID,
@@ -14,7 +14,7 @@ pub struct SrgbCubeToLinearMaterial {
 impl Default for SrgbCubeToLinearMaterial {
     fn default() -> Self {
         Self {
-            input_sgb_cube_texture: INVALID_ID,
+            input_sgb_cube_texture: Handle::INVALID,
             texture_cube_sampler: None,
             cull_mode: wgpu::Face::Front,
             bind_group_id: INVALID_ID,
@@ -49,7 +49,7 @@ impl MaterialTrait for SrgbCubeToLinearMaterial {
         graphics_context: &crate::prelude::GraphicsContext,
         bind_group_manager: &mut crate::prelude::bind_group::BindGroupManager,
         bind_group_layout_manager: &mut crate::prelude::bind_group_layout::BindGroupLayoutManager,
-        texture_manager: &crate::prelude::texture_manager::TextureManager,
+        asset_manager: &AssetManager,
     ) -> ID {
         let bind_group_layout =
             bind_group_layout_manager.get_bind_group_layout(self.get_bind_group_layout_id());
@@ -61,7 +61,7 @@ impl MaterialTrait for SrgbCubeToLinearMaterial {
                     // albedo map
                     binding: 0,
                     resource: wgpu::BindingResource::TextureView(
-                        texture_manager.get_texture_view(self.input_sgb_cube_texture),
+                        asset_manager.get(&self.input_sgb_cube_texture).unwrap().get_texture_view(),
                     ),
                 },
                 wgpu::BindGroupEntry {
@@ -94,7 +94,7 @@ impl MaterialTrait for SrgbCubeToLinearMaterial {
 }
 
 impl SrgbCubeToLinearMaterial {
-    pub fn new(input_sgb_cube_texture: ID) -> Self {
+    pub fn new(input_sgb_cube_texture: Handle<Texture>) -> Self {
         Self {
             input_sgb_cube_texture,
             ..Default::default()

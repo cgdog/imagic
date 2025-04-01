@@ -3,21 +3,19 @@ use wgpu::{
 };
 
 use crate::{
-    math::{Vec3, Vec4},
-    prelude::ImagicContext,
-    types::ID,
+    asset::asset::Handle, math::{Vec3, Vec4}, prelude::ImagicContext
 };
 
 use super::texture::Texture;
 
 pub trait RenderTexture {
-    /// Get color attachment texture id.
-    fn get_color_attachment_id(&self) -> ID;
+    /// Get color attachment texture handle.
+    fn get_color_attachment_handle(&self) -> Handle<Texture>;
 
     fn get_color_attachment_format(&self) -> wgpu::TextureFormat;
 
     /// Get depth attachment texture id.
-    fn get_depth_attachment_id(&self) -> ID;
+    fn get_depth_attachment_id(&self) -> Handle<Texture>;
 
     fn get_depth_attachment_views(&self) -> &[TextureView];
     fn set_depth_attachment_views(&mut self, depth_views: Vec<TextureView>);
@@ -43,7 +41,7 @@ fn create_depth_texture(
     imagic_context: &mut ImagicContext,
     width: u32,
     height: u32,
-) -> (ID, TextureView) {
+) -> (Handle<Texture>, TextureView) {
     const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth24PlusStencil8;
     let dpeth_texture = Texture::create_depth_texture(
         imagic_context.graphics_context(),
@@ -54,8 +52,8 @@ fn create_depth_texture(
     );
     let depth_view = dpeth_texture.create_view(&wgpu::TextureViewDescriptor::default());
     let depth_texture = imagic_context
-        .texture_manager_mut()
-        .add_texture(dpeth_texture);
+        .asset_manager_mut()
+        .add(dpeth_texture);
     (depth_texture, depth_view)
 }
 
@@ -106,26 +104,26 @@ pub(crate) fn create_cube_depth_views(
 }
 
 pub struct RenderTexture2D {
-    color_attachment: ID,
+    color_attachment: Handle<Texture>,
     color_attachment_format: wgpu::TextureFormat,
     color_attachment_view: [TextureView; 1],
-    depth_attachment: ID,
+    depth_attachment: Handle<Texture>,
     depth_view: [TextureView; 1],
     width: f32,
     height: f32,
 }
 
 impl RenderTexture for RenderTexture2D {
-    fn get_color_attachment_id(&self) -> ID {
-        self.color_attachment
+    fn get_color_attachment_handle(&self) -> Handle<Texture> {
+        self.color_attachment.clone()
     }
 
     fn get_color_attachment_format(&self) -> wgpu::TextureFormat {
         self.color_attachment_format
     }
 
-    fn get_depth_attachment_id(&self) -> ID {
-        self.depth_attachment
+    fn get_depth_attachment_id(&self) -> Handle<Texture> {
+        self.depth_attachment.clone()
     }
 
     fn get_color_attachment_views(&self) -> &[TextureView] {
@@ -191,12 +189,12 @@ impl RenderTexture2D {
 
         let rt_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
-        let color_attachment_id = imagic_context.texture_manager_mut().add_texture(texture);
+        let color_attachment_handle = imagic_context.asset_manager_mut().add(texture);
 
         let (depth_attachment_id, depth_view) = create_depth_texture(imagic_context, width, height);
 
         Self {
-            color_attachment: color_attachment_id,
+            color_attachment: color_attachment_handle,
             color_attachment_format: format,
             color_attachment_view: [rt_view],
             depth_attachment: depth_attachment_id,
@@ -208,10 +206,10 @@ impl RenderTexture2D {
 }
 
 pub struct CubeRenderTexture {
-    color_attachment: ID,
+    color_attachment: Handle<Texture>,
     color_attachment_views: [TextureView; 6],
     color_attachment_format: wgpu::TextureFormat,
-    depth_attachment: ID,
+    depth_attachment: Handle<Texture>,
     depth_attachment_views: [TextureView; 6],
     face_size: f32,
     // view_matrices: [Mat4; 6],
@@ -219,16 +217,16 @@ pub struct CubeRenderTexture {
 }
 
 impl RenderTexture for CubeRenderTexture {
-    fn get_color_attachment_id(&self) -> ID {
-        self.color_attachment
+    fn get_color_attachment_handle(&self) -> Handle<Texture> {
+        self.color_attachment.clone()
     }
 
     fn get_color_attachment_format(&self) -> wgpu::TextureFormat {
         self.color_attachment_format
     }
 
-    fn get_depth_attachment_id(&self) -> ID {
-        self.depth_attachment
+    fn get_depth_attachment_id(&self) -> Handle<Texture> {
+        self.depth_attachment.clone()
     }
 
     fn get_color_attachment_views(&self) -> &[TextureView] {
@@ -303,8 +301,8 @@ impl CubeRenderTexture {
             .expect("Failed to create cube rt color attachment views.");
 
         let color_attachment_id = imagic_context
-            .texture_manager_mut()
-            .add_texture(cube_texture);
+            .asset_manager_mut()
+            .add(cube_texture);
 
         // let (depth_attachment_id, depth_view) = create_depth_texture(imagic_context, width, height);
         let cube_depth_texture = Texture::create_cube_texture(
@@ -322,9 +320,9 @@ impl CubeRenderTexture {
             .try_into()
             .expect("Failed to create cube rt depth attachment views.");
 
-        let depth_attachment_id = imagic_context
-            .texture_manager_mut()
-            .add_texture(cube_depth_texture);
+        let depth_attachment_handle = imagic_context
+            .asset_manager_mut()
+            .add(cube_depth_texture);
 
         // let view_matrices: [Mat4; 6] = [
         //         Mat4::look_at_rh(Vec3::ZERO, Vec3::new( 1.0,  0.0,  0.0), Vec3::new(0.0, -1.0,  0.0)),
@@ -372,7 +370,7 @@ impl CubeRenderTexture {
         Self {
             color_attachment: color_attachment_id,
             color_attachment_format: format,
-            depth_attachment: depth_attachment_id,
+            depth_attachment: depth_attachment_handle,
             depth_attachment_views,
             color_attachment_views,
             face_size: width as f32,

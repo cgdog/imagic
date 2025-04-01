@@ -24,9 +24,9 @@ impl Default for App {
 
 impl App {
     fn set_pbr_ibl(&self, pbr_material: &mut Box<PBRMaterial>) {
-        pbr_material.set_irradiance_cube_texture(self.ibl_data.irradiance_cube_texture);
-        pbr_material.set_prefiltered_cube_texture(self.ibl_data.refelction_cube_texture);
-        pbr_material.set_brdf_lut(self.ibl_data.brdf_lut);
+        pbr_material.set_irradiance_cube_texture(self.ibl_data.irradiance_cube_texture.clone());
+        pbr_material.set_prefiltered_cube_texture(self.ibl_data.refelction_cube_texture.clone());
+        pbr_material.set_brdf_lut(self.ibl_data.brdf_lut.clone());
     }
 
     fn init_ibl(&mut self, imagic_context: &mut ImagicContext) {
@@ -42,7 +42,7 @@ impl App {
         self.ibl_data = ibl_baker.bake(imagic_context);
         self.skybox
             // .init_with_cube_texture(imagic_context, self.ibl_data.refelction_cube_texture);
-            .init_with_cube_texture(imagic_context, self.ibl_data.background_cube_texture);
+            .init_with_cube_texture(imagic_context, self.ibl_data.background_cube_texture.clone());
         // .init_with_cube_texture(imagic_context, self.ibl_data.irradiance_cube_texture);
     }
 
@@ -78,14 +78,14 @@ impl App {
 
     fn prepare_material(
         &mut self,
-        imagic_context: &mut ImagicContext,
+        world: &mut World,
         albedo_map_buffer: &[u8],
         normal_map_buffer: &[u8],
         metallic_map_buffer: &[u8],
         roughness_map_buffer: &[u8],
         ao_map_buffer: &[u8],
     ) -> ID {
-        let graphics_context = imagic_context.graphics_context();
+        let graphics_context = world.context().graphics_context();
         let mut pbr_material = Box::new(PBRMaterial::new(
             Vec4::new(1.0, 1.0, 1.0, 1.0),
             1.0,
@@ -128,27 +128,25 @@ impl App {
             true,
         );
 
-        let texture_manager = imagic_context.texture_manager_mut();
-
-        let albedo_texture = texture_manager.add_texture(albedo_texture);
+        let albedo_texture = world.asset_manager_mut().add(albedo_texture);
         pbr_material.set_albedo_texture(albedo_texture);
-        let normal_texture = texture_manager.add_texture(normal_texture);
+        let normal_texture = world.asset_manager_mut().add(normal_texture);
         pbr_material.set_normal_texture(normal_texture);
-        let metallic_texture = texture_manager.add_texture(metallic_texture);
+        let metallic_texture = world.asset_manager_mut().add(metallic_texture);
         pbr_material.set_metallic_texture(metallic_texture);
-        let roughness_texture = texture_manager.add_texture(roughness_texture);
+        let roughness_texture = world.asset_manager_mut().add(roughness_texture);
         pbr_material.set_roughness_texture(roughness_texture);
-        let ao_texture = texture_manager.add_texture(ao_texture);
+        let ao_texture = world.asset_manager_mut().add(ao_texture);
         pbr_material.set_ao_texture(ao_texture);
 
         self.set_pbr_ibl(&mut pbr_material);
-        let pbr_material_index = imagic_context.add_material(pbr_material);
+        let pbr_material_index = world.context_mut().add_material(pbr_material);
         pbr_material_index
     }
 
     fn create_sphere(
         &mut self,
-        imagic_context: &mut ImagicContext,
+        world: &mut World,
         albedo_map_buffer: &[u8],
         normal_map_buffer: &[u8],
         metallic_map_buffer: &[u8],
@@ -157,7 +155,7 @@ impl App {
         x_pos: f32,
     ) {
         let pbr_material_index = self.prepare_material(
-            imagic_context,
+            world,
             albedo_map_buffer,
             normal_map_buffer,
             metallic_map_buffer,
@@ -165,15 +163,15 @@ impl App {
             ao_map_buffer,
         );
         let mut sphere = Sphere::new(1.0, 256, 256);
-        sphere.init_with_transform(imagic_context, pbr_material_index, Transform {
+        sphere.init_with_transform(world.context_mut(), pbr_material_index, Transform {
             position: Vec3::new(x_pos, 0.0, 0.0),
             ..Default::default()
         });
     }
 
-    fn create_spheres(&mut self, imagic_context: &mut ImagicContext) {
+    fn create_spheres(&mut self, world: &mut World) {
         self.create_sphere(
-            imagic_context,
+            world,
             include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_basecolor.png"),
             include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_normal.png"),
             include_bytes!("./assets/pbr/rustediron1-alt2-bl/rustediron2_metallic.png"),
@@ -183,7 +181,7 @@ impl App {
         );
 
         self.create_sphere(
-            imagic_context,
+            world,
             include_bytes!("./assets/pbr/gold/albedo.png"),
             include_bytes!("./assets/pbr/gold/normal.png"),
             include_bytes!("./assets/pbr/gold/metallic.png"),
@@ -193,7 +191,7 @@ impl App {
         );
 
         self.create_sphere(
-            imagic_context,
+            world,
             include_bytes!("./assets/pbr/grass/albedo.png"),
             include_bytes!("./assets/pbr/grass/normal.png"),
             include_bytes!("./assets/pbr/grass/metallic.png"),
@@ -203,7 +201,7 @@ impl App {
         );
 
         self.create_sphere(
-            imagic_context,
+            world,
             include_bytes!("./assets/pbr/plastic/albedo.png"),
             include_bytes!("./assets/pbr/plastic/normal.png"),
             include_bytes!("./assets/pbr/plastic/metallic.png"),
@@ -213,7 +211,7 @@ impl App {
         );
 
         self.create_sphere(
-            imagic_context,
+            world,
             include_bytes!("./assets/pbr/wall/albedo.png"),
             include_bytes!("./assets/pbr/wall/normal.png"),
             include_bytes!("./assets/pbr/wall/metallic.png"),
@@ -239,7 +237,7 @@ impl ImagicAppTrait for App {
             world.context_mut(),
         );
 
-        self.create_spheres(world.context_mut());
+        self.create_spheres(world);
     }
 
     fn on_update(&mut self, _world: &mut World) {}

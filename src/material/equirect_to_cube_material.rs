@@ -1,17 +1,15 @@
 use std::borrow::Cow;
 
 use crate::{
-    prelude::{
-        bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
-        texture_manager::TextureManager, GraphicsContext, INVALID_ID,
-    },
-    types::ID,
+    asset::{asset::Handle, asset_manager::AssetManager}, prelude::{
+        bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, GraphicsContext, Texture, INVALID_ID
+    }, types::ID
 };
 
 use super::MaterialTrait;
 
 pub struct EquirectangularToCubeMaterial {
-    equirectangular_map: ID,
+    equirectangular_map: Handle<Texture>,
     texture2d_sampler: Option<wgpu::Sampler>,
     bind_group_id: ID,
     cull_mode: wgpu::Face,
@@ -21,7 +19,7 @@ pub struct EquirectangularToCubeMaterial {
 impl Default for EquirectangularToCubeMaterial {
     fn default() -> Self {
         Self {
-            equirectangular_map: INVALID_ID,
+            equirectangular_map: Handle::INVALID,
             texture2d_sampler: None,
             bind_group_id: INVALID_ID,
             cull_mode: wgpu::Face::Back,
@@ -48,7 +46,7 @@ impl MaterialTrait for EquirectangularToCubeMaterial {
         graphics_context: &GraphicsContext,
         bind_group_manager: &mut BindGroupManager,
         bind_group_layout_manager: &mut BindGroupLayoutManager,
-        texture_manager: &TextureManager,
+        asset_manager: &AssetManager,
     ) -> ID {
         let bind_group_layout =
             bind_group_layout_manager.get_bind_group_layout(self.get_bind_group_layout_id());
@@ -59,7 +57,7 @@ impl MaterialTrait for EquirectangularToCubeMaterial {
                 wgpu::BindGroupEntry {
                     binding: 0,
                     resource: wgpu::BindingResource::TextureView(
-                        texture_manager.get_texture_view(self.equirectangular_map),
+                        asset_manager.get(&self.equirectangular_map).unwrap().get_texture_view(),
                     ),
                 },
                 wgpu::BindGroupEntry {
@@ -187,12 +185,12 @@ impl EquirectangularToCubeMaterial {
         bind_group_layout
     }
 
-    pub fn set_equirectangular_map(&mut self, equirectangular_map: ID) {
+    pub fn set_equirectangular_map(&mut self, equirectangular_map: Handle<Texture>) {
         self.equirectangular_map = equirectangular_map;
     }
 
-    pub fn get_equirectangular_map(&self) -> ID {
-        self.equirectangular_map
+    pub fn get_equirectangular_map(&self) -> &Handle<Texture> {
+        &self.equirectangular_map
     }
 
     pub fn get_2d_texture_sampler(&self) -> &wgpu::Sampler {

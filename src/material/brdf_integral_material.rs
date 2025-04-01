@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::{prelude::{bind_group_layout::BindGroupLayoutManager, GraphicsContext, INVALID_ID}, types::ID};
+use crate::{asset::asset_manager::AssetManager, prelude::{bind_group_layout::BindGroupLayoutManager, GraphicsContext, INVALID_ID}, types::ID};
 
 use super::MaterialTrait;
 
@@ -38,7 +38,7 @@ impl MaterialTrait for BRDFIntegralMaterial {
         graphics_context: &crate::prelude::GraphicsContext,
         bind_group_manager: &mut crate::prelude::bind_group::BindGroupManager,
         bind_group_layout_manager: &mut crate::prelude::bind_group_layout::BindGroupLayoutManager,
-        _texture_manager: &crate::prelude::texture_manager::TextureManager,
+        _asset_manager: &AssetManager,
     ) -> crate::prelude::ID {
         let bind_group_layout =
             bind_group_layout_manager.get_bind_group_layout(self.get_bind_group_layout_id());

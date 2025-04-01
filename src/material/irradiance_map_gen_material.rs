@@ -1,12 +1,12 @@
 use std::borrow::Cow;
 
-use crate::{prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, texture_manager::TextureManager, GraphicsContext, INVALID_ID}, types::ID};
+use crate::{asset::{asset::Handle, asset_manager::AssetManager}, prelude::{bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, GraphicsContext, Texture, INVALID_ID}, types::ID};
 
 use super::MaterialTrait;
 
 /// This material can generate an irradiance map from a plain Cube Texture.
 pub struct IrradianceMapGenMaterial {
-    cube_texture: ID,
+    cube_texture: Handle<Texture>,
     cube_sampler: Option<wgpu::Sampler>,
     bind_group_id: ID,
     cull_mode: wgpu::Face,
@@ -16,7 +16,7 @@ pub struct IrradianceMapGenMaterial {
 impl Default for IrradianceMapGenMaterial {
     fn default() -> Self {
         Self {
-            cube_texture: INVALID_ID,
+            cube_texture: Handle::INVALID,
             cube_sampler: None,
             bind_group_id: INVALID_ID,
             cull_mode: wgpu::Face::Back,
@@ -43,7 +43,7 @@ impl MaterialTrait for IrradianceMapGenMaterial {
         graphics_context: &GraphicsContext,
         bind_group_manager: &mut BindGroupManager,
         bind_group_layout_manager: &mut BindGroupLayoutManager,
-        texture_manager: &TextureManager,
+        asset_manager: &AssetManager,
     ) -> ID {
         let bind_group_layout =
             bind_group_layout_manager.get_bind_group_layout(self.get_bind_group_layout_id());
@@ -54,7 +54,7 @@ impl MaterialTrait for IrradianceMapGenMaterial {
                 wgpu::BindGroupEntry {
                     binding: 0,
                     resource: wgpu::BindingResource::TextureView(
-                        texture_manager.get_texture_view(self.cube_texture),
+                        asset_manager.get(&self.cube_texture).unwrap().get_texture_view(),
                     ),
                 },
                 wgpu::BindGroupEntry {
@@ -182,12 +182,12 @@ impl IrradianceMapGenMaterial {
         bind_group_layout
     }
 
-    pub fn set_input_cube_map(&mut self, cube_texture: ID) {
+    pub fn set_input_cube_map(&mut self, cube_texture: Handle<Texture>) {
         self.cube_texture = cube_texture;
     }
 
-    pub fn get_input_cube_map(&self) -> ID {
-        self.cube_texture
+    pub fn get_input_cube_map(&self) -> &Handle<Texture> {
+        &self.cube_texture
     }
 
     pub fn get_cube_sampler(&self) -> &wgpu::Sampler {

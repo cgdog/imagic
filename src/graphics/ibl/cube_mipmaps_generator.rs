@@ -1,8 +1,7 @@
 use wgpu::{BindGroup, BindGroupLayout, ComputePipeline, TextureAspect};
 
 use crate::{
-    prelude::{ComputeShader, ImagicContext, Texture, INVALID_ID},
-    types::ID,
+    asset::asset::Handle, prelude::{ComputeShader, ImagicContext, Texture}
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -17,8 +16,8 @@ pub enum MipmapGeneratorType {
 }
 
 pub struct CubeMipmapsGenerator {
-    cube_without_mipmaps: ID,
-    cube_with_mipmaps: ID,
+    cube_without_mipmaps: Handle<Texture>,
+    cube_with_mipmaps: Handle<Texture>,
     face_size: u32,
     format: wgpu::TextureFormat,
     mipmap_generator_type: MipmapGeneratorType,
@@ -74,18 +73,18 @@ impl CubeMipmapsGenerator {
         )
     );
     
-    pub fn new(cube_without_mipmaps: ID, face_size: u32, format: wgpu::TextureFormat, mipmap_generator_type: MipmapGeneratorType) -> Self {
+    pub fn new(cube_without_mipmaps: Handle<Texture>, face_size: u32, format: wgpu::TextureFormat, mipmap_generator_type: MipmapGeneratorType) -> Self {
         Self {
             cube_without_mipmaps,
             face_size,
-            cube_with_mipmaps: INVALID_ID,
+            cube_with_mipmaps: Handle::INVALID,
             format,
             mipmap_generator_type
         }
     }
 
-    pub fn get_cube_with_mipmap(&self) -> ID {
-        self.cube_with_mipmaps
+    pub fn get_cube_with_mipmap(&self) -> Handle<Texture> {
+        self.cube_with_mipmaps.clone()
     }
 
     fn create_cube_texture_with_mipmaps(&mut self, imagic_context: &mut ImagicContext) -> u32 {
@@ -105,8 +104,8 @@ impl CubeMipmapsGenerator {
         );
 
         let original_cube_texture = imagic_context
-            .texture_manager()
-            .get_texture(self.cube_without_mipmaps);
+            .asset_manager()
+            .get(&self.cube_without_mipmaps).unwrap();
 
         let mut encoder = imagic_context
             .graphics_context()
@@ -154,8 +153,8 @@ impl CubeMipmapsGenerator {
             .poll(wgpu::Maintain::Wait);
 
         self.cube_with_mipmaps = imagic_context
-            .texture_manager_mut()
-            .add_texture(cube_map_with_mipmap);
+            .asset_manager_mut()
+            .add(cube_map_with_mipmap);
         // info!("cube_with_mipmaps: {}", self.cube_with_mipmaps);
 
         mip_level_count
@@ -200,8 +199,8 @@ impl CubeMipmapsGenerator {
         bind_group_layout: &BindGroupLayout,
     ) -> BindGroup {
         let cube_texture_with_mipmaps = imagic_context
-            .texture_manager()
-            .get_texture(self.cube_with_mipmaps);
+            .asset_manager()
+            .get(&self.cube_with_mipmaps).unwrap();
         let input_texture_view =
             cube_texture_with_mipmaps.create_view(&wgpu::TextureViewDescriptor {
                 label: Some("Input Mipmap Texture View"),

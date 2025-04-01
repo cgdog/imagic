@@ -1,14 +1,13 @@
 use std::{borrow::Cow, usize};
 
 use crate::{
-    prelude::{bind_group_layout::BindGroupLayoutManager, GraphicsContext, Texture, INVALID_ID},
-    types::ID,
+    asset::{asset::Handle, asset_manager::AssetManager}, prelude::{bind_group_layout::BindGroupLayoutManager, GraphicsContext, Texture, INVALID_ID}, types::ID
 };
 
 use super::MaterialTrait;
 
 pub struct UnlitMaterial {
-    albedo_map: usize,
+    albedo_map: Handle<Texture>,
     texture2d_sampler: Option<wgpu::Sampler>,
     bind_group_id: usize,
 }
@@ -16,7 +15,7 @@ pub struct UnlitMaterial {
 impl Default for UnlitMaterial {
     fn default() -> Self {
         Self {
-            albedo_map: Texture::white(),
+            albedo_map: Handle::INVALID,
             texture2d_sampler: None,
             bind_group_id: INVALID_ID,
         }
@@ -38,7 +37,7 @@ impl MaterialTrait for UnlitMaterial {
         graphics_context: &crate::prelude::GraphicsContext,
         bind_group_manager: &mut crate::prelude::bind_group::BindGroupManager,
         bind_group_layout_manager: &mut crate::prelude::bind_group_layout::BindGroupLayoutManager,
-        texture_manager: &crate::prelude::texture_manager::TextureManager,
+        asset_manager: &AssetManager,
     ) -> ID {
         let bind_group_layout =
             bind_group_layout_manager.get_bind_group_layout(self.get_bind_group_layout_id());
@@ -50,7 +49,7 @@ impl MaterialTrait for UnlitMaterial {
                     // albedo map
                     binding: 0,
                     resource: wgpu::BindingResource::TextureView(
-                        texture_manager.get_texture_view(self.albedo_map),
+                        asset_manager.get(&self.albedo_map).expect("failed to get UnlitMaterial albedo_map").get_texture_view(),
                     ),
                 },
                 wgpu::BindGroupEntry {
@@ -160,12 +159,12 @@ impl UnlitMaterial {
         bind_group_layout
     }
 
-    pub fn set_albedo_map(&mut self, albedo_map: usize) {
+    pub fn set_albedo_map(&mut self, albedo_map: Handle<Texture>) {
         self.albedo_map = albedo_map;
     }
 
-    pub fn get_albedo_map(&self) -> ID {
-        self.albedo_map
+    pub fn get_albedo_map(&self) -> &Handle<Texture> {
+        &self.albedo_map
     }
 
     pub fn get_2d_texture_sampler(&self) -> &wgpu::Sampler {

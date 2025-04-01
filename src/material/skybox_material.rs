@@ -1,14 +1,13 @@
 use std::{borrow::Cow, usize};
 
 use crate::{
-    prelude::{bind_group_layout::BindGroupLayoutManager, GraphicsContext, INVALID_ID},
-    types::ID,
+    asset::{asset::Handle, asset_manager::AssetManager}, prelude::{bind_group_layout::BindGroupLayoutManager, GraphicsContext, Texture, INVALID_ID}, types::ID
 };
 
 use super::MaterialTrait;
 
 pub struct SkyboxMaterial {
-    skybox_map: ID,
+    skybox_map: Handle<Texture>,
     texture_cube_sampler: Option<wgpu::Sampler>,
     bind_group_id: ID,
     cull_mode: wgpu::Face,
@@ -17,7 +16,7 @@ pub struct SkyboxMaterial {
 impl Default for SkyboxMaterial {
     fn default() -> Self {
         Self {
-            skybox_map: INVALID_ID,
+            skybox_map: Handle::INVALID,
             texture_cube_sampler: None,
             bind_group_id: INVALID_ID,
             cull_mode: wgpu::Face::Front,
@@ -40,7 +39,7 @@ impl MaterialTrait for SkyboxMaterial {
         graphics_context: &crate::prelude::GraphicsContext,
         bind_group_manager: &mut crate::prelude::bind_group::BindGroupManager,
         bind_group_layout_manager: &mut crate::prelude::bind_group_layout::BindGroupLayoutManager,
-        texture_manager: &crate::prelude::texture_manager::TextureManager,
+        asset_manager: &AssetManager,
     ) -> ID {
         let bind_group_layout =
             bind_group_layout_manager.get_bind_group_layout(self.get_bind_group_layout_id());
@@ -52,7 +51,7 @@ impl MaterialTrait for SkyboxMaterial {
                     // albedo map
                     binding: 0,
                     resource: wgpu::BindingResource::TextureView(
-                        texture_manager.get_texture_view(self.skybox_map),
+                        asset_manager.get(&self.skybox_map).unwrap().get_texture_view(),
                     ),
                 },
                 wgpu::BindGroupEntry {
@@ -170,12 +169,12 @@ impl SkyboxMaterial {
         bind_group_layout
     }
 
-    pub fn set_skybox_map(&mut self, skybox_map: usize) {
+    pub fn set_skybox_map(&mut self, skybox_map: Handle<Texture>) {
         self.skybox_map = skybox_map;
     }
 
-    pub fn get_skybox_map(&self) -> ID {
-        self.skybox_map
+    pub fn get_skybox_map(&self) -> &Handle<Texture> {
+        &self.skybox_map
     }
 
     pub fn get_cube_texture_sampler(&self) -> &wgpu::Sampler {

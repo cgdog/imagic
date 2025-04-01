@@ -4,17 +4,12 @@ use wgpu::TextureFormat;
 use winit::dpi::{LogicalSize, PhysicalSize};
 
 use crate::{
-    camera::{Camera, CameraControllerOptions},
-    graphics::{
+    asset::asset_manager::AssetManager, camera::{Camera, CameraControllerOptions}, graphics::{
         bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
         buffer::GPUBufferManager, render_pipeline::RenderPipelineManager, GraphicsContext,
-    },
-    input::InputManager,
-    prelude::{
+    }, input::InputManager, prelude::{
         texture_manager::TextureManager, CameraManager, LightManager, MaterialManager, MaterialTrait, RenderItem, Texture, TransformManager
-    },
-    types::{ID, RR},
-    window::WindowSize,
+    }, types::{ID, RR}, window::WindowSize
 };
 
 use super::render_item::render_item_manager::RenderItemManager;
@@ -33,6 +28,7 @@ pub struct ImagicContext {
     transform_manager: RR<TransformManager>,
     camera_manager: CameraManager,
     input_manager: InputManager,
+    asset_manager: AssetManager,
 
     logical_size: WindowSize,
     physical_size: WindowSize,
@@ -49,7 +45,15 @@ impl ImagicContext {
     }
 
     fn init_default_assets(&mut self) {
-        Texture::_internal_create_default_textures(Some(&self.graphics_context), &mut Some(&mut self.texture_manager));
+        Texture::_internal_create_default_textures(Some(&self.graphics_context), &mut self.asset_manager);
+    }
+
+    pub(crate) fn asset_manager(&self) -> &AssetManager {
+        &self.asset_manager
+    }
+
+    pub(crate) fn asset_manager_mut(&mut self) -> &mut AssetManager {
+        &mut self.asset_manager
     }
 
     /// Called after App.init()
@@ -264,7 +268,7 @@ impl ImagicContext {
             &self.graphics_context,
             &mut self.bind_group_manager,
             &mut self.bind_group_layout_manager,
-            &self.texture_manager,
+            &self.asset_manager,
         )
     }
 

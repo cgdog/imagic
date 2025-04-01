@@ -1,12 +1,9 @@
 use std::borrow::Cow;
 
 use crate::{
-    math::{color::Color, Vec4},
-    prelude::{
-        bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
-        texture_manager::TextureManager, GraphicsContext, Texture, INVALID_ID,
-    },
-    types::ID,
+    asset::{asset::Handle, asset_manager::AssetManager}, math::{color::Color, Vec4}, prelude::{
+        bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, GraphicsContext, Texture, INVALID_ID,
+    }, types::ID
 };
 
 use super::material_trait::MaterialTrait;
@@ -24,15 +21,15 @@ pub struct PBRMaterial {
     albedo_color: Color,
     metallic_roughness_ao: Vec4,
 
-    albedo_texture: ID,
-    normal_textue: ID,
-    metallic_texture: ID,
-    roughness_texture: ID,
-    ao_texture: ID,
+    albedo_texture: Handle<Texture>,
+    normal_textue: Handle<Texture>,
+    metallic_texture: Handle<Texture>,
+    roughness_texture: Handle<Texture>,
+    ao_texture: Handle<Texture>,
 
-    irradiance_cube_texture: ID,
-    prefiltered_cube_texture: ID,
-    brdf_lut: ID,
+    irradiance_cube_texture: Handle<Texture>,
+    prefiltered_cube_texture: Handle<Texture>,
+    brdf_lut: Handle<Texture>,
 
     texture2d_sampler: Option<wgpu::Sampler>,
     texture_cube_sampler: Option<wgpu::Sampler>,
@@ -47,14 +44,14 @@ impl Default for PBRMaterial {
         Self {
             albedo_color: Vec4::ONE,
             metallic_roughness_ao: Vec4::ONE,
-            albedo_texture: Texture::white(),
-            normal_textue: Texture::white(),
-            metallic_texture: Texture::white(),
-            roughness_texture: Texture::white(),
-            ao_texture: Texture::white(),
-            irradiance_cube_texture: Texture::cube_texture_placeholder(),
-            prefiltered_cube_texture: Texture::cube_texture_placeholder(),
-            brdf_lut: Texture::white(),
+            albedo_texture: Texture::white().clone(),
+            normal_textue: Texture::white().clone(),
+            metallic_texture: Texture::white().clone(),
+            roughness_texture: Texture::white().clone(),
+            ao_texture: Texture::white().clone(),
+            irradiance_cube_texture: Texture::cube_texture_placeholder().clone(),
+            prefiltered_cube_texture: Texture::cube_texture_placeholder().clone(),
+            brdf_lut: Texture::white().clone(),
             texture2d_sampler: None,
             texture_cube_sampler: None,
 
@@ -110,7 +107,7 @@ impl MaterialTrait for PBRMaterial {
         graphics_context: &GraphicsContext,
         bind_group_manager: &mut BindGroupManager,
         bind_group_layout_manager: &mut BindGroupLayoutManager,
-        texture_manager: &TextureManager,
+        asset_manager: &AssetManager,
     ) -> ID {
         let fragment_uniforms = PBRFragmentUniforms {
             features: self.get_enabled_features(),
@@ -143,42 +140,42 @@ impl MaterialTrait for PBRMaterial {
                     // albedo map
                     binding: 2,
                     resource: wgpu::BindingResource::TextureView(
-                        texture_manager.get_texture_view(self.albedo_texture),
+                        asset_manager.get(&self.albedo_texture).unwrap().get_texture_view(),
                     ),
                 },
                 wgpu::BindGroupEntry {
                     // normal map
                     binding: 3,
                     resource: wgpu::BindingResource::TextureView(
-                        texture_manager.get_texture_view(self.normal_textue),
+                        asset_manager.get(&self.normal_textue).unwrap().get_texture_view(),
                     ),
                 },
                 wgpu::BindGroupEntry {
                     // metallic map
                     binding: 4,
                     resource: wgpu::BindingResource::TextureView(
-                        texture_manager.get_texture_view(self.metallic_texture),
+                        asset_manager.get(&self.metallic_texture).unwrap().get_texture_view(),
                     ),
                 },
                 wgpu::BindGroupEntry {
                     // roughness map
                     binding: 5,
                     resource: wgpu::BindingResource::TextureView(
-                        texture_manager.get_texture_view(self.roughness_texture),
+                        asset_manager.get(&self.roughness_texture).unwrap().get_texture_view(),
                     ),
                 },
                 wgpu::BindGroupEntry {
                     // ao map
                     binding: 6,
                     resource: wgpu::BindingResource::TextureView(
-                        texture_manager.get_texture_view(self.ao_texture),
+                        asset_manager.get(&self.ao_texture).unwrap().get_texture_view(),
                     ),
                 },
                 wgpu::BindGroupEntry {
                     // irradiance map
                     binding: 7,
                     resource: wgpu::BindingResource::TextureView(
-                        texture_manager.get_texture_view(self.irradiance_cube_texture),
+                        asset_manager.get(&self.irradiance_cube_texture).unwrap().get_texture_view(),
                     ),
                 },
                 wgpu::BindGroupEntry {
@@ -189,14 +186,14 @@ impl MaterialTrait for PBRMaterial {
                     // prefiltered reflection map
                     binding: 9,
                     resource: wgpu::BindingResource::TextureView(
-                        texture_manager.get_texture_view(self.prefiltered_cube_texture),
+                        asset_manager.get(&self.prefiltered_cube_texture).unwrap().get_texture_view(),
                     ),
                 },
                 wgpu::BindGroupEntry {
                     // brdf lut
                     binding: 10,
                     resource: wgpu::BindingResource::TextureView(
-                        texture_manager.get_texture_view(self.brdf_lut),
+                        asset_manager.get(&self.brdf_lut).unwrap().get_texture_view(),
                     ),
                 },
             ],
@@ -451,68 +448,68 @@ impl PBRMaterial {
         self.metallic_roughness_ao
     }
 
-    pub fn set_albedo_texture(&mut self, albedo_texture: ID) {
+    pub fn set_albedo_texture(&mut self, albedo_texture: Handle<Texture>) {
         self.albedo_texture = albedo_texture;
     }
 
-    pub fn get_albedo_texture(&self) -> ID {
-        self.albedo_texture
+    pub fn get_albedo_texture(&self) -> &Handle<Texture> {
+        &self.albedo_texture
     }
 
-    pub fn set_normal_texture(&mut self, normal_texture: ID) {
+    pub fn set_normal_texture(&mut self, normal_texture: Handle<Texture>) {
         self.normal_textue = normal_texture;
     }
 
-    pub fn get_normal_texture(&self) -> ID {
-        self.normal_textue
+    pub fn get_normal_texture(&self) -> &Handle<Texture> {
+        &self.normal_textue
     }
 
-    pub fn set_metallic_texture(&mut self, metallic_texture: ID) {
+    pub fn set_metallic_texture(&mut self, metallic_texture: Handle<Texture>) {
         self.metallic_texture = metallic_texture;
     }
 
-    pub fn get_metallic_texture(&self) -> ID {
-        self.metallic_texture
+    pub fn get_metallic_texture(&self) -> &Handle<Texture> {
+        &self.metallic_texture
     }
 
-    pub fn set_roughness_texture(&mut self, roughness_texture: ID) {
+    pub fn set_roughness_texture(&mut self, roughness_texture: Handle<Texture>) {
         self.roughness_texture = roughness_texture;
     }
 
-    pub fn get_roughness_texture(&self) -> ID {
-        self.roughness_texture
+    pub fn get_roughness_texture(&self) -> &Handle<Texture> {
+        &self.roughness_texture
     }
 
-    pub fn set_ao_texture(&mut self, ao_texture: ID) {
+    pub fn set_ao_texture(&mut self, ao_texture: Handle<Texture>) {
         self.ao_texture = ao_texture;
     }
 
-    pub fn get_ao_texture(&self) -> ID {
-        self.ao_texture
+    pub fn get_ao_texture(&self) -> &Handle<Texture> {
+        &self.ao_texture
     }
 
-    pub fn set_irradiance_cube_texture(&mut self, irradiance_cube_texture: ID) {
+    pub fn set_irradiance_cube_texture(&mut self, irradiance_cube_texture: Handle<Texture>) {
         self.irradiance_cube_texture = irradiance_cube_texture;
     }
 
-    pub fn get_irradiance_cube_texture(&self) -> ID {
-        self.irradiance_cube_texture
+    pub fn get_irradiance_cube_texture(&self) -> &Handle<Texture> {
+        &self.irradiance_cube_texture
     }
 
-    pub fn set_prefiltered_cube_texture(&mut self, prefiltered_cube_texture: ID) {
+    pub fn set_prefiltered_cube_texture(&mut self, prefiltered_cube_texture: Handle<Texture>) {
         self.prefiltered_cube_texture = prefiltered_cube_texture;
     }
 
-    pub fn get_prefiltered_cube_texture(&self) -> ID {
-        self.prefiltered_cube_texture
+    pub fn get_prefiltered_cube_texture(&self) -> &Handle<Texture> {
+        &self.prefiltered_cube_texture
     }
 
-    pub fn set_brdf_lut(&mut self, brdf_lut: ID) {
+    pub fn set_brdf_lut(&mut self, brdf_lut: Handle<Texture>) {
         self.brdf_lut = brdf_lut;
     }
 
-    pub fn get_brdf_lut(&self) -> ID {
-        self.brdf_lut
+    pub fn get_brdf_lut(&self) -> &Handle<Texture> {
+        &self.brdf_lut
     }
 
     pub fn get_2d_texture_sampler(&self) -> &wgpu::Sampler {
@@ -533,28 +530,28 @@ impl PBRMaterial {
 
     pub fn get_enabled_features(&self) -> [u32; 4] {
         let mut features: u32 = 0;
-        if self.albedo_texture != INVALID_ID && self.albedo_texture != Texture::white() {
+        if self.albedo_texture != Handle::INVALID && self.albedo_texture != *Texture::white() {
             features |= Self::FEATURE_FLAG_ALBEDO_MAP; // 1 << 0
         }
-        if self.normal_textue != INVALID_ID && self.normal_textue != Texture::white() {
+        if self.normal_textue != Handle::INVALID && self.normal_textue != *Texture::white() {
             // TODO: determine the default normal map.
             features |= Self::FEATURE_FLAG_NORMAL_MAP; // 1 << 1
         }
-        if self.metallic_texture != INVALID_ID && self.metallic_texture != Texture::white() {
+        if self.metallic_texture != Handle::INVALID && self.metallic_texture != *Texture::white() {
             features |= Self::FEATURE_FLAG_METALLIC_MAP; // 1 << 2
         }
-        if self.roughness_texture != INVALID_ID && self.roughness_texture != Texture::white() {
+        if self.roughness_texture != Handle::INVALID && self.roughness_texture != *Texture::white() {
             features |= Self::FEATURE_FLAG_ROUGHNESS_MAP;
         }
-        if self.ao_texture != INVALID_ID && self.ao_texture != Texture::white() {
+        if self.ao_texture != Handle::INVALID && self.ao_texture != *Texture::white() {
             features |= Self::FEATURE_FLAG_AO_MAP;
         }
-        if self.irradiance_cube_texture != INVALID_ID
-            && self.irradiance_cube_texture != Texture::cube_texture_placeholder()
-            && self.prefiltered_cube_texture != INVALID_ID
-            && self.prefiltered_cube_texture != Texture::cube_texture_placeholder()
-            && self.brdf_lut != INVALID_ID
-            && self.brdf_lut != Texture::white()
+        if self.irradiance_cube_texture != Handle::INVALID
+            && self.irradiance_cube_texture != *Texture::cube_texture_placeholder()
+            && self.prefiltered_cube_texture != Handle::INVALID
+            && self.prefiltered_cube_texture != *Texture::cube_texture_placeholder()
+            && self.brdf_lut != Handle::INVALID
+            && self.brdf_lut != *Texture::white()
         {
             features |= Self::FEATURE_FLAG_IBL;
         }

@@ -6,7 +6,6 @@ use super::{component::Components, entity::{Entities, Entity}, types::TupleTypes
 pub struct World {
     entities: Entities,
     components: Components,
-    asset_manager: AssetManager,
     context: ImagicContext,
 }
 
@@ -77,12 +76,12 @@ impl World {
         self.components.iter_mut()
     }
 
-    pub fn get_asset_manager(&self) -> &AssetManager {
-        &self.asset_manager
+    pub fn asset_manager(&self) -> &AssetManager {
+        self.context.asset_manager()
     }
 
-    pub fn get_asset_manager_mut(&mut self) -> &mut AssetManager {
-        &mut self.asset_manager
+    pub fn asset_manager_mut(&mut self) -> &mut AssetManager {
+        self.context_mut().asset_manager_mut()
     }
 
 }

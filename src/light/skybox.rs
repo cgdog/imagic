@@ -1,7 +1,5 @@
 use crate::{
-    model::Cube,
-    prelude::{ImagicContext, MaterialTrait, SkyboxMaterial, Texture, INVALID_ID},
-    types::ID,
+    asset::asset::Handle, model::Cube, prelude::{ImagicContext, MaterialTrait, SkyboxMaterial, Texture, INVALID_ID}, types::ID
 };
 
 /// Skybox representation. It includes a background cube texture and an environment refelction cube texture.
@@ -29,12 +27,12 @@ impl Skybox {
             wgpu::TextureFormat::Rgba8UnormSrgb,
             1,
         );
-        let cube_texture_id = imagic_context
-            .texture_manager_mut()
-            .add_texture(cube_texture);
+        let cube_texture_handle = imagic_context
+            .asset_manager_mut()
+            .add(cube_texture);
 
         let mut skybox_material = Box::new(SkyboxMaterial::new());
-        skybox_material.set_skybox_map(cube_texture_id);
+        skybox_material.set_skybox_map(cube_texture_handle);
         skybox_material.set_cull_mode(wgpu::Face::Front);
         let skybox_material_id = imagic_context.add_material(skybox_material);
 
@@ -47,7 +45,7 @@ impl Skybox {
     pub fn init_with_cube_texture(
         &mut self,
         imagic_context: &mut ImagicContext,
-        background_cube_texture: ID,
+        background_cube_texture: Handle<Texture>,
     ) {
         let mut skybox_material = Box::new(SkyboxMaterial::new());
         skybox_material.set_skybox_map(background_cube_texture);

@@ -1,11 +1,9 @@
 use std::any::Any;
 
 use crate::{
-    prelude::{
-        bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
-        texture_manager::TextureManager, GraphicsContext,
-    },
-    types::ID,
+    asset::asset_manager::AssetManager, prelude::{
+        bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, GraphicsContext,
+    }, types::ID
 };
 
 pub trait MaterialTrait : Any {
@@ -26,7 +24,8 @@ pub trait MaterialTrait : Any {
         graphics_context: &GraphicsContext,
         bind_group_manager: &mut BindGroupManager,
         bind_group_layout_manager: &mut BindGroupLayoutManager,
-        texture_manager: &TextureManager,
+        // texture_manager: &TextureManager,
+        asset_manager: &AssetManager,
     ) -> ID;
 
     fn get_bind_group_layout_id(&self) -> ID;

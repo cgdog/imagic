@@ -1,10 +1,7 @@
 use crate::{
-    camera::Camera,
-    math::Vec4,
-    prelude::{
-        CubeRenderTexture, ImagicContext, IrradianceMapGenMaterial, MaterialTrait, RenderTexture,
-    },
-    types::ID,
+    asset::asset::Handle, camera::Camera, math::Vec4, prelude::{
+        CubeRenderTexture, ImagicContext, IrradianceMapGenMaterial, MaterialTrait, RenderTexture, Texture,
+    }, types::ID
 };
 
 /// Generate a irradiance map for a CubeTexture
@@ -18,13 +15,13 @@ impl IrradianceMapGenerator {
     pub(crate) fn generate(
         &self,
         imagic_context: &mut ImagicContext,
-        input_cube_texture: ID,
+        input_cube_texture: Handle<Texture>,
         face_size: u32,
         box_item_id: ID,
         format: wgpu::TextureFormat,
         camera: &mut Camera,
         // sync_buffer: &SyncBuffer,
-    ) -> ID {
+    ) -> Handle<Texture> {
         let irradiance_map_gen_material =
             self.create_irradiance_map_gen_map(imagic_context, input_cube_texture);
         imagic_context
@@ -42,16 +39,16 @@ impl IrradianceMapGenerator {
         let viewport_size = face_size as f32;
         camera.set_logical_viewport(Vec4::new(0.0, 0.0, viewport_size, viewport_size));
         camera.set_physical_viewport(Vec4::new(0.0, 0.0, viewport_size, viewport_size));
-        let rt_texture_id = cube_rt.get_color_attachment_id();
+        let rt_texture_handle = cube_rt.get_color_attachment_handle();
         camera.set_render_texture(Box::new(cube_rt));
         camera.render(imagic_context, None);
-        rt_texture_id
+        rt_texture_handle
     }
 
     fn create_irradiance_map_gen_map(
         &self,
         imagic_context: &mut ImagicContext,
-        cube_texture: ID,
+        cube_texture: Handle<Texture>,
     ) -> ID {
         let mut material = IrradianceMapGenMaterial::new();
         material.set_input_cube_map(cube_texture);

@@ -43,12 +43,13 @@ impl AssetManager {
             None => {
                 let mut concrete_asset_store = ConcreteAssetStore::<T>::new();
                 let handle = concrete_asset_store.add(asset);
-                if let None = self
+                // if let None = 
+                self
                     .asset_stores
-                    .insert(type_id, Box::new(concrete_asset_store))
-                {
-                    panic!("Failed to create asset store");
-                }
+                    .insert(type_id, Box::new(concrete_asset_store));
+                // {
+                //     panic!("Failed to create asset store");
+                // }
                 return handle;
             }
         }

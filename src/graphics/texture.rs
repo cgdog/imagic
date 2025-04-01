@@ -1,7 +1,7 @@
 use image::{ImageBuffer, Rgba};
 use wgpu::{TextureFormat, TextureUsages, TextureView, TextureViewDescriptor};
 
-use crate::{prelude::{Mipmaps2DGenerator, INVALID_ID}, types::ID};
+use crate::{asset::{asset::{Asset, Handle}, asset_manager::AssetManager}, prelude::{Mipmaps2DGenerator, INVALID_ID}, types::ID};
 
 use super::{texture_manager::TextureManager, GraphicsContext};
 
@@ -10,6 +10,8 @@ pub struct Texture {
     view: Option<TextureView>,
     size: wgpu::Extent3d,
 }
+
+impl Asset for Texture {}
 
 impl Texture {
     pub fn get(&self) -> &wgpu::Texture {
@@ -336,12 +338,12 @@ impl Texture {
 
     /////// default textures ///////
     /// Get default 2x2 white texture.
-    pub fn white() -> ID {
-        Self::_internal_white(None, &mut None)
+    pub fn white() -> &'static Handle<Texture> {
+        Self::_internal_white(None, None)
     }
 
-    pub fn cube_texture_placeholder() -> ID {
-        Self::_internal_cube_placeholder(None, &mut None)
+    pub fn cube_texture_placeholder() -> &'static Handle<Texture> {
+        Self::_internal_cube_placeholder(None, None)
     }
 
     /// Get default 2x2 black texture.
@@ -357,25 +359,28 @@ impl Texture {
     /// Create all default textures.
     pub(crate) fn _internal_create_default_textures(
         graphics_context: Option<&GraphicsContext>,
-        texture_manager: &mut Option<&mut TextureManager>,
+        // texture_manager: &mut Option<&mut TextureManager>,
+        asset_manager: &mut AssetManager,
     ) {
         // At preset, all missing textures will use a default white image and PBR will disable related features.
-        Self::_internal_white(graphics_context, texture_manager);
+        Self::_internal_white(graphics_context, Some(asset_manager));
         // Self::_internal_black(graphics_context, texture_manager);
         // Self::_internal_blue(graphics_context, texture_manager);
-        Self::_internal_cube_placeholder(graphics_context, texture_manager);
+        Self::_internal_cube_placeholder(graphics_context, Some(asset_manager));
     }
 
     /// Get or create default a 2x2 white texture.
+    #[allow(static_mut_refs)]
     pub(crate) fn _internal_white(
         graphics_context: Option<&GraphicsContext>,
-        texture_manager: &mut Option<&mut TextureManager>,
-    ) -> ID {
-        static mut WHITE_TEXTURE_ID: ID = INVALID_ID;
+        // texture_manager: &mut Option<&mut TextureManager>,
+        asset_manager: Option<&mut AssetManager>,
+    ) -> &'static Handle<Texture> {
+        static mut WHITE_TEXTURE_ID: Handle<Texture> = Handle::INVALID;
         unsafe {
-            if WHITE_TEXTURE_ID == INVALID_ID {
-                if let (Some(graphics_context), Some(texture_manager)) =
-                    (graphics_context, texture_manager)
+            if WHITE_TEXTURE_ID == Handle::INVALID {
+                if let (Some(graphics_context), Some(asset_manager)) =
+                    (graphics_context, asset_manager)
                 {
                     let white_image_data: Vec<u8> = vec![
                         255, 255, 255, 255, // (R, G, B, A)
@@ -392,10 +397,10 @@ impl Texture {
                         wgpu::TextureFormat::Rgba8UnormSrgb,
                         1,
                     );
-                    WHITE_TEXTURE_ID = texture_manager.add_texture(white_texture);
+                    WHITE_TEXTURE_ID = asset_manager.add(white_texture);
                 }
             }
-            WHITE_TEXTURE_ID
+            &WHITE_TEXTURE_ID
         }
     }
 
@@ -465,15 +470,16 @@ impl Texture {
         }
     }
 
+    #[allow(static_mut_refs)]
     pub(crate) fn _internal_cube_placeholder(
         graphics_context: Option<&GraphicsContext>,
-        texture_manager: &mut Option<&mut TextureManager>,
-    ) -> ID {
-        static mut CUBE_PLACE_HOLDER: ID = INVALID_ID;
+        asset_manager: Option<&mut AssetManager>,
+    ) -> &'static Handle<Texture> {
+        static mut CUBE_PLACE_HOLDER: Handle<Texture> = Handle::INVALID;
         unsafe {
-            if CUBE_PLACE_HOLDER == INVALID_ID {
-                if let (Some(graphics_context), Some(texture_manager)) =
-                    (graphics_context, texture_manager)
+            if CUBE_PLACE_HOLDER == Handle::INVALID {
+                if let (Some(graphics_context), Some(asset_manager)) =
+                    (graphics_context, asset_manager)
                 {
                     let cube_texture = Self::create_cube_texture(
                         graphics_context,
@@ -483,10 +489,10 @@ impl Texture {
                         wgpu::TextureUsages::TEXTURE_BINDING,
                         1,
                     );
-                    CUBE_PLACE_HOLDER = texture_manager.add_texture(cube_texture);
+                    CUBE_PLACE_HOLDER = asset_manager.add(cube_texture);
                 }
             }
-            CUBE_PLACE_HOLDER
+            &CUBE_PLACE_HOLDER
         }
     }
 }

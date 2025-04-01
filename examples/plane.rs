@@ -1,7 +1,7 @@
 use std::f32::consts;
 
 use changeable::Changeable;
-use imagic::{ecs::world::World, prelude::*, window::WindowSize};
+use imagic::{asset::asset::Handle, ecs::world::World, prelude::*, window::WindowSize};
 use log::info;
 
 pub struct App {
@@ -30,34 +30,34 @@ impl Default for App {
 }
 
 impl App {
-    fn prepare_albedo(&mut self, imagic_context: &mut ImagicContext) -> ID {
+    fn prepare_albedo(&mut self, world: &mut World) -> Handle<Texture> {
         let albedo_texture = Texture::create_from_bytes(
-            imagic_context.graphics_context(),
+            world.context().graphics_context(),
             include_bytes!("./assets/lena.png"),
             wgpu::TextureFormat::Rgba8UnormSrgb,
             true,
             true,
         );
-        let albedo_texture_index = imagic_context
-            .texture_manager_mut()
-            .add_texture(albedo_texture);
+        let albedo_texture_index = world
+            .asset_manager_mut()
+            .add(albedo_texture);
         albedo_texture_index
     }
 
-    fn prepare_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
+    fn prepare_material(&mut self, world: &mut World) -> ID {
         let mut lena_unlit_material = Box::new(UnlitMaterial::new());
-        let albedo_index = self.prepare_albedo(imagic_context);
+        let albedo_index = self.prepare_albedo(world);
         lena_unlit_material.set_albedo_map(albedo_index);
-        self.lena_unlit = imagic_context.add_material(lena_unlit_material);
+        self.lena_unlit = world.context_mut().add_material(lena_unlit_material);
 
-        let brdf_lut = self.generate_brdf_lut(imagic_context);
+        let brdf_lut = self.generate_brdf_lut(world.context_mut());
         let mut brdf_lut_material = Box::new(UnlitMaterial::new());
         brdf_lut_material.set_albedo_map(brdf_lut);
-        self.brdf_lut_unlit = imagic_context.add_material(brdf_lut_material);
+        self.brdf_lut_unlit = world.context_mut().add_material(brdf_lut_material);
         self.brdf_lut_unlit
     }
 
-    fn generate_brdf_lut(&mut self, imagic_context: &mut ImagicContext) -> ID {
+    fn generate_brdf_lut(&mut self, imagic_context: &mut ImagicContext) -> Handle<Texture> {
         let mut ibl_baker = IBLBaker::new(IBLBakerOptions {
             brdf_lut_size: 512,
             ..Default::default()
@@ -81,7 +81,7 @@ impl ImagicAppTrait for App {
             world.context_mut(),
         );
 
-        let material_index = self.prepare_material(world.context_mut());
+        let material_index = self.prepare_material(world);
         self.plane.init(world.context_mut(), material_index);
     }
 

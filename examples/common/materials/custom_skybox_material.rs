@@ -1,16 +1,13 @@
 use std::{borrow::Cow, usize};
 
 use imagic::{
-    prelude::{
-        bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
-        texture_manager::TextureManager, GraphicsContext, MaterialTrait, INVALID_ID,
-    },
-    types::ID,
-    utils::changeable::Changeable,
+    asset::{asset::Handle, asset_manager::AssetManager}, prelude::{
+        bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, GraphicsContext, MaterialTrait, Texture, INVALID_ID
+    }, types::ID, utils::changeable::Changeable
 };
 
 pub struct CustomSkyboxMaterial {
-    skybox_map: ID,
+    skybox_map: Handle<Texture>,
     texture_cube_sampler: Option<wgpu::Sampler>,
     bind_group_id: ID,
     cull_mode: wgpu::Face,
@@ -21,7 +18,7 @@ pub struct CustomSkyboxMaterial {
 impl Default for CustomSkyboxMaterial {
     fn default() -> Self {
         Self {
-            skybox_map: INVALID_ID,
+            skybox_map: Handle::INVALID,
             texture_cube_sampler: None,
             bind_group_id: INVALID_ID,
             cull_mode: wgpu::Face::Front,
@@ -57,7 +54,7 @@ impl MaterialTrait for CustomSkyboxMaterial {
         graphics_context: &GraphicsContext,
         bind_group_manager: &mut BindGroupManager,
         bind_group_layout_manager: &mut BindGroupLayoutManager,
-        texture_manager: &TextureManager,
+        asset_manager: &AssetManager,
     ) -> ID {
         let uniform_buffer =
             graphics_context.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -75,7 +72,7 @@ impl MaterialTrait for CustomSkyboxMaterial {
                 wgpu::BindGroupEntry {
                     binding: 0,
                     resource: wgpu::BindingResource::TextureView(
-                        texture_manager.get_texture_view(self.skybox_map),
+                        asset_manager.get(&self.skybox_map).unwrap().get_texture_view(),
                     ),
                 },
                 wgpu::BindGroupEntry {
@@ -229,13 +226,13 @@ impl CustomSkyboxMaterial {
     }
 
     #[allow(unused)]
-    pub fn set_skybox_map(&mut self, skybox_map: usize) {
+    pub fn set_skybox_map(&mut self, skybox_map: Handle<Texture>) {
         self.skybox_map = skybox_map;
     }
 
     #[allow(unused)]
-    pub fn get_skybox_map(&self) -> ID {
-        self.skybox_map
+    pub fn get_skybox_map(&self) -> &Handle<Texture> {
+        &self.skybox_map
     }
 
     pub fn get_cube_texture_sampler(&self) -> &wgpu::Sampler {

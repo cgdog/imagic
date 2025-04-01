@@ -2,6 +2,7 @@ use std::f32::consts;
 use std::usize;
 
 use common::create_camera;
+use imagic::asset::asset::Handle;
 use imagic::asset::loaders::hdr_loader::{HDRLoader, HDRLoaderOptions};
 use imagic::ecs::world::World;
 use imagic::prelude::*;
@@ -37,7 +38,7 @@ impl Default for App {
 }
 
 impl App {
-    fn prepare_hdr_texture(&mut self, imagic_context: &mut ImagicContext) -> ID {
+    fn prepare_hdr_texture(&mut self, world: &mut World) -> Handle<Texture> {
         let mut hdr_loader = HDRLoader::new(HDRLoaderOptions{is_flip_y: true});
         // let cwd = std::env::current_dir().unwrap();
         // let hdr_path = cwd.join("examples/assets/pbr/hdr/newport_loft.hdr");
@@ -49,11 +50,10 @@ impl App {
 
         let hdr_texture = hdr_loader.load_by_bytes(
             include_bytes!("./assets/pbr/hdr/newport_loft.hdr"),
-            imagic_context.graphics_context(),
+            world.context().graphics_context(),
         );
-        let hdr_texture_index = imagic_context
-            .texture_manager_mut()
-            .add_texture(hdr_texture);
+        let hdr_texture_index = world.asset_manager_mut()
+            .add(hdr_texture);
         hdr_texture_index
     }
 
@@ -71,14 +71,14 @@ impl App {
         albedo_texture_index
     }
 
-    fn prepare_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
+    fn prepare_material(&mut self, world: &mut World) -> ID {
         let mut equirectangular_to_cube_material = Box::new(EquirectangularToCubeMaterial::new());
-        let hdr_texture = self.prepare_hdr_texture(imagic_context);
+        let hdr_texture = self.prepare_hdr_texture(world);
         equirectangular_to_cube_material.set_equirectangular_map(hdr_texture);
         // let albedo_index = self._prepare_albedo(imagic.context_mut());
         // equirectangular_to_cube_material.set_equirectangular_map(albedo_index);
 
-        let material_index = imagic_context.add_material(equirectangular_to_cube_material);
+        let material_index = world.context_mut().add_material(equirectangular_to_cube_material);
         material_index
     }
 
@@ -129,7 +129,7 @@ impl ImagicAppTrait for App {
             Some(self.camera_controller_option_2),
         );
 
-        let material_index = self.prepare_material(world.context_mut());
+        let material_index = self.prepare_material(world);
         self.cube.init(world.context_mut(), material_index);
     }
 

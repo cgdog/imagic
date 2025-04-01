@@ -67,8 +67,8 @@ impl App {
         light_manager.add_point_light(point_light_3);
     }
 
-    fn prepare_pbr_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
-        let graphics_context = imagic_context.graphics_context();
+    fn prepare_pbr_material(&mut self, world: &mut World) -> ID {
+        let graphics_context = world.context().graphics_context();
         let mut pbr_material = Box::new(PBRMaterial::new(
             Vec4::new(1.0, 1.0, 1.0, 1.0),
             1.0,
@@ -111,22 +111,21 @@ impl App {
             true,
         );
 
-        let texture_manager = imagic_context.texture_manager_mut();
 
-        let albedo_texture = texture_manager.add_texture(albedo_texture);
+        let albedo_texture = world.asset_manager_mut().add(albedo_texture);
         pbr_material.set_albedo_texture(albedo_texture);
-        let normal_texture = texture_manager.add_texture(normal_texture);
+        let normal_texture = world.asset_manager_mut().add(normal_texture);
         pbr_material.set_normal_texture(normal_texture);
-        let metallic_texture = texture_manager.add_texture(metallic_texture);
+        let metallic_texture = world.asset_manager_mut().add(metallic_texture);
         pbr_material.set_metallic_texture(metallic_texture);
-        let roughness_texture = texture_manager.add_texture(roughness_texture);
+        let roughness_texture = world.asset_manager_mut().add(roughness_texture);
         pbr_material.set_roughness_texture(roughness_texture);
-        let ao_texture = texture_manager.add_texture(ao_texture);
+        let ao_texture = world.asset_manager_mut().add(ao_texture);
         pbr_material.set_ao_texture(ao_texture);
 
         self.set_pbr_ibl(&mut pbr_material);
 
-        let pbr_material_index = imagic_context.add_material(pbr_material);
+        let pbr_material_index = world.context_mut().add_material(pbr_material);
         pbr_material_index
     }
 
@@ -183,9 +182,9 @@ impl App {
     }
 
     fn set_pbr_ibl(&self, pbr_material: &mut Box<PBRMaterial>) {
-        pbr_material.set_irradiance_cube_texture(self.ibl_data.irradiance_cube_texture);
-        pbr_material.set_prefiltered_cube_texture(self.ibl_data.refelction_cube_texture);
-        pbr_material.set_brdf_lut(self.ibl_data.brdf_lut);
+        pbr_material.set_irradiance_cube_texture(self.ibl_data.irradiance_cube_texture.clone());
+        pbr_material.set_prefiltered_cube_texture(self.ibl_data.refelction_cube_texture.clone());
+        pbr_material.set_brdf_lut(self.ibl_data.brdf_lut.clone());
     }
 
     fn init_ibl(&mut self, imagic_context: &mut ImagicContext) {
@@ -217,7 +216,7 @@ impl App {
             ..Default::default()
         });
         self.ibl_data = ibl_baker.bake(imagic_context);
-        self.skybox.init_with_cube_texture(imagic_context, self.ibl_data.background_cube_texture);
+        self.skybox.init_with_cube_texture(imagic_context, self.ibl_data.background_cube_texture.clone());
     }
 }
 
@@ -227,7 +226,7 @@ impl ImagicAppTrait for App {
         self.prepare_lights(world.context_mut());
         self.init_ibl(world.context_mut());
 
-        let pbr_material_index = self.prepare_pbr_material(world.context_mut());
+        let pbr_material_index = self.prepare_pbr_material(world);
         self.sphere.init(world.context_mut(), pbr_material_index);
         self.sphere
             .set_layer(Layer::Default, world.context_mut().render_item_manager_mut());

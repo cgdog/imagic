@@ -1,15 +1,10 @@
 use glam::Vec4;
 
 use crate::{
-    camera::{Camera, Layer, LayerMask},
-    math::Vec3,
-    model::{Cube, Plane},
-    prelude::{
+    asset::asset::Handle, camera::{Camera, Layer, LayerMask}, math::Vec3, model::{Cube, Plane}, prelude::{
         BRDFIntegralMaterial, ComputeShader, CubeRenderTexture, ImagicContext, RenderTexture,
-        RenderTexture2D, SrgbCubeToLinearMaterial, Texture, INVALID_ID,
-    },
-    scene::SceneObject,
-    types::{ID, RR},
+        RenderTexture2D, SrgbCubeToLinearMaterial, Texture,
+    }, scene::SceneObject, types::RR
 };
 
 use super::{
@@ -63,39 +58,39 @@ impl Default for IBLBakerOptions {
 }
 
 pub struct IBLData {
-    pub background_cube_texture: ID,
-    pub irradiance_cube_texture: ID,
-    pub refelction_cube_texture: ID,
-    pub brdf_lut: ID,
+    pub background_cube_texture: Handle<Texture>,
+    pub irradiance_cube_texture: Handle<Texture>,
+    pub refelction_cube_texture: Handle<Texture>,
+    pub brdf_lut: Handle<Texture>,
 }
 
 impl Default for IBLData {
     fn default() -> Self {
         Self {
-            background_cube_texture: INVALID_ID,
-            irradiance_cube_texture: INVALID_ID,
-            refelction_cube_texture: INVALID_ID,
-            brdf_lut: INVALID_ID,
+            background_cube_texture: Handle::INVALID,
+            irradiance_cube_texture: Handle::INVALID,
+            refelction_cube_texture: Handle::INVALID,
+            brdf_lut: Handle::INVALID,
         }
     }
 }
 
 pub struct IBLBaker {
     options: IBLBakerOptions,
-    background_cube_texture: ID,
-    irradiance_cube_texture: ID,
-    refelction_cube_texture: ID,
-    brdf_lut: ID,
+    background_cube_texture: Handle<Texture>,
+    irradiance_cube_texture: Handle<Texture>,
+    refelction_cube_texture: Handle<Texture>,
+    brdf_lut: Handle<Texture>,
 }
 
 impl Default for IBLBaker {
     fn default() -> Self {
         Self {
             options: Default::default(),
-            background_cube_texture: INVALID_ID,
-            irradiance_cube_texture: INVALID_ID,
-            refelction_cube_texture: INVALID_ID,
-            brdf_lut: INVALID_ID,
+            background_cube_texture: Handle::INVALID,
+            irradiance_cube_texture: Handle::INVALID,
+            refelction_cube_texture: Handle::INVALID,
+            brdf_lut: Handle::INVALID,
         }
     }
 }
@@ -151,10 +146,10 @@ impl IBLBaker {
             .is_visible = false;
 
         IBLData {
-            background_cube_texture: self.background_cube_texture,
-            irradiance_cube_texture: self.irradiance_cube_texture,
-            refelction_cube_texture: self.refelction_cube_texture,
-            brdf_lut: self.brdf_lut,
+            background_cube_texture: self.background_cube_texture.clone(),
+            irradiance_cube_texture: self.irradiance_cube_texture.clone(),
+            refelction_cube_texture: self.refelction_cube_texture.clone(),
+            brdf_lut: self.brdf_lut.clone(),
         }
     }
 
@@ -199,8 +194,8 @@ impl IBLBaker {
                 );
                 let size = cube_texture.get_size();
                 let ldr_background_cube_texture = imagic_context
-                    .texture_manager_mut()
-                    .add_texture(cube_texture);
+                    .asset_manager_mut()
+                    .add(cube_texture);
                 let srgb_cube_to_linear_material =
                     SrgbCubeToLinearMaterial::new(ldr_background_cube_texture);
                 let srgb_cube_to_linear_material_id =
@@ -219,7 +214,7 @@ impl IBLBaker {
                     1,
                 );
                 // info!("wgpu::TextureFormat::Rgba32Float: {:?}", wgpu::TextureFormat::Rgba32Float);
-                self.background_cube_texture = hdr_background_rt.get_color_attachment_id();
+                self.background_cube_texture = hdr_background_rt.get_color_attachment_handle();
                 camera.set_render_texture(Box::new(hdr_background_rt));
                 camera.set_viewport(Vec4::new(0.0, 0.0, 1.0, 0.0));
                 camera.set_logical_viewport(Vec4::new(
@@ -250,7 +245,7 @@ impl IBLBaker {
         let irradiance_map_generator = IrradianceMapGenerator::new();
         self.irradiance_cube_texture = irradiance_map_generator.generate(
             imagic_context,
-            self.background_cube_texture,
+            self.background_cube_texture.clone(),
             self.options.irradiance_cube_map_size,
             cube.render_item_id(),
             self.options.rt_format,
@@ -279,20 +274,20 @@ impl IBLBaker {
         camera
     }
 
-    pub fn get_background_cube_texture(&self) -> ID {
-        self.background_cube_texture
+    pub fn get_background_cube_texture(&self) -> Handle<Texture> {
+        self.background_cube_texture.clone()
     }
 
-    pub fn get_irradiance_cube_texture(&self) -> ID {
-        self.irradiance_cube_texture
+    pub fn get_irradiance_cube_texture(&self) -> Handle<Texture> {
+        self.irradiance_cube_texture.clone()
     }
 
-    pub fn get_reflection_cube_texture(&self) -> ID {
-        self.refelction_cube_texture
+    pub fn get_reflection_cube_texture(&self) -> Handle<Texture> {
+        self.refelction_cube_texture.clone()
     }
 
     /// Generate BRDF LUT texture.
-    pub fn generate_brdf_lut(&mut self, imagic_context: &mut ImagicContext) -> ID {
+    pub fn generate_brdf_lut(&mut self, imagic_context: &mut ImagicContext) -> Handle<Texture> {
         let camera = Self::create_camera(imagic_context);
         let material = Box::new(BRDFIntegralMaterial::new());
         let material_index = imagic_context.add_material(material);
@@ -310,7 +305,7 @@ impl IBLBaker {
             rt_size,
             rt_size,
         );
-        self.brdf_lut = rt.get_color_attachment_id();
+        self.brdf_lut = rt.get_color_attachment_handle();
         let rt_size = rt_size as f32;
         camera
             .borrow_mut()
@@ -329,7 +324,7 @@ impl IBLBaker {
             .render_item_manager_mut()
             .get_render_item_mut(plane.render_item_id())
             .is_visible = false;
-        self.brdf_lut
+        self.brdf_lut.clone()
     }
 
     fn generate_prefiltered_cube_texture(
@@ -341,7 +336,7 @@ impl IBLBaker {
     ) {
         // generate mipmaps with compute shader, like openGL's glGenerateMipmap.
         let mut cube_mipmaps_generator = CubeMipmapsGenerator::new(
-            self.background_cube_texture,
+            self.background_cube_texture.clone(),
             self.options.background_cube_map_size,
             // note: Rgba8UnormSrgb format does not support StorageBinding
             wgpu::TextureFormat::Rgba32Float,

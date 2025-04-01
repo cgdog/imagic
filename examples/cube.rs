@@ -1,6 +1,6 @@
 use std::f32::consts;
 
-use imagic::{ecs::world::World, prelude::*, window::WindowSize};
+use imagic::{asset::asset::Handle, ecs::world::World, prelude::*, window::WindowSize};
 use log::info;
 
 pub struct App {
@@ -20,26 +20,35 @@ impl Default for App {
 }
 
 impl App {
-    fn prepare_albedo(&mut self, imagic_context: &mut ImagicContext) -> ID {
+    fn prepare_albedo(&mut self, world: &mut World) -> Handle<Texture> {
         let albedo_texture = Texture::create_from_bytes(
-            imagic_context.graphics_context(),
+            world.context().graphics_context(),
             include_bytes!("./assets/lena.png"),
             wgpu::TextureFormat::Rgba8UnormSrgb,
             false,
             true,
         );
-        let albedo_texture_index = imagic_context
-            .texture_manager_mut()
-            .add_texture(albedo_texture);
-        albedo_texture_index
+
+        let texture_handle = world.asset_manager_mut().add(albedo_texture);
+        texture_handle
+
+        // if let Some(texture) = world.get_asset_manager().get(&texture_handle) {
+        //     texture.get_texture_view()
+        // }
+
+
+        // let albedo_texture_index = imagic_context
+        //     .texture_manager_mut()
+        //     .add_texture(albedo_texture);
+        // albedo_texture_index
     }
 
-    fn prepare_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
+    fn prepare_material(&mut self, world: &mut World) -> ID {
         let mut unlit_material = Box::new(UnlitMaterial::new());
-        let albedo_index = self.prepare_albedo(imagic_context);
+        let albedo_index = self.prepare_albedo(world);
         unlit_material.set_albedo_map(albedo_index);
 
-        let material_index = imagic_context.add_material(unlit_material);
+        let material_index = world.context_mut().add_material(unlit_material);
         material_index
     }
 }
@@ -57,7 +66,7 @@ impl ImagicAppTrait for App {
             world.context_mut(),
         );
 
-        let material_index = self.prepare_material(world.context_mut());
+        let material_index = self.prepare_material(world);
         self.cube.init(world.context_mut(), material_index);
     }
 

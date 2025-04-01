@@ -1,7 +1,7 @@
 use core::f32;
 
 use crate::{
-    asset::loaders::hdr_loader::{HDRLoader, HDRLoaderOptions}, camera::{Camera, Layer}, math::Vec4, model::Cube, prelude::{
+    asset::{asset::Handle, loaders::hdr_loader::{HDRLoader, HDRLoaderOptions}}, camera::{Camera, Layer}, math::Vec4, model::Cube, prelude::{
         CubeRenderTexture, EquirectangularToCubeMaterial,
         ImagicContext, MaterialTrait, RenderTexture, Texture,
     }, scene::SceneObject, types::ID
@@ -33,7 +33,7 @@ impl EquirectToCubeConverter {
         camera: &mut Camera,
         cube: &mut Cube,
         // sync_buffer: &SyncBuffer,
-    ) -> ID {
+    ) -> Handle<Texture> {
         let material_index = Self::get_equirect_to_cube_material(equirect_path, imagic_context);
         self.convert_core(
             material_index,
@@ -55,7 +55,7 @@ impl EquirectToCubeConverter {
         camera: &mut Camera,
         cube: &mut Cube,
         // sync_buffer: &SyncBuffer,
-    ) -> ID {
+    ) -> Handle<Texture> {
         let material_index =
             self.get_equirect_to_cube_material_by_bytes(equirect_img_data, imagic_context);
         self.convert_core(
@@ -78,7 +78,7 @@ impl EquirectToCubeConverter {
         camera: &mut Camera,
         cube: &mut Cube,
         // sync_buffer: &SyncBuffer,
-    ) -> ID {
+    ) -> Handle<Texture> {
         cube.init(imagic_context, material_index);
         cube.set_layer(
             Layer::RenderTarget,
@@ -86,7 +86,7 @@ impl EquirectToCubeConverter {
         );
 
         let cube_rt = CubeRenderTexture::new(imagic_context, format, face_size, face_size, 1);
-        let rt_texture_id = cube_rt.get_color_attachment_id();
+        let rt_texture_id = cube_rt.get_color_attachment_handle();
         camera.set_viewport(Vec4::new(0.0, 0.0, 1.0, 1.0));
 
         let viewport_size = face_size as f32;
@@ -123,12 +123,12 @@ impl EquirectToCubeConverter {
         hdr_texture: Texture,
         imagic_context: &mut ImagicContext,
     ) -> ID {
-        let hdr_texture_index = imagic_context
-            .texture_manager_mut()
-            .add_texture(hdr_texture);
+        let hdr_texture_handle = imagic_context
+            .asset_manager_mut()
+            .add(hdr_texture);
 
         let mut equirectangular_to_cube_material = Box::new(EquirectangularToCubeMaterial::new());
-        equirectangular_to_cube_material.set_equirectangular_map(hdr_texture_index);
+        equirectangular_to_cube_material.set_equirectangular_map(hdr_texture_handle);
         // Note here: camera is inside the box, we should render the back face.
         equirectangular_to_cube_material.set_cull_mode(wgpu::Face::Front);
         let material_index = imagic_context.add_material(equirectangular_to_cube_material);

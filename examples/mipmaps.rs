@@ -49,7 +49,7 @@ impl App {
         });
         self.ibl_data = ibl_baker.bake(imagic_context);
         let mut cube_mipmaps_generator = CubeMipmapsGenerator::new(
-            self.ibl_data.background_cube_texture,
+            self.ibl_data.background_cube_texture.clone(),
             512,
             wgpu::TextureFormat::Rgba32Float,
             MipmapGeneratorType::GaussianFilter4x4,
