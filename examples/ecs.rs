@@ -91,7 +91,7 @@ fn main() {
     world.add_component(entity_a, Velocity::new(1.0));
     
     let entity_b = world.spawn();
-    world.add_component(entity_b, Name::new("entitry b"));
+    world.add_component(entity_b, Name::new("entity b"));
     world.add_component(entity_b, Position::new(-1.0, 0.0));
     world.add_component(entity_b, Velocity::new(-1.0));
 

@@ -65,7 +65,7 @@ impl World {
     /// Get all entities with all given components.
     /// 
     /// Usage: let entities = get_all<(i32, Transform, u32)>();
-    pub fn get_all<T: TupleTypesInfo>(&self) -> Option<Vec<Entity>> {
+    pub fn get_all<T: TupleTypesInfo>(&mut self) -> Option<Vec<Entity>> {
         self.components.get_all::<T>()
     }
 
@@ -76,13 +76,6 @@ impl World {
     pub fn query_mut<T: 'static>(&mut self) -> impl Iterator<Item = (&mut Entity, &mut T)> {
         self.components.iter_mut()
     }
-
-    // pub fn query_all<T: TupleTypesInfo>(&self) {
-    //     let type_ids = T::type_ids();
-    //     let type_names = T::type_names();
-    //     info!("type ids: {:?}", type_ids);
-    //     info!("type names: {:?}", type_names);
-    // }
 
     pub fn get_asset_manager(&self) -> &AssetManager {
         &self.asset_manager

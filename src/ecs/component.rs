@@ -1,4 +1,4 @@
-use std::{any::{type_name, Any, TypeId}, collections::{HashMap, HashSet}};
+use std::{any::{type_name, Any, TypeId}, collections::HashMap};
 
 use super::{entity::Entity, sparse_set::SparseSet, types::TupleTypesInfo};
 
@@ -99,10 +99,12 @@ pub struct Components {
     /// The mapping between ref or mut ref TypeId and original TypeId.
     ref_meta_info_map: HashMap<TypeId, ComponentRefMetaInfo>,
     component_type_to_id: HashMap<TypeId, ComponentId>,
+    component_id_to_type_id: HashMap<ComponentId, TypeId>,
     // Something like archetypes.
-    component_masks_to_entities: HashMap<ComponentMask, HashSet<Entity>>,
-    component_masks_to_type_ids: HashMap<ComponentMask, HashSet<TypeId>>,
     entity_to_component_masks: HashMap<Entity, ComponentMask>,
+
+    cache_tuple_type_id_to_mask: HashMap<TypeId, ComponentMask>,
+    cache_mask_to_entities: HashMap<ComponentMask, Vec<Entity>>,
 }
 
 impl Default for Components {
@@ -111,9 +113,10 @@ impl Default for Components {
             component_stores: HashMap::new(),
             ref_meta_info_map: HashMap::new(),
             component_type_to_id: HashMap::new(),
-            component_masks_to_entities: HashMap::new(),
-            component_masks_to_type_ids: HashMap::new(),
+            component_id_to_type_id: HashMap::new(),
             entity_to_component_masks: HashMap::new(),
+            cache_tuple_type_id_to_mask: HashMap::new(),
+            cache_mask_to_entities: HashMap::new(),
         }
     }
 }
@@ -144,77 +147,49 @@ impl Components {
                 self.ref_meta_info_map.insert(mut_ref_type_id, ComponentRefMetaInfo::new_mut_ref(original_type_id, type_name::<&mut T>()));
                 let component_id = ComponentIdGenerator::generate_component_handle();
                 self.component_type_to_id.insert(original_type_id, component_id);
-                let component_mask = self.set_entity_component_mask(entity, component_id);
-                if let Some(type_ids) = self.component_masks_to_type_ids.get_mut(&component_mask) {
-                    type_ids.insert(original_type_id);
-                } else {
-                    let mut type_ids = HashSet::new();
-                    type_ids.insert(original_type_id);
-                    self.component_masks_to_type_ids.insert(component_mask, type_ids);
-                }
+                self.component_id_to_type_id.insert(component_id, original_type_id);
+                self.set_entity_component_mask(entity, component_id);
             }
         }
     }
 
-    fn set_entity_component_mask(&mut self, entity: Entity, component_id: u32) -> ComponentMask {
+    fn set_entity_component_mask(&mut self, entity: Entity, component_id: u32) {
         if let Some(component_mask) = self.entity_to_component_masks.get_mut(&entity) {
             *component_mask |= 1 << component_id;
-            if let Some(mask_entities) = self.component_masks_to_entities.get_mut(&component_mask) {
-                mask_entities.insert(entity);
-            } else {
-                let mut entities = HashSet::new();
-                entities.insert(entity);
-                self.component_masks_to_entities.insert(*component_mask, entities);
-            }
-            *component_mask
         } else {
             let component_mask = 1 << component_id;
             self.entity_to_component_masks.insert(entity, component_mask);
-            let mut entities = HashSet::new();
-            entities.insert(entity);
-            self.component_masks_to_entities.insert(component_mask, entities);
-            component_mask
-        }
-    }
-
-    fn unset_entity_component_mask(&mut self, entity: Entity, component_id: u32) {
-        if let Some(component_mask) = self.entity_to_component_masks.get_mut(&entity) {
-            let old_component_mask = *component_mask;
-            *component_mask &= !(1 << component_id);
-            self.component_masks_to_entities.get_mut(&old_component_mask).expect("Failed to get component mask unexpectedlly").remove(&entity);
-            if let Some(new_component_mask_entities) = self.component_masks_to_entities.get_mut(component_mask) {
-                new_component_mask_entities.insert(entity);
-            } else {
-                let mut entities = HashSet::new();
-                entities.insert(entity);
-                self.component_masks_to_entities.insert(*component_mask, entities);
-            }
         }
     }
 
     pub(crate) fn remove<T: 'static>(&mut self, entity: Entity) {
         let type_id = TypeId::of::<T>();
         self.remove_component_by_type_id(&type_id, entity);
+        self.clean_cache_mask_to_entity(entity);
     }
 
     fn remove_component_by_type_id(&mut self, type_id: &TypeId, entity: Entity) {
         if let Some(component_store) = self.component_stores.get_mut(&type_id) {
             if component_store.remove(entity) {
-                if let Some(component_id) = self.component_type_to_id.get(&type_id) {
-                    self.unset_entity_component_mask(entity, *component_id);
-                }
+                self.entity_to_component_masks.remove(&entity);
             }
         }
     }
 
+    fn clean_cache_mask_to_entity(&mut self, entity: Entity) {
+        self.cache_mask_to_entities.retain(|_, v|!v.contains(&entity));
+    }
+
     pub(crate) fn remove_all(&mut self, entity: Entity) {
-        if let Some(component_mask) = self.entity_to_component_masks.get(&entity) {
-            if let Some(component_type_ids) = self.component_masks_to_type_ids.get(component_mask) {
-                let type_ids: Vec<_> = component_type_ids.iter().cloned().collect();
-                for component_type_id in type_ids {
-                    self.remove_component_by_type_id(&component_type_id, entity);
+        if let Some(&component_mask) = self.entity_to_component_masks.get(&entity) {
+            for component_id in 0..64 {
+                if (component_mask & (1 << component_id)) != 0 {
+                    if let Some(component_type_id) = self.component_id_to_type_id.get(&component_id).cloned() {
+                        self.remove_component_by_type_id(&component_type_id, entity);
+                    }
                 }
             }
+            self.clean_cache_mask_to_entity(entity);
         }
     }
 
@@ -229,20 +204,45 @@ impl Components {
     }
 
     /// e.g., let entities = get_all<(i32, Transform, u32)>();
-    pub(crate) fn get_all<T: TupleTypesInfo>(&self) -> Option<Vec<Entity>> {
-        let original_type_ids = T::type_ids();
+    pub(crate) fn get_all<T: TupleTypesInfo>(&mut self) -> Option<Vec<Entity>> {
         let mut mask: ComponentMask = 0;
-        for original_type_id in &original_type_ids {
-            if let Some(component_id) = self.component_type_to_id.get(original_type_id) {
-                mask |= 1 << component_id;
+
+        let tuple_type_id = TypeId::of::<T>();
+        if let Some(&tuple_mask) = self.cache_tuple_type_id_to_mask.get(&tuple_type_id) {
+            mask = tuple_mask;
+        } else {
+            let original_type_ids = T::type_ids();
+            for original_type_id in &original_type_ids {
+                if let Some(component_id) = self.component_type_to_id.get(original_type_id) {
+                    mask |= 1 << component_id;
+                } else {
+                    return None;
+                }
+            }
+            self.cache_tuple_type_id_to_mask.insert(tuple_type_id, mask);
+        }
+
+        if let Some(cached_entities) = self.cache_mask_to_entities.get(&mask) {
+            if cached_entities.len() > 0 {
+                Some(cached_entities.clone())
             } else {
-                return None;
+                None
+            }
+        } else {
+            let mut entities = Vec::new();
+            for (&entity, &cur_mask) in self.entity_to_component_masks.iter() {
+                if (cur_mask & mask) == mask {
+                    entities.push(entity);
+                }
+            }
+    
+            self.cache_mask_to_entities.insert(mask, entities.clone());
+            if entities.len() > 0 {
+                Some(entities)
+            } else {
+                None
             }
         }
-        if let Some(entities) = self.component_masks_to_entities.get(&mask) {
-            return Some(entities.iter().map(|e|e.clone()).collect())
-        }
-        None
     }
 
     pub(crate) fn get_mut<T: 'static>(&mut self, entity: Entity) -> Option<&mut T> {
@@ -254,28 +254,6 @@ impl Components {
         }
         None
     }
-
-    // pub(crate) fn query<T: TupleTypesInfo>(&mut self) -> Option<Vec<T>> {
-    //     let type_ids = T::type_ids();
-    //     let mut mask: ComponentMask = 0;
-    //     for type_id in &type_ids {
-    //         if let Some(ref_meta_info) = self.ref_meta_info_map.get(type_id) {
-    //             if let Some(component_id) = self.component_type_to_id.get(&ref_meta_info.original_type_id) {
-    //                 mask |= 1 << component_id;
-    //             } else {
-    //                 return None;
-    //             }
-    //         } else {
-    //             return None;
-    //         }
-    //     }
-    //     if let Some(entities) = self.component_masks_to_entities.get_mut(&mask) {
-    //         for entity in entities.iter() {
-    //             // get components & create tuple
-    //         }
-    //     }
-    //     None
-    // }
 
     pub(crate) fn iter<T: 'static>(&self) -> impl Iterator<Item = (&Entity, & T)> {
         let type_id = TypeId::of::<T>();
