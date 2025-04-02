@@ -6,7 +6,6 @@ pub mod bind_group_layout;
 pub mod bind_group;
 pub mod texture;
 pub mod buffer;
-pub mod texture_manager;
 pub mod render_texture;
 pub mod ibl;
 pub mod compute;

@@ -1,18 +1,14 @@
 use wgpu::{TextureFormat, TextureView};
 
 use crate::{
-    math::{Mat4, Vec3, Vec4},
-    prelude::{
+    asset::{asset::Handle, asset_manager::AssetManager}, math::{Mat4, Vec3, Vec4}, prelude::{
         bind_group::BindGroupManager,
         bind_group_layout::BindGroupLayoutManager,
         buffer::{GPUBufferManager, SyncBuffer},
         render_item_manager::RenderItemManager,
-        texture_manager::TextureManager,
         GraphicsContext, ImagicContext, RenderTexture, SceneObject, Texture, Transform,
         TransformManager, VertexOrIndexCount, INVALID_ID,
-    },
-    types::{Dirtyable, ID},
-    window::WindowSize,
+    }, types::{Dirtyable, ID}, window::WindowSize
 };
 
 use super::{CameraControllerOptions, Layer, LayerMask};
@@ -55,7 +51,7 @@ pub struct Camera {
     vertex_uniform_buffer_id: ID,
     fragment_uniform_buffer_id: ID,
 
-    depth_texture: ID,
+    depth_texture: Handle<Texture>,
 
     layer: Layer,
     pub layer_mask: LayerMask,
@@ -91,7 +87,7 @@ impl Default for Camera {
             vertex_uniform_buffer_id: INVALID_ID,
             fragment_uniform_buffer_id: INVALID_ID,
 
-            depth_texture: INVALID_ID,
+            depth_texture: Handle::INVALID,
 
             layer: Layer::Default,
             layer_mask: LayerMask::default(),
@@ -228,8 +224,8 @@ impl Camera {
                 depth_view
             } else {
                 context
-                    .texture_manager()
-                    .get_texture_view(camera_depth_textue)
+                    .asset_manager()
+                    .get(camera_depth_textue).unwrap().get_texture_view()
             };
 
             let camera_layer_mask = self.layer_mask;
@@ -361,7 +357,7 @@ impl Camera {
         bind_group_layout_manager: &mut BindGroupLayoutManager,
         transform_manager: &TransformManager,
         buffer_manager: &mut GPUBufferManager,
-        texture_manager: &mut TextureManager,
+        asset_manager: &mut AssetManager,
     ) {
         let (logical_width, logical_height) = logical_size.get();
         self._compute_logical_viewport(logical_width, logical_height);
@@ -369,7 +365,7 @@ impl Camera {
         self._compute_physical_viewport_aspect(physical_width, physical_height);
         self.create_depth_texture(
             graphics_context,
-            texture_manager,
+            asset_manager,
             physical_width as u32,
             physical_height as u32,
         );
@@ -399,7 +395,7 @@ impl Camera {
     pub(crate) fn on_resize(
         &mut self,
         graphics_context: &GraphicsContext,
-        texture_manager: &mut TextureManager,
+        asset_manager: &mut AssetManager,
         transform_manager: &TransformManager,
         buffer_manager: &GPUBufferManager,
         physical_width: u32,
@@ -410,10 +406,10 @@ impl Camera {
         if !self.is_viewport_auto_resizeable {
             return;
         }
-        // TODO: release outdated depth_texture: self.depth_texture, which requires to refactor TextureManager class.
+        // TODO: release outdated depth_texture: self.depth_texture.
         self.create_depth_texture(
             graphics_context,
-            texture_manager,
+            asset_manager,
             physical_width,
             physical_height,
         );
@@ -657,17 +653,17 @@ impl Camera {
     fn create_depth_texture(
         &mut self,
         graphics_context: &GraphicsContext,
-        texture_manager: &mut TextureManager,
+        asset_manager: &mut AssetManager,
         width: u32,
         height: u32,
     ) {
         const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth24PlusStencil8;
         let dpeth_texture =
             Texture::create_depth_texture(graphics_context, width, height, DEPTH_FORMAT, true);
-        self.depth_texture = texture_manager.add_texture(dpeth_texture);
+        self.depth_texture = asset_manager.add(dpeth_texture);
     }
 
-    pub fn get_depth_texture(&self) -> ID {
-        self.depth_texture
+    pub fn get_depth_texture(&self) -> &Handle<Texture> {
+        &self.depth_texture
     }
 }

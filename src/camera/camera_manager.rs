@@ -3,14 +3,11 @@ use std::{cell::RefCell, rc::Rc};
 use log::info;
 
 use crate::{
-    input::InputManager,
-    prelude::{
+    asset::asset_manager::AssetManager, input::InputManager, prelude::{
         bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
-        buffer::GPUBufferManager, texture_manager::TextureManager, GraphicsContext,
+        buffer::GPUBufferManager, GraphicsContext,
         TransformManager, INVALID_ID,
-    },
-    types::{ID, RR},
-    window::WindowSize,
+    }, types::{ID, RR}, window::WindowSize
 };
 
 use super::{camera::Camera, CameraController, CameraControllerOptions};
@@ -41,7 +38,7 @@ impl CameraManager {
         bind_group_layout_manager: &mut BindGroupLayoutManager,
         transform_manager: RR<TransformManager>,
         buffer_manager: &mut GPUBufferManager,
-        texture_manager: &mut TextureManager,
+        asset_manager: &mut AssetManager,
         input_manager: &mut InputManager,
     ) -> ID {
         let camera = Rc::new(RefCell::new(camera));
@@ -53,7 +50,7 @@ impl CameraManager {
             bind_group_layout_manager,
             &transform_manager.borrow(),
             buffer_manager,
-            texture_manager,
+            asset_manager,
         );
 
         let mut controller_id = INVALID_ID;
@@ -96,7 +93,7 @@ impl CameraManager {
     pub fn on_resize(
         &mut self,
         graphics_context: &GraphicsContext,
-        texture_manager: &mut TextureManager,
+        asset_manager: &mut AssetManager,
         transform_manager: &TransformManager,
         buffer_manager: &GPUBufferManager,
         physical_width: u32,
@@ -107,7 +104,7 @@ impl CameraManager {
         for camera in self.cameras.iter() {
             camera.borrow_mut().on_resize(
                 graphics_context,
-                texture_manager,
+                asset_manager,
                 transform_manager,
                 buffer_manager,
                 physical_width,

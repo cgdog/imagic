@@ -57,26 +57,10 @@ impl App {
         hdr_texture_index
     }
 
-    fn _prepare_albedo(&mut self, imagic_context: &mut ImagicContext) -> ID {
-        let albedo_texture = Texture::create_from_bytes(
-            imagic_context.graphics_context(),
-            include_bytes!("./assets/lena.png"),
-            wgpu::TextureFormat::Rgba8UnormSrgb,
-            false,
-            true,
-        );
-        let albedo_texture_index = imagic_context
-            .texture_manager_mut()
-            .add_texture(albedo_texture);
-        albedo_texture_index
-    }
-
     fn prepare_material(&mut self, world: &mut World) -> ID {
         let mut equirectangular_to_cube_material = Box::new(EquirectangularToCubeMaterial::new());
         let hdr_texture = self.prepare_hdr_texture(world);
         equirectangular_to_cube_material.set_equirectangular_map(hdr_texture);
-        // let albedo_index = self._prepare_albedo(imagic.context_mut());
-        // equirectangular_to_cube_material.set_equirectangular_map(albedo_index);
 
         let material_index = world.context_mut().add_material(equirectangular_to_cube_material);
         material_index

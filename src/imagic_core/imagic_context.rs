@@ -8,7 +8,7 @@ use crate::{
         bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
         buffer::GPUBufferManager, render_pipeline::RenderPipelineManager, GraphicsContext,
     }, input::InputManager, prelude::{
-        texture_manager::TextureManager, CameraManager, LightManager, MaterialManager, MaterialTrait, RenderItem, Texture, TransformManager
+        CameraManager, LightManager, MaterialManager, MaterialTrait, RenderItem, Texture, TransformManager
     }, types::{ID, RR}, window::WindowSize
 };
 
@@ -24,7 +24,6 @@ pub struct ImagicContext {
     buffer_manager: GPUBufferManager,
     light_manager: LightManager,
     material_manager: MaterialManager,
-    texture_manager: TextureManager,
     transform_manager: RR<TransformManager>,
     camera_manager: CameraManager,
     input_manager: InputManager,
@@ -125,7 +124,7 @@ impl ImagicContext {
         self.graphics_context.on_resize(new_physical_size);
         self.camera_manager.on_resize(
             &self.graphics_context,
-            &mut self.texture_manager,
+            &mut self.asset_manager,
             &self.transform_manager.borrow(),
             &self.buffer_manager,
             new_physical_size.width,
@@ -203,14 +202,6 @@ impl ImagicContext {
         &mut self.material_manager
     }
 
-    pub fn texture_manager(&self) -> &TextureManager {
-        &self.texture_manager
-    }
-
-    pub fn texture_manager_mut(&mut self) -> &mut TextureManager {
-        &mut self.texture_manager
-    }
-
     pub fn transform_manager(&self) -> RR<TransformManager> {
         self.transform_manager.clone()
     }
@@ -257,7 +248,7 @@ impl ImagicContext {
             &mut self.bind_group_layout_manager,
             self.transform_manager.clone(),
             &mut self.buffer_manager,
-            &mut self.texture_manager,
+            &mut self.asset_manager,
             &mut self.input_manager,
         )
     }

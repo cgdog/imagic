@@ -1,9 +1,9 @@
 use image::{ImageBuffer, Rgba};
 use wgpu::{TextureFormat, TextureUsages, TextureView, TextureViewDescriptor};
 
-use crate::{asset::{asset::{Asset, Handle}, asset_manager::AssetManager}, prelude::{Mipmaps2DGenerator, INVALID_ID}, types::ID};
+use crate::{asset::{asset::{Asset, Handle}, asset_manager::AssetManager}, prelude::Mipmaps2DGenerator};
 
-use super::{texture_manager::TextureManager, GraphicsContext};
+use super::GraphicsContext;
 
 pub struct Texture {
     texture: wgpu::Texture,
@@ -359,7 +359,6 @@ impl Texture {
     /// Create all default textures.
     pub(crate) fn _internal_create_default_textures(
         graphics_context: Option<&GraphicsContext>,
-        // texture_manager: &mut Option<&mut TextureManager>,
         asset_manager: &mut AssetManager,
     ) {
         // At preset, all missing textures will use a default white image and PBR will disable related features.
@@ -373,7 +372,6 @@ impl Texture {
     #[allow(static_mut_refs)]
     pub(crate) fn _internal_white(
         graphics_context: Option<&GraphicsContext>,
-        // texture_manager: &mut Option<&mut TextureManager>,
         asset_manager: Option<&mut AssetManager>,
     ) -> &'static Handle<Texture> {
         static mut WHITE_TEXTURE_ID: Handle<Texture> = Handle::INVALID;
@@ -405,15 +403,16 @@ impl Texture {
     }
 
     /// Get or create default a 2x2 black texture.
+    #[allow(static_mut_refs)]
     pub(crate) fn _internal_black(
         graphics_context: Option<&GraphicsContext>,
-        texture_manager: &mut Option<&mut TextureManager>,
-    ) -> ID {
-        static mut BLACK_TEXTURE_ID: ID = INVALID_ID;
+        asset_manager: Option<&mut AssetManager>,
+    ) -> &'static Handle<Texture> {
+        static mut BLACK_TEXTURE_ID: Handle<Texture> = Handle::INVALID;
         unsafe {
-            if BLACK_TEXTURE_ID == INVALID_ID {
-                if let (Some(graphics_context), Some(texture_manager)) =
-                    (graphics_context, texture_manager)
+            if BLACK_TEXTURE_ID == Handle::INVALID {
+                if let (Some(graphics_context), Some(asset_manager)) =
+                    (graphics_context, asset_manager)
                 {
                     let black_image_data: Vec<u8> = vec![
                         0, 0, 0, 255, // (R, G, B, A)
@@ -430,43 +429,10 @@ impl Texture {
                         wgpu::TextureFormat::Rgba8UnormSrgb,
                         1,
                     );
-                    BLACK_TEXTURE_ID = texture_manager.add_texture(white_texture);
+                    BLACK_TEXTURE_ID = asset_manager.add(white_texture);
                 }
             }
-            BLACK_TEXTURE_ID
-        }
-    }
-
-    /// Get or create default a 2x2 blue texture.
-    pub(crate) fn _internal_blue(
-        graphics_context: Option<&GraphicsContext>,
-        texture_manager: &mut Option<&mut TextureManager>,
-    ) -> ID {
-        static mut BLACK_TEXTURE_ID: ID = INVALID_ID;
-        unsafe {
-            if BLACK_TEXTURE_ID == INVALID_ID {
-                if let (Some(graphics_context), Some(texture_manager)) =
-                    (graphics_context, texture_manager)
-                {
-                    let black_image_data: Vec<u8> = vec![
-                        0, 0, 255, 255, // (R, G, B, A)
-                        0, 0, 255, 255, //
-                        0, 0, 255, 255, //
-                        0, 0, 255, 255, //
-                    ];
-
-                    let white_texture = Texture::create_from_raw_bytes(
-                        graphics_context,
-                        &black_image_data,
-                        2,
-                        2,
-                        wgpu::TextureFormat::Rgba8UnormSrgb,
-                        1,
-                    );
-                    BLACK_TEXTURE_ID = texture_manager.add_texture(white_texture);
-                }
-            }
-            BLACK_TEXTURE_ID
+            &BLACK_TEXTURE_ID
         }
     }
 

@@ -29,18 +29,7 @@ impl App {
             true,
         );
 
-        let texture_handle = world.asset_manager_mut().add(albedo_texture);
-        texture_handle
-
-        // if let Some(texture) = world.get_asset_manager().get(&texture_handle) {
-        //     texture.get_texture_view()
-        // }
-
-
-        // let albedo_texture_index = imagic_context
-        //     .texture_manager_mut()
-        //     .add_texture(albedo_texture);
-        // albedo_texture_index
+        world.asset_manager_mut().add(albedo_texture)
     }
 
     fn prepare_material(&mut self, world: &mut World) -> ID {

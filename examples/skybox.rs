@@ -2,7 +2,6 @@ use std::f32::consts;
 
 use common::create_camera;
 use glam::Vec3;
-use imagic::asset::loaders::hdr_loader::HDRLoader;
 use imagic::ecs::world::World;
 use imagic::prelude::*;
 use imagic::window::WindowSize;
@@ -127,34 +126,6 @@ impl App {
 
         let pbr_material_index = world.context_mut().add_material(pbr_material);
         pbr_material_index
-    }
-
-    fn _prepare_skybox(&mut self, imagic_context: &mut ImagicContext) -> ID {
-        let mut hdr_loader = HDRLoader::default();
-        let cwd = std::env::current_dir().unwrap();
-        let hdr_path = cwd.join("examples/assets/pbr/hdr/newport_loft.hdr");
-        let hdr_texture = hdr_loader.load(
-            hdr_path.to_str().unwrap(),
-            imagic_context.graphics_context(),
-        );
-        let hdr_texture_index = imagic_context
-            .texture_manager_mut()
-            .add_texture(hdr_texture);
-        hdr_texture_index
-    }
-
-    fn _prepare_albedo(&mut self, imagic_context: &mut ImagicContext) -> ID {
-        let albedo_texture = Texture::create_from_bytes(
-            imagic_context.graphics_context(),
-            include_bytes!("./assets/lena.png"),
-            wgpu::TextureFormat::Rgba8UnormSrgb,
-            false,
-            true,
-        );
-        let albedo_texture_index = imagic_context
-            .texture_manager_mut()
-            .add_texture(albedo_texture);
-        albedo_texture_index
     }
 
     fn prepare_cameras(&mut self, imagic_context: &mut ImagicContext) {
