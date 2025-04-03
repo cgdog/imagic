@@ -1,10 +1,10 @@
 use crate::{
-    asset::asset::Handle, model::Cube, prelude::{ImagicContext, MaterialTrait, SkyboxMaterial, Texture, INVALID_ID}, types::ID
+    asset::asset::Handle, model::Cube, prelude::{ImagicContext, Material, MaterialTrait, SkyboxMaterial, Texture}
 };
 
 /// Skybox representation. It includes a background cube texture and an environment refelction cube texture.
 pub struct Skybox {
-    skybox_material_id: ID,
+    skybox_material_id: Handle<Material>,
     cube: Cube,
 }
 
@@ -12,7 +12,7 @@ impl Default for Skybox {
     fn default() -> Self {
         Self {
             // background_texture_id: INVALID_ID,
-            skybox_material_id: INVALID_ID,
+            skybox_material_id: Handle::INVALID,
             cube: Cube::default(),
         }
     }
@@ -34,9 +34,9 @@ impl Skybox {
         let mut skybox_material = Box::new(SkyboxMaterial::new());
         skybox_material.set_skybox_map(cube_texture_handle);
         skybox_material.set_cull_mode(wgpu::Face::Front);
-        let skybox_material_id = imagic_context.add_material(skybox_material);
+        let skybox_material_id = imagic_context.add_material(skybox_material as Material);
 
-        self.cube.init(imagic_context, skybox_material_id);
+        self.cube.init(imagic_context, skybox_material_id.clone());
 
         self.skybox_material_id = skybox_material_id;
     }
@@ -50,14 +50,14 @@ impl Skybox {
         let mut skybox_material = Box::new(SkyboxMaterial::new());
         skybox_material.set_skybox_map(background_cube_texture);
         skybox_material.set_cull_mode(wgpu::Face::Front);
-        let skybox_material_id = imagic_context.add_material(skybox_material);
+        let skybox_material_id = imagic_context.add_material(skybox_material as Material);
 
-        self.cube.init(imagic_context, skybox_material_id);
+        self.cube.init(imagic_context, skybox_material_id.clone());
 
         self.skybox_material_id = skybox_material_id;
     }
 
-    pub fn init_with_custom_material(&mut self, imagic_context: &mut ImagicContext, material: ID) {
+    pub fn init_with_custom_material(&mut self, imagic_context: &mut ImagicContext, material: Handle<Material>) {
         self.cube.init(imagic_context, material);
     }
 }

@@ -32,12 +32,12 @@ impl App {
         world.asset_manager_mut().add(albedo_texture)
     }
 
-    fn prepare_material(&mut self, world: &mut World) -> ID {
+    fn prepare_material(&mut self, world: &mut World) -> Handle<Material> {
         let mut unlit_material = Box::new(UnlitMaterial::new());
         let albedo_index = self.prepare_albedo(world);
         unlit_material.set_albedo_map(albedo_index);
 
-        let material_index = world.context_mut().add_material(unlit_material);
+        let material_index = world.context_mut().add_material(unlit_material as Material);
         material_index
     }
 }
@@ -55,8 +55,8 @@ impl ImagicAppTrait for App {
             world.context_mut(),
         );
 
-        let material_index = self.prepare_material(world);
-        self.cube.init(world.context_mut(), material_index);
+        let material_handle = self.prepare_material(world);
+        self.cube.init(world.context_mut(), material_handle);
     }
 
     fn get_imagic_option(&self) -> ImagicOption {

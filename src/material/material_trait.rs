@@ -70,3 +70,11 @@ pub trait MaterialTrait : Any {
         todo!()
     }
 }
+
+impl<T: MaterialTrait> Asset for T {
+}
+
+pub type Material = Box<dyn MaterialTrait>;
+impl Asset for Material {
+
+}

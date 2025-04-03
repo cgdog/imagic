@@ -57,7 +57,7 @@ impl App {
         hdr_texture_index
     }
 
-    fn prepare_material(&mut self, world: &mut World) -> ID {
+    fn prepare_material(&mut self, world: &mut World) -> Handle<Material> {
         let mut equirectangular_to_cube_material = Box::new(EquirectangularToCubeMaterial::new());
         let hdr_texture = self.prepare_hdr_texture(world);
         equirectangular_to_cube_material.set_equirectangular_map(hdr_texture);

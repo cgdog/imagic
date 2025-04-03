@@ -3,13 +3,9 @@ use std::usize;
 use wgpu::util::DeviceExt;
 
 use crate::{
-    camera::Layer,
-    prelude::{
-        render_item_manager::RenderItemManager, ImagicContext, RenderItem, VertexOrIndexCount,
-        INVALID_ID,
-    },
-    scene::{SceneObject, Transform},
-    types::ID,
+    asset::asset::Handle, camera::Layer, prelude::{
+        render_item_manager::RenderItemManager, ImagicContext, Material, RenderItem, VertexOrIndexCount, INVALID_ID
+    }, scene::{SceneObject, Transform}, types::ID
 };
 
 use super::Vertex;
@@ -141,9 +137,9 @@ impl Cube {
         self.render_item_id
     }
 
-    pub fn init(&mut self, imagic_context: &mut ImagicContext, material_index: usize) {
+    pub fn init(&mut self, imagic_context: &mut ImagicContext, material_handle: Handle<Material>) {
         let mut cube_item = self.create_transform_render_item(imagic_context);
-        cube_item.set_material_id(material_index);
+        cube_item.set_material_id(material_handle);
         self.render_item_id = imagic_context.add_render_item(cube_item);
     }
 

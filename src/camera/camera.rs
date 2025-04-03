@@ -281,14 +281,14 @@ impl Camera {
                         .is_none()
                     {
                         let material = context
-                            .material_manager()
-                            .get_material(item.get_material_id());
+                            .asset_manager()
+                            .get(item.get_material_id()).unwrap();
                         context.create_pipeline(item_id, color_attachment_format, material);
                     }
 
                     let material = context
-                        .material_manager()
-                        .get_material(item.get_material_id());
+                        .asset_manager()
+                        .get(item.get_material_id()).unwrap();
                     let material_bind_group_id = material.get_bind_group_id();
                     let lighting_bind_group_id = context.light_manager().get_bind_group_id();
                     let item_bind_groups = [

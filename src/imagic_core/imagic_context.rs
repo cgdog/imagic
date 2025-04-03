@@ -4,11 +4,11 @@ use wgpu::TextureFormat;
 use winit::dpi::{LogicalSize, PhysicalSize};
 
 use crate::{
-    asset::asset_manager::AssetManager, camera::{Camera, CameraControllerOptions}, graphics::{
+    asset::{asset::Handle, asset_manager::AssetManager}, camera::{Camera, CameraControllerOptions}, graphics::{
         bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
         buffer::GPUBufferManager, render_pipeline::RenderPipelineManager, GraphicsContext,
     }, input::InputManager, prelude::{
-        CameraManager, LightManager, MaterialManager, MaterialTrait, RenderItem, Texture, TransformManager
+        CameraManager, LightManager, Material, MaterialTrait, RenderItem, Texture, TransformManager
     }, types::{ID, RR}, window::WindowSize
 };
 
@@ -23,7 +23,6 @@ pub struct ImagicContext {
     render_item_manager: RenderItemManager,
     buffer_manager: GPUBufferManager,
     light_manager: LightManager,
-    material_manager: MaterialManager,
     transform_manager: RR<TransformManager>,
     camera_manager: CameraManager,
     input_manager: InputManager,
@@ -57,36 +56,12 @@ impl ImagicContext {
 
     /// Called after App.init()
     pub(crate) fn init_after_app(&mut self) {
-        // self.camera_manager.init_after_app(
-        //     window,
-        //     &self.graphics_context,
-        //     &mut self.bind_group_manager,
-        //     &mut self.bind_group_layout_manager,
-        //     self.transform_manager.clone(),
-        //     &mut self.buffer_manager,
-        //     &mut self.texture_manager,
-        //     &mut self.input_manager,
-        // );
         self.light_manager.init_after_app(
             &self.graphics_context,
             &mut self.bind_group_manager,
             &mut self.bind_group_layout_manager,
             &self.transform_manager.borrow(),
         );
-        // self.material_manager.init_after_app(
-        //     &self.graphics_context,
-        //     &mut self.bind_group_manager,
-        //     &mut self.bind_group_layout_manager,
-        //     &self.texture_manager,
-        // );
-        // self.render_item_manager.init_after_app(
-        //     &self.graphics_context,
-        //     &mut self.bind_group_manager,
-        //     &mut self.bind_group_layout_manager,
-        //     &self.material_manager,
-        //     &self.transform_manager.borrow(),
-        //     &mut self.pipeline_manager,
-        // );
     }
 
     /// Update imageic context after App.on_update().
@@ -99,12 +74,10 @@ impl ImagicContext {
         );
 
         self.input_manager.on_update();
-
-        // self.material_manager.on_update(&self.graphics_context);
     }
 
-    pub fn update_material(&mut self, material_id: ID) {
-        self.material_manager.get_material_mut(material_id).on_update(&self.graphics_context);
+    pub fn update_material(&mut self, material_id: &Handle<Material>) {
+        self.asset_manager.get_mut(material_id).unwrap().on_update(&self.graphics_context);
     }
 
     pub fn on_resize(
@@ -158,14 +131,6 @@ impl ImagicContext {
         &self.bind_group_manager
     }
 
-    // pub fn pipeline_manager_mut(&mut self) -> &mut RenderPipelineManager {
-    //     &mut self.pipeline_manager
-    // }
-
-    // pub fn pipeline_manager(&self) -> &RenderPipelineManager {
-    //     &self.pipeline_manager
-    // }
-
     pub fn pipeline_manager(&self) -> &RefCell<RenderPipelineManager> {
         &self.pipeline_manager
     }
@@ -194,21 +159,9 @@ impl ImagicContext {
         &mut self.light_manager
     }
 
-    pub fn material_manager(&self) -> &MaterialManager {
-        &self.material_manager
-    }
-
-    pub fn material_manager_mut(&mut self) -> &mut MaterialManager {
-        &mut self.material_manager
-    }
-
     pub fn transform_manager(&self) -> RR<TransformManager> {
         self.transform_manager.clone()
     }
-
-    // pub fn transform_manager_mut(&mut self) -> RR<TransformManager> {
-    //     self.transform_manager.clone()
-    // }
 
     pub fn camera_manager(&self) -> &CameraManager {
         &self.camera_manager
@@ -253,14 +206,15 @@ impl ImagicContext {
         )
     }
 
-    pub fn add_material(&mut self, material: Box<dyn MaterialTrait>) -> ID {
-        self.material_manager.add_material(
-            material,
+    pub fn add_material(&mut self, mut material: Box<dyn MaterialTrait>) -> Handle<Material> {
+        material.on_init(&self.graphics_context, &mut self.bind_group_layout_manager);
+        material.create_bind_group(
             &self.graphics_context,
             &mut self.bind_group_manager,
             &mut self.bind_group_layout_manager,
             &self.asset_manager,
-        )
+        );
+        self.asset_manager.add(material as Material)
     }
 
     pub fn add_render_item(&mut self, render_item: RenderItem) -> ID {
@@ -283,7 +237,4 @@ impl ImagicContext {
             material,
         );
     }
-
-    // pub fn add_point_light(&mut self, light: PointLight) -> ID {
-    // }
 }

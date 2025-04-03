@@ -1,8 +1,7 @@
 use crate::{
     asset::asset::Handle, camera::Camera, math::Vec4, model::Cube, prelude::{
-        create_cube_color_attachment_views, create_cube_depth_views, CubeRenderTexture,
-        EnvironmentPrefilterMaterial, ImagicContext, MaterialTrait, RenderTexture, Texture,
-    }, types::ID
+        create_cube_color_attachment_views, create_cube_depth_views, CubeRenderTexture, EnvironmentPrefilterMaterial, ImagicContext, Material, MaterialTrait, RenderTexture, Texture
+    }
 };
 
 pub struct CubeTexturePrefilter {
@@ -38,7 +37,7 @@ impl CubeTexturePrefilter {
         imagic_context
             .render_item_manager_mut()
             .get_render_item_mut(box_item_id)
-            .set_material_id(prefilter_material_id);
+            .set_material_id(prefilter_material_id.clone());
 
         let total_mipmaps_count = self.mipmap_level_count; //self.face_size.ilog2() + 1;
         let cube_rt = CubeRenderTexture::new(
@@ -81,14 +80,14 @@ impl CubeTexturePrefilter {
 
             let roughness = (mip as f32) / (self.mipmap_level_count as f32);
             let material = imagic_context
-                .material_manager_mut()
-                .get_material_mut(prefilter_material_id);
+                .asset_manager_mut()
+                .get_mut(&prefilter_material_id).unwrap();
             if let Some(prefilter_material) = material
                 .as_any_mut()
                 .downcast_mut::<EnvironmentPrefilterMaterial>()
             {
                 prefilter_material.set_roughness(roughness);
-                imagic_context.update_material(prefilter_material_id);
+                imagic_context.update_material(&prefilter_material_id);
             }
             camera.render(imagic_context, None);
             // imagic_context
@@ -100,10 +99,10 @@ impl CubeTexturePrefilter {
         rt_color_attachment
     }
 
-    fn get_prefilter_material(&self, imagic_context: &mut ImagicContext) -> ID {
+    fn get_prefilter_material(&self, imagic_context: &mut ImagicContext) -> Handle<Material> {
         let mut prefilter_material =
             EnvironmentPrefilterMaterial::new(self.input_cube_texture.clone(), self.mipmap_level_count);
         prefilter_material.set_cull_mode(wgpu::Face::Front);
-        imagic_context.add_material(Box::new(prefilter_material))
+        imagic_context.add_material(Box::new(prefilter_material) as Material)
     }
 }

@@ -1,7 +1,7 @@
 use std::f32::consts;
 
 use glam::Vec3;
-use imagic::{ecs::world::World, prelude::*, window::WindowSize};
+use imagic::{asset::asset::Handle, ecs::world::World, prelude::*, window::WindowSize};
 use log::info;
 
 pub struct App {
@@ -84,7 +84,7 @@ impl App {
         metallic_map_buffer: &[u8],
         roughness_map_buffer: &[u8],
         ao_map_buffer: &[u8],
-    ) -> ID {
+    ) -> Handle<Material> {
         let graphics_context = world.context().graphics_context();
         let mut pbr_material = Box::new(PBRMaterial::new(
             Vec4::new(1.0, 1.0, 1.0, 1.0),

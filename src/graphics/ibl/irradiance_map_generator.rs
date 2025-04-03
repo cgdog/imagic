@@ -1,6 +1,6 @@
 use crate::{
     asset::asset::Handle, camera::Camera, math::Vec4, prelude::{
-        CubeRenderTexture, ImagicContext, IrradianceMapGenMaterial, MaterialTrait, RenderTexture, Texture,
+        CubeRenderTexture, ImagicContext, IrradianceMapGenMaterial, Material, MaterialTrait, RenderTexture, Texture
     }, types::ID
 };
 
@@ -49,10 +49,10 @@ impl IrradianceMapGenerator {
         &self,
         imagic_context: &mut ImagicContext,
         cube_texture: Handle<Texture>,
-    ) -> ID {
+    ) -> Handle<Material> {
         let mut material = IrradianceMapGenMaterial::new();
         material.set_input_cube_map(cube_texture);
         material.set_cull_mode(wgpu::Face::Front);
-        imagic_context.add_material(Box::new(material))
+        imagic_context.add_material(Box::new(material) as Material)
     }
 }

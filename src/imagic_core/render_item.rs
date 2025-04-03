@@ -1,6 +1,6 @@
 use std::usize;
 
-use crate::{camera::Layer, prelude::INVALID_ID, types::ID};
+use crate::{asset::asset::Handle, camera::Layer, prelude::{Material, INVALID_ID}, types::ID};
 
 pub mod render_item_manager;
 
@@ -16,7 +16,7 @@ pub struct RenderItem {
     item_bind_group_id: usize,
     vertex_buffer_id: usize,
     index_buffer_id: usize,
-    material_id: usize,
+    material_id: Handle<Material>,
     transform_id: usize,
     vertex_or_index_count: VertexOrIndexCount,
     pub is_visible: bool,
@@ -30,7 +30,7 @@ impl Default for RenderItem {
             item_bind_group_id: INVALID_ID,
             vertex_buffer_id: INVALID_ID,
             index_buffer_id: INVALID_ID,
-            material_id: INVALID_ID,
+            material_id: Handle::INVALID,
             transform_id: INVALID_ID,
             vertex_or_index_count: VertexOrIndexCount::VertexCount{vertex_count: 0, instance_count: 1},
             is_visible: true,
@@ -45,7 +45,7 @@ impl RenderItem {
         Self {
             vertex_buffer_id,
             index_buffer_id,
-            material_id: INVALID_ID,
+            material_id: Handle::INVALID,
             transform_id,
             vertex_or_index_count: vertex_or_index_count,
             is_visible,
@@ -94,12 +94,12 @@ impl RenderItem {
         self.index_buffer_id
     }
 
-    pub fn set_material_id(&mut self, material_id: usize) {
-        self.material_id = material_id;
+    pub fn set_material_id(&mut self, material_handle: Handle<Material>) {
+        self.material_id = material_handle;
     }
 
-    pub fn get_material_id(&self) -> ID {
-        self.material_id
+    pub fn get_material_id(&self) -> &Handle<Material> {
+        &self.material_id
     }
 
     pub fn set_vertex_or_index_count(&mut self, vertex_or_index_count: VertexOrIndexCount) {

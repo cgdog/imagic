@@ -2,9 +2,8 @@ use core::f32;
 
 use crate::{
     asset::{asset::Handle, loaders::hdr_loader::{HDRLoader, HDRLoaderOptions}}, camera::{Camera, Layer}, math::Vec4, model::Cube, prelude::{
-        CubeRenderTexture, EquirectangularToCubeMaterial,
-        ImagicContext, MaterialTrait, RenderTexture, Texture,
-    }, scene::SceneObject, types::ID
+        CubeRenderTexture, EquirectangularToCubeMaterial, ImagicContext, Material, MaterialTrait, RenderTexture, Texture
+    }, scene::SceneObject
 };
 
 pub struct EquirectToCubeConverter {
@@ -71,7 +70,7 @@ impl EquirectToCubeConverter {
 
     fn convert_core(
         &self,
-        material_index: usize,
+        material_index: Handle<Material>,
         imagic_context: &mut ImagicContext,
         face_size: u32,
         format: wgpu::TextureFormat,
@@ -100,7 +99,7 @@ impl EquirectToCubeConverter {
     fn get_equirect_to_cube_material(
         equirect_path: &str,
         imagic_context: &mut ImagicContext,
-    ) -> ID {
+    ) -> Handle<Material> {
         let mut hdr_loader = HDRLoader::default();
         let hdr_texture = hdr_loader.load(equirect_path, imagic_context.graphics_context());
         Self::get_equirect_to_cube_material_core(hdr_texture, imagic_context)
@@ -110,7 +109,7 @@ impl EquirectToCubeConverter {
         &self,
         equirect_img_data: &[u8],
         imagic_context: &mut ImagicContext,
-    ) -> ID {
+    ) -> Handle<Material> {
         let mut hdr_loader = HDRLoader::new(HDRLoaderOptions {
             is_flip_y: self.is_flip_y,
         });
@@ -122,7 +121,7 @@ impl EquirectToCubeConverter {
     fn get_equirect_to_cube_material_core(
         hdr_texture: Texture,
         imagic_context: &mut ImagicContext,
-    ) -> ID {
+    ) -> Handle<Material> {
         let hdr_texture_handle = imagic_context
             .asset_manager_mut()
             .add(hdr_texture);
@@ -131,7 +130,7 @@ impl EquirectToCubeConverter {
         equirectangular_to_cube_material.set_equirectangular_map(hdr_texture_handle);
         // Note here: camera is inside the box, we should render the back face.
         equirectangular_to_cube_material.set_cull_mode(wgpu::Face::Front);
-        let material_index = imagic_context.add_material(equirectangular_to_cube_material);
+        let material_index = imagic_context.add_material(equirectangular_to_cube_material as Material);
         material_index
     }
 }

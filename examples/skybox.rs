@@ -2,6 +2,7 @@ use std::f32::consts;
 
 use common::create_camera;
 use glam::Vec3;
+use imagic::asset::asset::Handle;
 use imagic::ecs::world::World;
 use imagic::prelude::*;
 use imagic::window::WindowSize;
@@ -66,7 +67,7 @@ impl App {
         light_manager.add_point_light(point_light_3);
     }
 
-    fn prepare_pbr_material(&mut self, world: &mut World) -> ID {
+    fn prepare_pbr_material(&mut self, world: &mut World) -> Handle<Material> {
         let graphics_context = world.context().graphics_context();
         let mut pbr_material = Box::new(PBRMaterial::new(
             Vec4::new(1.0, 1.0, 1.0, 1.0),

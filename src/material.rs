@@ -1,5 +1,4 @@
 pub mod pbr_material;
-pub mod material_manager;
 pub mod material_trait;
 pub mod unlit_material;
 pub mod equirect_to_cube_material;
@@ -10,7 +9,6 @@ pub mod environment_prefilter_material;
 pub mod srgb_cube_to_linear_material;
 
 pub use pbr_material::*;
-pub use material_manager::*;
 pub use material_trait::*;
 pub use unlit_material::*;
 pub use equirect_to_cube_material::*;

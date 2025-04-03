@@ -3,6 +3,7 @@
 use changeable::Changeable;
 use common::create_camera;
 use ibl::ibl_baker::IBLBaker;
+use imagic::asset::asset::Handle;
 use imagic::ecs::world::World;
 use imagic::prelude::*;
 use imagic::window::WindowSize;
@@ -19,8 +20,8 @@ pub struct App {
     camera_z: f32,
     camera_controller_option: Changeable<CameraControllerOptions>,
     sphere_use_textured_pbr: Changeable<bool>,
-    white_pbr_material_index: ID,
-    textured_pbr_material_index: ID,
+    white_pbr_material_index: Handle<Material>,
+    textured_pbr_material_index: Handle<Material>,
     enable_point_lights: bool,
     white_pbr_metallic: Changeable<f32>,
     white_pbr_roughness: Changeable<f32>,
@@ -38,8 +39,8 @@ impl Default for App {
             camera_z: 8.0,
             camera_controller_option: Changeable::new(CameraControllerOptions::default()),
             sphere_use_textured_pbr: Changeable::new(false),
-            white_pbr_material_index: INVALID_ID,
-            textured_pbr_material_index: INVALID_ID,
+            white_pbr_material_index: Handle::INVALID,
+            textured_pbr_material_index: Handle::INVALID,
             enable_point_lights: false,
             white_pbr_metallic: Changeable::new(1.0),
             white_pbr_roughness: Changeable::new(0.0),
@@ -79,7 +80,7 @@ impl App {
         light_manager.add_point_light(point_light_3);
     }
 
-    fn prepare_rusted_pbr_material(&mut self, world: &mut World) -> ID {
+    fn prepare_rusted_pbr_material(&mut self, world: &mut World) -> Handle<Material> {
         let graphics_context = world.context().graphics_context();
         let mut pbr_material = Box::new(PBRMaterial::new(
             Vec4::new(1.0, 1.0, 1.0, 1.0),
@@ -135,11 +136,11 @@ impl App {
         pbr_material.set_ao_texture(ao_texture);
         self.set_pbr_ibl(&mut pbr_material);
 
-        let pbr_material_index = world.context_mut().add_material(pbr_material);
-        pbr_material_index
+        let pbr_material_handle = world.context_mut().add_material(pbr_material);
+        pbr_material_handle
     }
 
-    fn prepare_white_pbr_material(&mut self, imagic_context: &mut ImagicContext) -> ID {
+    fn prepare_white_pbr_material(&mut self, imagic_context: &mut ImagicContext) -> Handle<Material> {
         let mut pbr_material = Box::new(PBRMaterial::new(
             Vec4::new(1.0, 1.0, 1.0, 1.0),
             1.0,
@@ -207,12 +208,12 @@ impl ImagicAppTrait for App {
         self.white_pbr_material_index = self.prepare_white_pbr_material(world.context_mut());
 
         let pbr_material_index = if *self.sphere_use_textured_pbr {
-            self.textured_pbr_material_index
+            &self.textured_pbr_material_index
         } else {
-            self.white_pbr_material_index
+            &self.white_pbr_material_index
         };
 
-        self.sphere.init_with_transform(world.context_mut(), pbr_material_index, Transform {
+        self.sphere.init_with_transform(world.context_mut(), pbr_material_index.clone(), Transform {
             // position: Vec3::new(-2.0, 0.0, 0.0),
             position: Vec3::new(0.0, 0.0, 0.0),
             ..Default::default()
@@ -230,9 +231,9 @@ impl ImagicAppTrait for App {
             self.sphere_use_textured_pbr.reset();
             // TODO: optimize to use only one pbr material
             let pbr_material_index = if *self.sphere_use_textured_pbr {
-                self.textured_pbr_material_index
+                &self.textured_pbr_material_index
             } else {
-                self.white_pbr_material_index
+                &self.white_pbr_material_index
             };
 
             world.context_mut()
@@ -243,15 +244,14 @@ impl ImagicAppTrait for App {
             world.context_mut()
                 .render_item_manager_mut()
                 .get_render_item_mut(self.sphere.render_item_id())
-                .set_material_id(pbr_material_index);
+                .set_material_id(pbr_material_index.clone());
         }
 
         if !*self.sphere_use_textured_pbr {
             if self.white_pbr_metallic.is_changed() || self.white_pbr_roughness.is_changed()
                 || self.white_pbr_albedo_color.is_changed() {
-                let white_pbr_material = world.context_mut()
-                    .material_manager_mut()
-                    .get_material_mut(self.white_pbr_material_index);
+                let white_pbr_material = world.asset_manager_mut()
+                    .get_mut(&self.white_pbr_material_index).unwrap();
                 if let Some(pbr_material) = white_pbr_material
                     .as_any_mut()
                     .downcast_mut::<PBRMaterial>()
@@ -269,7 +269,7 @@ impl ImagicAppTrait for App {
                         self.white_pbr_albedo_color.reset();
                         pbr_material.set_albedo_color_rgb(&self.white_pbr_albedo_color);
                     }
-                    world.context_mut().update_material(self.white_pbr_material_index);
+                    world.context_mut().update_material(&self.white_pbr_material_index);
                 }
             }
         }

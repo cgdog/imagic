@@ -4,6 +4,7 @@ use changeable::Changeable;
 use common::create_camera;
 use common::materials::custom_skybox_material::CustomSkyboxMaterial;
 use ibl::ibl_baker::IBLBaker;
+use imagic::asset::asset::Handle;
 use imagic::ecs::world::World;
 use imagic::prelude::*;
 use imagic::window::WindowSize;
@@ -19,7 +20,7 @@ pub struct App {
     camera_z: f32,
     camera_controller_option: Changeable<CameraControllerOptions>,
     lod: Changeable<f32>,
-    custom_skybox_material_id: ID,
+    custom_skybox_material_id: Handle<Material>,
 }
 
 impl Default for App {
@@ -32,7 +33,7 @@ impl Default for App {
             camera_z: 8.0,
             camera_controller_option: Changeable::new(CameraControllerOptions::default()),
             lod: Changeable::new(0.0),
-            custom_skybox_material_id: INVALID_ID,
+            custom_skybox_material_id: Handle::INVALID,
         }
     }
 }
@@ -63,7 +64,7 @@ impl App {
         let custom_skybox_material_id =
             imagic_context.add_material(Box::new(custom_skybox_material));
         self.skybox
-            .init_with_custom_material(imagic_context, custom_skybox_material_id);
+            .init_with_custom_material(imagic_context, custom_skybox_material_id.clone());
         self.custom_skybox_material_id = custom_skybox_material_id;
     }
 }
@@ -104,10 +105,10 @@ impl ImagicAppTrait for App {
         if self.lod.is_changed() {
             self.lod.reset();
             // info!("lod changed! to: {}", *self.lod);
-            let custom_skybox_material = world.context_mut().material_manager_mut().get_material_mut(self.custom_skybox_material_id);
+            let custom_skybox_material = world.asset_manager_mut().get_mut(&self.custom_skybox_material_id).unwrap();
             if let Some(custom_skybox_material) = custom_skybox_material.as_any_mut().downcast_mut::<CustomSkyboxMaterial>() {
                 custom_skybox_material.set_lod(*self.lod);
-                world.context_mut().update_material(self.custom_skybox_material_id);
+                world.context_mut().update_material(&self.custom_skybox_material_id);
             }
         }
     }

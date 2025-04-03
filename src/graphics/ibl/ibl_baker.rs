@@ -2,8 +2,7 @@ use glam::Vec4;
 
 use crate::{
     asset::asset::Handle, camera::{Camera, Layer, LayerMask}, math::Vec3, model::{Cube, Plane}, prelude::{
-        BRDFIntegralMaterial, ComputeShader, CubeRenderTexture, ImagicContext, RenderTexture,
-        RenderTexture2D, SrgbCubeToLinearMaterial, Texture,
+        BRDFIntegralMaterial, ComputeShader, CubeRenderTexture, ImagicContext, Material, RenderTexture, RenderTexture2D, SrgbCubeToLinearMaterial, Texture
     }, scene::SceneObject, types::RR
 };
 
@@ -199,7 +198,7 @@ impl IBLBaker {
                 let srgb_cube_to_linear_material =
                     SrgbCubeToLinearMaterial::new(ldr_background_cube_texture);
                 let srgb_cube_to_linear_material_id =
-                    imagic_context.add_material(Box::new(srgb_cube_to_linear_material));
+                    imagic_context.add_material(Box::new(srgb_cube_to_linear_material) as Material);
                 cube.init(imagic_context, srgb_cube_to_linear_material_id);
                 cube.set_layer(
                     Layer::RenderTarget,
@@ -290,7 +289,7 @@ impl IBLBaker {
     pub fn generate_brdf_lut(&mut self, imagic_context: &mut ImagicContext) -> Handle<Texture> {
         let camera = Self::create_camera(imagic_context);
         let material = Box::new(BRDFIntegralMaterial::new());
-        let material_index = imagic_context.add_material(material);
+        let material_index = imagic_context.add_material(material as Material);
         let mut plane = Plane::default();
         let rt_size = self.options.brdf_lut_size;
         plane.init(imagic_context, material_index);

@@ -11,8 +11,8 @@ pub struct App {
     is_show_image: Changeable<bool>,
     show_brdf_lut: Changeable<bool>,
     // TODO: optimize to use only one unlit material to show both texture.
-    lena_unlit: ID,
-    brdf_lut_unlit: ID,
+    lena_unlit: Handle<Material>,
+    brdf_lut_unlit: Handle<Material>,
 }
 
 impl Default for App {
@@ -23,8 +23,8 @@ impl Default for App {
             window_size: WindowSize::new(500.0, 500.0),
             is_show_image: Changeable::new(true),
             show_brdf_lut: Changeable::new(true),
-            lena_unlit: INVALID_ID,
-            brdf_lut_unlit: INVALID_ID,
+            lena_unlit: Handle::INVALID,
+            brdf_lut_unlit: Handle::INVALID,
         }
     }
 }
@@ -44,17 +44,17 @@ impl App {
         albedo_texture_index
     }
 
-    fn prepare_material(&mut self, world: &mut World) -> ID {
+    fn prepare_material(&mut self, world: &mut World) -> Handle<Material> {
         let mut lena_unlit_material = Box::new(UnlitMaterial::new());
         let albedo_index = self.prepare_albedo(world);
         lena_unlit_material.set_albedo_map(albedo_index);
-        self.lena_unlit = world.context_mut().add_material(lena_unlit_material);
+        self.lena_unlit = world.context_mut().add_material(lena_unlit_material as Material);
 
         let brdf_lut = self.generate_brdf_lut(world.context_mut());
         let mut brdf_lut_material = Box::new(UnlitMaterial::new());
         brdf_lut_material.set_albedo_map(brdf_lut);
         self.brdf_lut_unlit = world.context_mut().add_material(brdf_lut_material);
-        self.brdf_lut_unlit
+        self.brdf_lut_unlit.clone()
     }
 
     fn generate_brdf_lut(&mut self, imagic_context: &mut ImagicContext) -> Handle<Texture> {
@@ -98,9 +98,9 @@ impl ImagicAppTrait for App {
             self.show_brdf_lut.reset();
             // TODO: optimize to use only one material.
             let unlit_material_index = if *self.show_brdf_lut {
-                self.brdf_lut_unlit
+                &self.brdf_lut_unlit
             } else {
-                self.lena_unlit
+                &self.lena_unlit
             };
 
             world.context_mut()
@@ -111,7 +111,7 @@ impl ImagicAppTrait for App {
             world.context_mut()
                 .render_item_manager_mut()
                 .get_render_item_mut(self.plane.render_item_id())
-                .set_material_id(unlit_material_index);
+                .set_material_id(unlit_material_index.clone());
         }
     }
 
