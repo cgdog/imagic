@@ -1,7 +1,5 @@
-use wgpu::{util::DeviceExt, Buffer, Device};
-// use std::hash::{Hash, Hasher};
-
-use crate::{asset::{asset::{Asset, Handle}, asset_manager::AssetManager}, prelude::VertexOrIndexCount};
+use wgpu::{util::DeviceExt, Device};
+use crate::{asset::{asset::{Asset, Handle}, asset_manager::AssetManager}, prelude::{buffer::Buffer, VertexOrIndexCount}};
 
 use super::Vertex;
 
@@ -37,6 +35,7 @@ impl Mesh {
             contents: bytemuck::cast_slice(&self.vertices),
             usage: wgpu::BufferUsages::VERTEX,
         });
+        let vertex_buffer = Buffer::new(vertex_buffer);
         let vertex_buffer_handle = asset_manager.add(vertex_buffer);
         self.vertex_buffer = Some(vertex_buffer_handle);
 
@@ -46,6 +45,7 @@ impl Mesh {
                 contents: bytemuck::cast_slice(&indices),
                 usage: wgpu::BufferUsages::INDEX,
             });
+            let index_buffer = Buffer::new(index_buffer);
             let index_buffer_handle = asset_manager.add(index_buffer);
             self.index_buffer = Some(index_buffer_handle);
         }

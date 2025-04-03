@@ -328,12 +328,12 @@ impl Camera {
                             index_format,
                         } => {
                             let vertex_buffer = context
-                                .buffer_manager()
-                                .get_buffer(item.get_vertex_buffer_id());
+                                .asset_manager()
+                                .get(item.get_vertex_buffer_id()).unwrap();
                             rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
                             let index_buffer = context
-                                .buffer_manager()
-                                .get_buffer(item.get_index_buffer_id());
+                                .asset_manager()
+                                .get(item.get_index_buffer_id()).unwrap();
                             rpass.set_index_buffer(index_buffer.slice(..), *index_format);
                             rpass.draw_indexed(0..*index_count, *base_vertex, 0..*instance_count);
                         }

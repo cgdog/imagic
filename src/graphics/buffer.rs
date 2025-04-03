@@ -1,10 +1,29 @@
-use wgpu::{util::{align_to, DeviceExt}, CommandEncoder};
+use std::ops::RangeBounds;
+
+use wgpu::{util::{align_to, DeviceExt}, BufferAddress, BufferSlice, CommandEncoder};
 
 use crate::{asset::asset::Asset, types::ID};
 
 use super::GraphicsContext;
 
-impl Asset for wgpu::Buffer {}
+pub struct Buffer {
+    gpu_buffer: wgpu::Buffer,
+}
+
+impl Asset for Buffer {}
+
+impl Buffer {
+    pub fn new(gpu_buffer: wgpu::Buffer) -> Self {
+        Self {
+            gpu_buffer
+        }
+    }
+
+    pub fn slice<S>(&self, bounds: S) -> BufferSlice 
+        where S: RangeBounds<BufferAddress>,{
+        self.gpu_buffer.slice(bounds)
+    }
+}
 
 pub struct GPUBufferManager {
     buffers: Vec<wgpu::Buffer>,

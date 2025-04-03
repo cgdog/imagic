@@ -1,6 +1,6 @@
 use std::usize;
 
-use crate::{asset::asset::Handle, camera::Layer, prelude::{Material, INVALID_ID}, types::ID};
+use crate::{asset::asset::Handle, camera::Layer, prelude::{buffer::Buffer, Material, INVALID_ID}, types::ID};
 
 pub mod render_item_manager;
 
@@ -14,8 +14,8 @@ pub struct RenderItem {
     // pipeline_id: usize,
     // model matrix bind group
     item_bind_group_id: usize,
-    vertex_buffer_id: usize,
-    index_buffer_id: usize,
+    vertex_buffer_id: Handle<Buffer>,
+    index_buffer_id: Handle<Buffer>,
     material_id: Handle<Material>,
     transform_id: usize,
     vertex_or_index_count: VertexOrIndexCount,
@@ -28,8 +28,8 @@ impl Default for RenderItem {
         Self {
             // pipeline_id: INVALID_ID,
             item_bind_group_id: INVALID_ID,
-            vertex_buffer_id: INVALID_ID,
-            index_buffer_id: INVALID_ID,
+            vertex_buffer_id: Handle::INVALID,
+            index_buffer_id: Handle::INVALID,
             material_id: Handle::INVALID,
             transform_id: INVALID_ID,
             vertex_or_index_count: VertexOrIndexCount::VertexCount{vertex_count: 0, instance_count: 1},
@@ -40,8 +40,8 @@ impl Default for RenderItem {
 }
 
 impl RenderItem {
-    pub fn new(vertex_or_index_count: VertexOrIndexCount, vertex_buffer_id: usize,
-            index_buffer_id: usize, transform_id: usize, is_visible: bool) -> Self {
+    pub fn new(vertex_or_index_count: VertexOrIndexCount, vertex_buffer_id: Handle<Buffer>,
+            index_buffer_id: Handle<Buffer>, transform_id: usize, is_visible: bool) -> Self {
         Self {
             vertex_buffer_id,
             index_buffer_id,
@@ -62,14 +62,6 @@ impl RenderItem {
         }
     }
 
-    // pub fn set_pipeline(&mut self, pipeline_id: usize) {
-    //     self.pipeline_id = pipeline_id;
-    // }
-
-    // pub fn get_pipeline(&self) -> ID {
-    //     self.pipeline_id
-    // }
-
     pub fn set_item_bind_group_id(&mut self, bind_group_id: usize) {
         self.item_bind_group_id = bind_group_id;
     }
@@ -78,20 +70,20 @@ impl RenderItem {
         self.item_bind_group_id
     }
 
-    pub fn set_vertex_buffer_id(&mut self, vertex_buffer_id: usize) {
+    pub fn set_vertex_buffer_id(&mut self, vertex_buffer_id: Handle<Buffer>) {
         self.vertex_buffer_id = vertex_buffer_id;
     }
 
-    pub fn get_vertex_buffer_id(&self) -> ID {
-        self.vertex_buffer_id
+    pub fn get_vertex_buffer_id(&self) -> &Handle<Buffer> {
+        &self.vertex_buffer_id
     }
 
-    pub fn set_index_buffer_id(&mut self, index_buffer_id: usize) {
+    pub fn set_index_buffer_id(&mut self, index_buffer_id: Handle<Buffer>) {
         self.index_buffer_id = index_buffer_id;
     }
 
-    pub fn get_index_buffer_id(&self) -> ID {
-        self.index_buffer_id
+    pub fn get_index_buffer_id(&self) -> &Handle<Buffer> {
+        &self.index_buffer_id
     }
 
     pub fn set_material_id(&mut self, material_handle: Handle<Material>) {
