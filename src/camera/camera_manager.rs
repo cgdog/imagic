@@ -4,8 +4,7 @@ use log::info;
 
 use crate::{
     asset::asset_manager::AssetManager, input::InputManager, prelude::{
-        bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
-        buffer::GPUBufferManager, GraphicsContext,
+        bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, GraphicsContext,
         TransformManager, INVALID_ID,
     }, types::{ID, RR}, window::WindowSize
 };
@@ -37,7 +36,6 @@ impl CameraManager {
         bind_group_manager: &mut BindGroupManager,
         bind_group_layout_manager: &mut BindGroupLayoutManager,
         transform_manager: RR<TransformManager>,
-        buffer_manager: &mut GPUBufferManager,
         asset_manager: &mut AssetManager,
         input_manager: &mut InputManager,
     ) -> ID {
@@ -49,7 +47,6 @@ impl CameraManager {
             bind_group_manager,
             bind_group_layout_manager,
             &transform_manager.borrow(),
-            buffer_manager,
             asset_manager,
         );
 
@@ -81,12 +78,12 @@ impl CameraManager {
         &mut self,
         graphics_context: &GraphicsContext,
         transform_manager: &TransformManager,
-        buffer_manager: &GPUBufferManager,
+        asset_manager: &mut AssetManager,
     ) {
         for camera in self.cameras.iter() {
             camera
                 .borrow_mut()
-                .on_update(graphics_context, transform_manager, buffer_manager);
+                .on_update(graphics_context, transform_manager, asset_manager);
         }
     }
 
@@ -95,7 +92,6 @@ impl CameraManager {
         graphics_context: &GraphicsContext,
         asset_manager: &mut AssetManager,
         transform_manager: &TransformManager,
-        buffer_manager: &GPUBufferManager,
         physical_width: u32,
         physical_height: u32,
         logical_width: u32,
@@ -106,7 +102,6 @@ impl CameraManager {
                 graphics_context,
                 asset_manager,
                 transform_manager,
-                buffer_manager,
                 physical_width,
                 physical_height,
                 logical_width,

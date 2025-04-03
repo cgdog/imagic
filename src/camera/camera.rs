@@ -4,7 +4,7 @@ use crate::{
     asset::{asset::Handle, asset_manager::AssetManager}, math::{Mat4, Vec3, Vec4}, prelude::{
         bind_group::BindGroupManager,
         bind_group_layout::BindGroupLayoutManager,
-        buffer::{GPUBufferManager, SyncBuffer},
+        buffer::{Buffer, SyncBuffer},
         render_item_manager::RenderItemManager,
         GraphicsContext, ImagicContext, RenderTexture, SceneObject, Texture, Transform,
         TransformManager, VertexOrIndexCount, INVALID_ID,
@@ -48,8 +48,8 @@ pub struct Camera {
     // bind_group_layout_id: ID,
 
     // TODO: merge buffers
-    vertex_uniform_buffer_id: ID,
-    fragment_uniform_buffer_id: ID,
+    vertex_uniform_buffer_handle: Handle<Buffer>,
+    fragment_uniform_buffer_handle: Handle<Buffer>,
 
     depth_texture: Handle<Texture>,
 
@@ -84,8 +84,8 @@ impl Default for Camera {
             transform: INVALID_ID,
             bind_group_id: INVALID_ID,
             // bind_group_layout_id: INVALID_ID,
-            vertex_uniform_buffer_id: INVALID_ID,
-            fragment_uniform_buffer_id: INVALID_ID,
+            vertex_uniform_buffer_handle: Handle::INVALID,
+            fragment_uniform_buffer_handle: Handle::INVALID,
 
             depth_texture: Handle::INVALID,
 
@@ -173,7 +173,7 @@ impl Camera {
                     self.update_uniform_buffers(
                         context.graphics_context(),
                         &context.transform_manager().borrow(),
-                        context.buffer_manager(),
+                        context.asset_manager(),
                     );
                     self.render_to_attachments(
                         context,
@@ -356,7 +356,6 @@ impl Camera {
         bind_group_manager: &mut BindGroupManager,
         bind_group_layout_manager: &mut BindGroupLayoutManager,
         transform_manager: &TransformManager,
-        buffer_manager: &mut GPUBufferManager,
         asset_manager: &mut AssetManager,
     ) {
         let (logical_width, logical_height) = logical_size.get();
@@ -374,7 +373,7 @@ impl Camera {
             bind_group_manager,
             bind_group_layout_manager,
             transform_manager,
-            buffer_manager,
+            asset_manager,
         );
     }
 
@@ -382,13 +381,13 @@ impl Camera {
         &mut self,
         graphics_context: &GraphicsContext,
         transform_manager: &TransformManager,
-        buffer_manager: &GPUBufferManager,
+        asset_manager: & AssetManager,
     ) {
         if !self.is_dirty {
             return;
         }
         self.is_dirty = false;
-        self.update_uniform_buffers(graphics_context, transform_manager, buffer_manager);
+        self.update_uniform_buffers(graphics_context, transform_manager, asset_manager);
     }
 
     /// Called to update depth texture size, viewport and projection matrix when window resized.
@@ -397,7 +396,6 @@ impl Camera {
         graphics_context: &GraphicsContext,
         asset_manager: &mut AssetManager,
         transform_manager: &TransformManager,
-        buffer_manager: &GPUBufferManager,
         physical_width: u32,
         physical_height: u32,
         logical_width: u32,
@@ -415,7 +413,7 @@ impl Camera {
         );
         self._compute_physical_viewport_aspect(physical_width as f32, physical_height as f32);
         self._compute_logical_viewport(logical_width as f32, logical_height as f32);
-        self.update_uniform_buffers(graphics_context, transform_manager, buffer_manager);
+        self.update_uniform_buffers(graphics_context, transform_manager, &asset_manager);
     }
 
     pub fn get_bind_group_id(&self) -> ID {
@@ -428,7 +426,7 @@ impl Camera {
         bind_group_manager: &mut BindGroupManager,
         bind_group_layout_manager: &mut BindGroupLayoutManager,
         transform_manager: &TransformManager,
-        buffer_manager: &mut GPUBufferManager,
+        asset_manager: &mut AssetManager,
     ) -> ID {
         let projection_matrix = self.get_projection_matrix();
         let view_matrix = self.get_view_matrix(transform_manager);
@@ -442,6 +440,7 @@ impl Camera {
                 contents: bytemuck::cast_slice(&mx_ref),
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             });
+        let camera_vertex_uniform_buf = Buffer::new(camera_vertex_uniform_buf);
 
         let camera_pos = transform_manager
             .get_transform(self.transform)
@@ -455,6 +454,8 @@ impl Camera {
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             });
 
+        let fragment_uniform_buffer = Buffer::new(fragment_uniform_buffer);
+
         let bind_group_layout = bind_group_layout_manager.get_camera_bind_group_layout();
         let bind_group = graphics_context.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: bind_group_layout,
@@ -462,17 +463,17 @@ impl Camera {
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: camera_vertex_uniform_buf.as_entire_binding(),
+                    resource: camera_vertex_uniform_buf.gpu_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: fragment_uniform_buffer.as_entire_binding(),
+                    resource: fragment_uniform_buffer.gpu_buffer.as_entire_binding(),
                 },
             ],
         });
 
-        self.vertex_uniform_buffer_id = buffer_manager.add_buffer(camera_vertex_uniform_buf);
-        self.fragment_uniform_buffer_id = buffer_manager.add_buffer(fragment_uniform_buffer);
+        self.vertex_uniform_buffer_handle = asset_manager.add(camera_vertex_uniform_buf);
+        self.fragment_uniform_buffer_handle = asset_manager.add(fragment_uniform_buffer);
         let bind_group_id = bind_group_manager.add_bind_group(bind_group);
         self.bind_group_id = bind_group_id;
         bind_group_id
@@ -527,7 +528,7 @@ impl Camera {
         &self,
         graphics_context: &GraphicsContext,
         transform_manager: &TransformManager,
-        buffer_manager: &GPUBufferManager,
+        asset_manager: & AssetManager,
     ) {
         let projection_matrix = self.get_projection_matrix();
         let view_matrix = self.get_view_matrix(transform_manager);
@@ -535,9 +536,9 @@ impl Camera {
         mx_ref[..16].copy_from_slice(view_matrix.as_ref());
         mx_ref[16..32].copy_from_slice(projection_matrix.as_ref());
 
-        let camera_vertex_uniform_buf = buffer_manager.get_buffer(self.vertex_uniform_buffer_id);
+        let camera_vertex_uniform_buf = asset_manager.get(&self.vertex_uniform_buffer_handle).unwrap();
         graphics_context.get_queue().write_buffer(
-            camera_vertex_uniform_buf,
+            &camera_vertex_uniform_buf.gpu_buffer,
             0,
             bytemuck::cast_slice(&mx_ref),
         );
@@ -547,9 +548,9 @@ impl Camera {
             .get_position();
         let camera_fragment_uniforms = [camera_pos[0], camera_pos[1], camera_pos[2], 1.0];
 
-        let fragment_uniform_buffer = buffer_manager.get_buffer(self.fragment_uniform_buffer_id);
+        let fragment_uniform_buffer = asset_manager.get(&self.fragment_uniform_buffer_handle).unwrap();
         graphics_context.get_queue().write_buffer(
-            fragment_uniform_buffer,
+            &fragment_uniform_buffer.gpu_buffer,
             0,
             bytemuck::cast_slice(&[camera_fragment_uniforms]),
         );

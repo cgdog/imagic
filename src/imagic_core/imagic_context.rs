@@ -5,8 +5,7 @@ use winit::dpi::{LogicalSize, PhysicalSize};
 
 use crate::{
     asset::{asset::Handle, asset_manager::AssetManager}, camera::{Camera, CameraControllerOptions}, graphics::{
-        bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager,
-        buffer::GPUBufferManager, render_pipeline::RenderPipelineManager, GraphicsContext,
+        bind_group::BindGroupManager, bind_group_layout::BindGroupLayoutManager, render_pipeline::RenderPipelineManager, GraphicsContext,
     }, input::InputManager, prelude::{
         CameraManager, LightManager, Material, MaterialTrait, RenderItem, Texture, TransformManager
     }, types::{ID, RR}, window::WindowSize
@@ -21,7 +20,6 @@ pub struct ImagicContext {
     bind_group_manager: BindGroupManager,
     pipeline_manager: RefCell<RenderPipelineManager>,
     render_item_manager: RenderItemManager,
-    buffer_manager: GPUBufferManager,
     light_manager: LightManager,
     transform_manager: RR<TransformManager>,
     camera_manager: CameraManager,
@@ -70,7 +68,7 @@ impl ImagicContext {
         self.camera_manager.on_update(
             &self.graphics_context,
             &self.transform_manager.borrow(),
-            &self.buffer_manager,
+            &mut self.asset_manager,
         );
 
         self.input_manager.on_update();
@@ -99,7 +97,6 @@ impl ImagicContext {
             &self.graphics_context,
             &mut self.asset_manager,
             &self.transform_manager.borrow(),
-            &self.buffer_manager,
             new_physical_size.width,
             new_physical_size.height,
             new_logical_size.width,
@@ -143,13 +140,6 @@ impl ImagicContext {
         &self.render_item_manager
     }
 
-    pub fn buffer_manager(&self) -> &GPUBufferManager {
-        &self.buffer_manager
-    }
-
-    pub fn buffer_manager_mut(&mut self) -> &mut GPUBufferManager {
-        &mut self.buffer_manager
-    }
 
     pub fn light_manager(&self) -> &LightManager {
         &self.light_manager
@@ -200,7 +190,6 @@ impl ImagicContext {
             &mut self.bind_group_manager,
             &mut self.bind_group_layout_manager,
             self.transform_manager.clone(),
-            &mut self.buffer_manager,
             &mut self.asset_manager,
             &mut self.input_manager,
         )
