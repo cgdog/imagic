@@ -19,7 +19,7 @@ impl GameBehavior {
     }
 }
 
-impl SystemBehavior for GameBehavior {
+impl Behavior for GameBehavior {
     impl_as_any!();
     fn on_gui(&mut self, _engine: &mut LogicContext, ctx: &egui::Context) {
         egui::Window::new("Settings")

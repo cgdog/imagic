@@ -5,7 +5,7 @@ use crate::{
     graphics::graphics_context::GraphicsContext,
     input::input_manager::InputManager,
     prelude::{
-        SystemBehavior,
+        Behavior,
         behavior_wrapper::{BehaviorStatus, BehaviorWrapper}, uniform::BuiltinUniforms,
     },
     renderer::frame_renderer::FrameRenderer,
@@ -156,12 +156,12 @@ impl Engine {
         }
     }
 
-    pub fn add_behavior<T: 'static + SystemBehavior>(&mut self, behavior: T) {
+    pub fn add_behavior<T: 'static + Behavior>(&mut self, behavior: T) {
         self._behavior_wrappers
             .push(BehaviorWrapper::new(Box::new(behavior)));
     }
 
-    pub fn remove_behavior<T: 'static + SystemBehavior>(&mut self) {
+    pub fn remove_behavior<T: 'static + Behavior>(&mut self) {
         self._behavior_wrappers.retain_mut(|behavior_wrapper| {
             if let Some(_behavior) = behavior_wrapper.behavior.as_any_mut().downcast_mut::<T>() {
                 let mut logic_context = LogicContext {

@@ -10,7 +10,7 @@ struct GameBehavior {
     metallic_roughness_ao: Vec4,
 }
 
-impl SystemBehavior for GameBehavior {
+impl Behavior for GameBehavior {
     impl_as_any!();
 
     fn on_start(&mut self, _engine: &mut LogicContext) {

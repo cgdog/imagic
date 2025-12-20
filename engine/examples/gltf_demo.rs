@@ -19,7 +19,7 @@ impl GameBehavior {
     }
 }
 
-impl SystemBehavior for GameBehavior {
+impl Behavior for GameBehavior {
     impl_as_any!();
     fn on_gui(&mut self, logic_context: &mut LogicContext, ui_context: &egui::Context) {
         egui::Window::new("gltf demo settings").show(ui_context, |ui| {
