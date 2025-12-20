@@ -1,6 +1,6 @@
 [package]
 name = "imagic"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 authors = ["lxycg <leixinyuethu@gmail.com>"]
 description = "A thin rendering framework, implemented by Rust and WGPU"
