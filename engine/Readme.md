@@ -27,18 +27,16 @@ At the moment, Imagic only supports a few features:
 - Physics.
 - And so on.
 
-> In the remote future, an imagic editor may be released.
+> In the remote future, an [imagic editor](https://github.com/cgdog/imagic/tree/main/editor) may be implemented and released which is just a placeholder now.
 
 
 # Examples
-There are some examples in folder `engine\examples\`.
+There are some examples in folder [examples](https://github.com/cgdog/imagic/tree/main/engine/examples) on Github.
 
 For example, you can run `cargo run --example gltf_demo` to see the `gltf_demo.rs` example:
 > - hold left mouse button down and move mouse to rotate camera.
 > - hold right mouse button down and move mouse to zoom in and out.
 
-
-![gltf demo](./assets/gltf_demo.png)
 
 # How to use Imagic
 

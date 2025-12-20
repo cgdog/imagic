@@ -548,10 +548,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "editor"
-version = "0.1.0"
-
-[[package]]
 name = "egui"
 version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1107,6 +1103,10 @@ dependencies = [
  "winit",
  "yaml-rust2",
 ]
+
+[[package]]
+name = "imagic-editor"
+version = "0.0.1"
 
 [[package]]
 name = "indexmap"
