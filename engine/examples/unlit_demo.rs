@@ -22,7 +22,7 @@ impl MoveBehavior {
     }
 }
 
-impl SystemBehavior for MoveBehavior {
+impl Behavior for MoveBehavior {
     impl_as_any!();
     fn on_update(&mut self, logic_context: &mut LogicContext) {
         self.cur_pos.x = self.cur_pos.x + self.speed * self.dir * logic_context.time.delta();

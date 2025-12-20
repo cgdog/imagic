@@ -1,4 +1,4 @@
-use crate::{behaviors::behavior::{SystemBehavior}, core::LogicContext};
+use crate::{behaviors::behavior::{Behavior}, core::LogicContext};
 
 pub(crate) enum BehaviorStatus {
     Start,
@@ -6,12 +6,12 @@ pub(crate) enum BehaviorStatus {
 }
 
 pub(crate) struct BehaviorWrapper {
-    pub(crate) behavior: Box<dyn SystemBehavior>,
+    pub(crate) behavior: Box<dyn Behavior>,
     pub(crate) status: BehaviorStatus,
 }
 
 impl BehaviorWrapper {
-    pub(crate) fn new(behavior: Box<dyn SystemBehavior>) -> Self {
+    pub(crate) fn new(behavior: Box<dyn Behavior>) -> Self {
         Self {
             behavior,
             status: BehaviorStatus::Start,

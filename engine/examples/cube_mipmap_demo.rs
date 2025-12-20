@@ -14,7 +14,7 @@ struct SkyboxBehavior {
     show_background_cube_map: bool,
 }
 
-impl SystemBehavior for SkyboxBehavior {
+impl Behavior for SkyboxBehavior {
     impl_as_any!();
 
     fn on_start(&mut self, _logic_context: &mut LogicContext) {

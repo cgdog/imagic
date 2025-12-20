@@ -20,7 +20,7 @@ impl ChangeMipLevelBehavior {
     }
 }
 
-impl SystemBehavior for ChangeMipLevelBehavior {
+impl Behavior for ChangeMipLevelBehavior {
     impl_as_any!();
     fn on_update(&mut self, logic_context: &mut LogicContext) {
         self.cur_time += logic_context.time.delta();

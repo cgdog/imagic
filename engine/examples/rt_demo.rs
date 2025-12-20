@@ -19,7 +19,7 @@ struct CustomShaderBehavior {
     change_color_over_time: bool,
 }
 
-impl SystemBehavior for CustomShaderBehavior {
+impl Behavior for CustomShaderBehavior {
     impl_as_any!();
 
     fn on_start(&mut self, _engine: &mut LogicContext) {

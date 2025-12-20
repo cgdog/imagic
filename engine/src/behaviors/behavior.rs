@@ -2,10 +2,9 @@ use std::any::Any;
 
 use crate::core::LogicContext;
 
-/// SystemBehavior is a trait for behaviors that operate at the system level.
-/// It provides lifecycle methods that are called at different stages of the application's existence.
+/// A behavior provides lifecycle methods that are called at different stages of the application's existence.
 #[allow(unused)]
-pub trait SystemBehavior : Any {
+pub trait Behavior : Any {
     fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
     

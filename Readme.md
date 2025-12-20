@@ -66,4 +66,4 @@ fn main() {
 For more details, see the `primitives_demo.rs`, `gltf_demo.rs`, `ibl_demo.rs`, `unlit_demo.rs` or other examples.
 
 -----
-There exists a branch [lxy/backup_before_refactor](https://github.com/cgdog/imagic/tree/lxy/backup_before_refactor) which is deprecated and has more examples and features, for example, point light, simple ray tracer. But it has no scene management, and have bugs on IBL implementation。
+There exists a tag [v0.1.0](https://github.com/cgdog/imagic/releases/tag/v0.1.0) which is deprecated and has more examples and features, for example, point light, simple ray tracer. But it has no scene management, and have bugs on IBL implementation。

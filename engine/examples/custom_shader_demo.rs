@@ -18,7 +18,7 @@ struct CustomShaderBehavior {
     cur_color_index: usize,
 }
 
-impl SystemBehavior for CustomShaderBehavior {
+impl Behavior for CustomShaderBehavior {
     impl_as_any!();
 
     fn on_start(&mut self, _logic_context: &mut LogicContext) {

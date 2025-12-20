@@ -4,7 +4,7 @@ use crate::{
     core::{LogicContext, NodeId},
     impl_as_any,
     math::{Vec3, spherical_coordinate::SphericalCoordinate},
-    prelude::SystemBehavior
+    prelude::Behavior
 };
 
 /// The target of the camera controlled by the camera controller.
@@ -58,7 +58,7 @@ impl CameraController {
     }
 }
 
-impl SystemBehavior for CameraController {
+impl Behavior for CameraController {
     impl_as_any!();
 
     fn on_start(&mut self, logic_context: &mut LogicContext) {
