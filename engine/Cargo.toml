@@ -1,0 +1,37 @@
+[package]
+name = "imagic"
+version = "0.1.0"
+edition = "2024"
+authors = ["lxycg <leixinyuethu@gmail.com>"]
+description = "A thin rendering framework, implemented by Rust and WGPU"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/cgdog/imagic"
+keywords = ["rendering", "wgpu", "3D", "RenderingEngine", "GameEngine"]
+categories = ["rendering", "rendering::engine","games", "graphics", "game-engines"]
+
+exclude = [
+    "examples/",
+    "target/",
+]
+
+[dependencies]
+log = { version = "^0.4.27"}
+env_logger = { version = "^0.11.8" }
+wgpu = {version = "^27.0.1", features = ["naga-ir"]}
+winit = { version = "^0.30.12", default-features = false, features = ["rwh_06"] }
+# egui
+egui = { version = "0.33.0", default-features = false, features = ["default_fonts"] }
+egui-wgpu = { version = "^0.33.0",features = ["winit"] }
+egui-winit = { version = "^0.33.0"}
+
+glam = "^0.30.4"
+pollster = "0.4.0"
+image = { version = "^0.25.6", default-features = false, features = ["png", "jpeg", "hdr"]}
+bytemuck = { version = "^1.23.1", features = ["derive"] }
+gltf = { version = "1.4.1", features = ["names"] }
+serde = { version = "1.0.219", features = ["derive"]}
+ron = "0.12.0"
+ahash = "0.8.12"
+yaml-rust2 = "0.10.3"
+
+thiserror = "2.0.17"
