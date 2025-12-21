@@ -1,7 +1,7 @@
 use wgpu::{CommandEncoder, RenderPass};
 
 use crate::{
-    assets::{INVALID_TEXTURE_HANDLE, TextureSamplerManager, texture_view::TextureView},
+    assets::{TextureHandle, TextureSamplerManager, texture_view::TextureView},
     graphics::graphics_context::GraphicsContext,
     math::{Vec4, color::Color},
     renderer::frame_data::{CameraRenderData, ItemRenderData}
@@ -63,13 +63,13 @@ impl RenderAPI {
 
         texture_sampler_manager
             .ensure_depth_texture_valid(camera_render_data.depth_attachment);
-        if camera_render_data.color_attchment != INVALID_TEXTURE_HANDLE {
+        if camera_render_data.color_attchment != TextureHandle::INVALID {
             texture_sampler_manager
                 .ensure_color_attachment_valid(camera_render_data.color_attchment);
         }
 
         let mut view_port = camera_render_data.view_port;
-        let color_attachment_view = if camera_render_data.color_attchment == INVALID_TEXTURE_HANDLE
+        let color_attachment_view = if camera_render_data.color_attchment == TextureHandle::INVALID
         {
             surface_texture_view_ref
         } else {

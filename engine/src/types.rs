@@ -11,6 +11,39 @@ pub type OWR<T> = Option<std::rc::Weak<std::cell::RefCell<T>>>;
 
 pub type HashID = u64;
 
+/// Handle type for resource.
+#[repr(transparent)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+pub struct Handle<T> {
+    id: u64,
+    _marker: std::marker::PhantomData<T>,
+}
+
+impl<T> Handle<T> {
+    pub const INVALID: Self = Self {
+        id: u64::MAX,
+        _marker: std::marker::PhantomData,
+    };
+
+    pub(crate) fn new(id: u64) -> Self {
+        Self {
+            id,
+            _marker: std::marker::PhantomData,
+        }
+    }
+
+    #[inline]
+    pub fn raw(self) -> u64 {
+        self.id
+    }
+}
+
+impl<T> std::fmt::Display for Handle<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Handle({}) of {}", self.id, std::any::type_name::<T>())
+    }
+}
+
 #[macro_export]
 macro_rules! RRB_new {
     ($object:expr) => {

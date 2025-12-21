@@ -1,6 +1,6 @@
 use crate::{
     assets::{
-        INVALID_TEXTURE_HANDLE, Texture, TextureHandle, TextureSamplerManager,
+        Texture, TextureHandle, TextureSamplerManager,
         environment::{ibldata::IBLData, skybox::Skybox},
     },
     components::mesh_renderer::MeshRenderer,
@@ -191,7 +191,7 @@ impl Scene {
         if INVALID_NODE_ID != self.cached_skybox_ {
             let skybox_node_id = self.cached_skybox_;
             let mut need_refresh_skybox_texture = false;
-            let mut skybox_texture_handle = INVALID_TEXTURE_HANDLE;
+            let mut skybox_texture_handle = TextureHandle::INVALID;
             if let Some(skybox_component) = self.get_component_mut::<Skybox>(&skybox_node_id)
                 && skybox_component.should_init()
             {

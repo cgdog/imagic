@@ -4,7 +4,7 @@ use ahash::AHashMap;
 
 use crate::{
     assets::{
-        BuiltinShaderUniformNames, INVALID_TEXTURE_HANDLE, Texture, TextureHandle, TextureSamplerManager, sampler::{INVALID_SAMPLER_HANDLE, SamplerHandle}, shaders::{
+        BuiltinShaderUniformNames, Texture, TextureHandle, TextureSamplerManager, sampler::SamplerHandle, shaders::{
             shader::ShaderPropertyPacket,
             shader_property::ShaderPropertyType,
         }
@@ -148,12 +148,12 @@ impl UniformValue {
                 );
             }
             UniformValue::Texture(handle) => {
-                if *handle != INVALID_TEXTURE_HANDLE {
+                if *handle != TextureHandle::INVALID {
                     texture_sampler_manager.ensure_gpu_texture_valid(handle);
                 }
             }
             UniformValue::Sampler(handle) => {
-                if *handle != INVALID_TEXTURE_HANDLE
+                if *handle != SamplerHandle::INVALID
                     && let Some(texture) = texture_sampler_manager.get_sampler_mut(handle)
                 {
                     if texture.gpu_sampler.is_none() {
@@ -341,7 +341,7 @@ impl Uniforms {
                         property_name.to_owned(),
                         Uniform::new(
                             property_name.to_owned(),
-                            UniformValue::Sampler(INVALID_SAMPLER_HANDLE),
+                            UniformValue::Sampler(SamplerHandle::INVALID),
                         ),
                     );
                 }
@@ -532,7 +532,7 @@ impl Uniforms {
                 _ => unreachable!(),
             }
         } else {
-            INVALID_TEXTURE_HANDLE
+            TextureHandle::INVALID
         }
     }
 

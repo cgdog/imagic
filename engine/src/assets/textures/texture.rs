@@ -11,8 +11,9 @@ pub type TextureViewDimension = wgpu::TextureViewDimension;
 pub type TextureViewDescriptor<'a> = wgpu::TextureViewDescriptor<'a>;
 pub type TextureAspect = wgpu::TextureAspect;
 
-pub type TextureHandle = u64;
-pub const INVALID_TEXTURE_HANDLE: TextureHandle = TextureHandle::MAX;
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+pub enum TextureTag {}
+pub type TextureHandle = crate::types::Handle<TextureTag>;
 
 #[derive(PartialEq, Clone)]
 pub enum SourceType {
@@ -69,7 +70,7 @@ impl Texture {
         is_flip_y.hash(hasher_mut_ref);
         is_generate_mipmaps.hash(hasher_mut_ref);
         let texture_handle = hasher.finish();
-        texture_handle
+        TextureHandle::new(texture_handle)
     }
 
     pub(crate) fn from_image(
@@ -129,8 +130,8 @@ impl Texture {
 
     /// The default white texture with size 2x2.
     pub fn white() -> TextureHandle {
-        static mut HANDLE: TextureHandle = INVALID_TEXTURE_HANDLE;
-        if unsafe { HANDLE } == INVALID_TEXTURE_HANDLE {
+        static mut HANDLE: TextureHandle = TextureHandle::INVALID;
+        if unsafe { HANDLE } == TextureHandle::INVALID {
             // Note: here we just compute its handle. The init function of [`TextureSamplerManager`] will really create this texture.
             let texture_usage = TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST;
             let image_data: Vec<Vec<u8>> = vec![vec![
@@ -149,8 +150,8 @@ impl Texture {
 
     /// The default cube texture. Each face is 1x1. Each pixel is (0, 0, 0, 1).
     pub fn default_cube_texture() -> TextureHandle {
-        static mut HANDLE: TextureHandle = INVALID_TEXTURE_HANDLE;
-        if unsafe { HANDLE } == INVALID_TEXTURE_HANDLE {
+        static mut HANDLE: TextureHandle = TextureHandle::INVALID;
+        if unsafe { HANDLE } == TextureHandle::INVALID {
             // Note: here we just compute its handle. The init function of [`TextureSamplerManager`] will really create this texture.
             let texture_usage = TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST;
             let image_data: Vec<Vec<u8>> = vec![

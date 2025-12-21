@@ -15,7 +15,7 @@ use crate::{
             },
         }, textures::{
             sampler::SamplerHandle,
-            texture::{INVALID_TEXTURE_HANDLE, TextureHandle},
+            texture::TextureHandle,
         }
     }, graphics::{
         bind_group::BindGroupID,
@@ -189,7 +189,7 @@ impl Material {
     /// - `albedo_map`: the texture handle of albedo map.
     pub fn set_albedo_map(&mut self, albedo_map: TextureHandle) {
         self.set_texture(BuiltinShaderUniformNames::_ALBEDO_MAP, albedo_map);
-        if albedo_map != INVALID_TEXTURE_HANDLE {
+        if albedo_map != TextureHandle::INVALID {
             self.enable_feature(BuiltinMaterialShaderFeatures::FEATURE_FLAG_ALBEDO_MAP);
         } else {
             self.disable_feature(BuiltinMaterialShaderFeatures::FEATURE_FLAG_ALBEDO_MAP);
@@ -221,7 +221,7 @@ impl Material {
     /// - `metallic_roughness_map`: the texture handle of metallic roughness map.
     pub fn set_metallic_roughness_map(&mut self, metallic_roughness_map: TextureHandle) {
         self.set_texture(BuiltinShaderUniformNames::_METALLIC_ROUGHNESS_MAP, metallic_roughness_map);
-        if metallic_roughness_map != INVALID_TEXTURE_HANDLE {
+        if metallic_roughness_map != TextureHandle::INVALID {
             self.enable_feature(BuiltinMaterialShaderFeatures::FEATURE_FLAG_METALLIC_ROUGHNESS_MAP);
         } else {
             self.disable_feature(BuiltinMaterialShaderFeatures::FEATURE_FLAG_METALLIC_ROUGHNESS_MAP);
@@ -235,7 +235,7 @@ impl Material {
     /// - `ao_map`: the texture handle of ao map.
     pub fn set_ao_map(&mut self, ao_map: TextureHandle) {
         self.set_texture(BuiltinShaderUniformNames::_AO_MAP, ao_map);
-        if ao_map != INVALID_TEXTURE_HANDLE {
+        if ao_map != TextureHandle::INVALID {
             self.enable_feature(BuiltinMaterialShaderFeatures::FEATURE_FLAG_AO_MAP);
         } else {
             self.disable_feature(BuiltinMaterialShaderFeatures::FEATURE_FLAG_AO_MAP);
@@ -258,7 +258,7 @@ impl Material {
     /// - `emissive_map`: the texture handle of emissive map.
     pub fn set_emissive_map(&mut self, emissive_map: TextureHandle) {
         self.set_texture(BuiltinShaderUniformNames::_EMISSIVE_MAP, emissive_map);
-        if emissive_map != INVALID_TEXTURE_HANDLE {
+        if emissive_map != TextureHandle::INVALID {
             self.enable_feature(BuiltinMaterialShaderFeatures::FEATURE_FLAG_EMISSIVE_MAP);
         } else {
             self.disable_feature(BuiltinMaterialShaderFeatures::FEATURE_FLAG_EMISSIVE_MAP);
@@ -272,7 +272,7 @@ impl Material {
     /// - `_normal_map`: the texture handle of normal map.
     pub fn set_normal_map(&mut self, normal_map: TextureHandle) {
         self.set_texture(BuiltinShaderUniformNames::_NORMAL_MAP, normal_map);
-        if normal_map != INVALID_TEXTURE_HANDLE {
+        if normal_map != TextureHandle::INVALID {
             self.enable_feature(BuiltinMaterialShaderFeatures::FEATURE_FLAG_NORMAL_MAP);
         } else {
             self.disable_feature(BuiltinMaterialShaderFeatures::FEATURE_FLAG_NORMAL_MAP);

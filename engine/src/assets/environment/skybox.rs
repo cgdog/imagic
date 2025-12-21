@@ -1,6 +1,6 @@
 use crate::{
     assets::{
-        INVALID_TEXTURE_HANDLE, Quad, Sampler, TextureAspect, TextureDimension, TextureFormat,
+        Quad, Sampler, TextureAspect, TextureDimension, TextureFormat,
         TextureHandle, TextureSamplerManager, TextureUsages, TextureViewDescriptor, TextureViewDimension,
         materials::material::Material,
         meshes::{mesh::Mesh, primitives::cuboid::Cuboid},
@@ -34,21 +34,21 @@ impl Skybox {
         let cube_map = if is_inpunt_cube_map {
             input_texture
         } else {
-            INVALID_TEXTURE_HANDLE
+            TextureHandle::INVALID
         };
         Self {
             background_cube_map: cube_map,
             input_texture,
             is_inpunt_cube_map,
-            reflection_cube_map: INVALID_TEXTURE_HANDLE,
+            reflection_cube_map: TextureHandle::INVALID,
             reflection_cube_face_resolution: 128,
-            brdf_lut: INVALID_TEXTURE_HANDLE,
+            brdf_lut: TextureHandle::INVALID,
             sh: [Color::BLACK; 9],
         }
     }
 
     pub(crate) fn should_init(&self) -> bool{
-        !self.is_inpunt_cube_map || self.reflection_cube_map == INVALID_TEXTURE_HANDLE
+        !self.is_inpunt_cube_map || self.reflection_cube_map == TextureHandle::INVALID
     }
 
     pub(crate) fn on_init(&mut self, graphics_context: &mut GraphicsContext, texture_sampler_manager: &mut TextureSamplerManager) {
@@ -72,7 +72,7 @@ impl Skybox {
             sh4.b = sh3.z;
         });
 
-        if self.brdf_lut == INVALID_TEXTURE_HANDLE {
+        if self.brdf_lut == TextureHandle::INVALID {
             self.generate_brdf_lut(graphics_context, texture_sampler_manager);
         }
     }

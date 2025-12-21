@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use crate::{
     assets::{
-        BuiltinGlobalShaderFeatures, INVALID_TEXTURE_HANDLE, Sampler, Texture, TextureFormat, TextureHandle, TextureSamplerManager, shaders::shader_property::BuiltinShaderUniformNames
+        BuiltinGlobalShaderFeatures, Sampler, Texture, TextureFormat, TextureHandle, TextureSamplerManager, shaders::shader_property::BuiltinShaderUniformNames
     }, components::{camera::Camera, mesh_renderer::MeshRenderer},
     core::{LayerMask, NodeId, SH, scene::Scene}, graphics::{
         bind_group::BindGroupID, graphics_context::GraphicsContext, render_states::RenderQueue,
@@ -89,7 +89,7 @@ impl World {
             let camera_node_ref = cur_scene.node_arena.get_forcely(camera_node_id);
             let camera_position = camera_node_ref.transform.position;
             let camera_render_data = if let Some(camera) = cur_scene.get_component::<Camera>(camera_node_id) {
-                if INVALID_TEXTURE_HANDLE != camera.depth_attachment {
+                if TextureHandle::INVALID != camera.depth_attachment {
                     let view_matrix =
                         camera.get_view_matrix(&camera_position);
                     let projection_matrix = camera.get_projection_matrix();
@@ -359,7 +359,7 @@ impl World {
                                 need_sync_global_uniforms = true;
                             }
                             if builtin_uniform_flags.has_environment_reflection_info() && !global_uniform_sync_flags.has_reflection_maps_synced {
-                                assert_ne!(reflection_map, INVALID_TEXTURE_HANDLE, "Reflection cube map is invalid!");
+                                assert_ne!(reflection_map, TextureHandle::INVALID, "Reflection cube map is invalid!");
                                 global_uniforms.set_struct(BuiltinShaderUniformNames::_SH, bytemuck::bytes_of(sh).to_vec());
                                 global_uniforms.set_texture(BuiltinShaderUniformNames::_REFLECTION_CUBE_MAP, reflection_map);
                                 global_uniforms.set_sampler(BuiltinShaderUniformNames::_REFLECTION_CUBE_SAMPLER, Sampler::default_sampler());

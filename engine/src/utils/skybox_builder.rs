@@ -1,7 +1,7 @@
 use crate::{
     RR_new,
     assets::{
-        INVALID_TEXTURE_HANDLE, TextureDimension, TextureFormat, TextureHandle, TextureUsages,
+        TextureDimension, TextureFormat, TextureHandle, TextureUsages,
         environment::skybox::Skybox, materials::material::Material,
         meshes::{mesh::Mesh, primitives::cuboid::Cuboid},
         sampler::Sampler
@@ -60,7 +60,7 @@ impl SkyboxBuilder {
                 is_inpunt_cube_map = true;
             } else {
                 // cube_map_data_length == 1，more steps are needed when initialization.
-                skybox_texture_handle = INVALID_TEXTURE_HANDLE;
+                skybox_texture_handle = TextureHandle::INVALID;
             };
         }
 

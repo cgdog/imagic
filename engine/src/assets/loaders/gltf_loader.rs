@@ -3,8 +3,8 @@ use gltf::mesh::Mode;
 use crate::{
     RR_new,
     assets::{
-        AddressMode, BuiltinShaderUniformNames, FilterMode, INVALID_SAMPLER_HANDLE,
-        INVALID_TEXTURE_HANDLE, Material, Mesh, SamplerHandle, TextureDimension, TextureFormat,
+        AddressMode, BuiltinShaderUniformNames, FilterMode,
+        Material, Mesh, SamplerHandle, TextureDimension, TextureFormat,
         TextureHandle, model_loader::ModelLoaderTrait, sub_mesh::SubMesh,
         vertex_attribute::VertexAttributes, vertex_index::IndexData,
     },
@@ -142,13 +142,13 @@ impl GLTFLoader {
                     let texture_index = occlusion_texture.texture().index();
                     self.get_texture_by_index(engine, texture_index, images, true)
                 } else {
-                    INVALID_TEXTURE_HANDLE
+                    TextureHandle::INVALID
                 };
             let normal_texture = if let Some(normal_texture) = gltf_material.normal_texture() {
                 let texture_index = normal_texture.texture().index();
                 self.get_texture_by_index(engine, texture_index, images, true)
             } else {
-                INVALID_TEXTURE_HANDLE
+                TextureHandle::INVALID
             };
             let emissive_factor = gltf_material.emissive_factor();
             let emissive_texture = if let Some(emissive_texture) = gltf_material.emissive_texture()
@@ -156,7 +156,7 @@ impl GLTFLoader {
                 let texture_index = emissive_texture.texture().index();
                 self.get_texture_by_index(engine, texture_index, images, false)
             } else {
-                INVALID_TEXTURE_HANDLE
+                TextureHandle::INVALID
             };
 
             let mode = primitive.mode();
@@ -176,25 +176,25 @@ impl GLTFLoader {
                     Mode::Lines | Mode::LineLoop | Mode::LineStrip => PolygonMode::Line,
                 };
 
-                if base_color_texture != INVALID_TEXTURE_HANDLE {
+                if base_color_texture != TextureHandle::INVALID {
                     pbr_material_mut_ref.set_albedo_map(base_color_texture);
                 }
-                if albdeo_sampler != INVALID_SAMPLER_HANDLE {
+                if albdeo_sampler != SamplerHandle::INVALID {
                     pbr_material_mut_ref.set_sampler(
                         BuiltinShaderUniformNames::_ALBEDO_MAP_SAMPLER,
                         albdeo_sampler,
                     );
                 }
 
-                if metallic_roughness_texture != INVALID_TEXTURE_HANDLE {
+                if metallic_roughness_texture != TextureHandle::INVALID {
                     pbr_material_mut_ref.set_metallic_roughness_map(metallic_roughness_texture);
                 }
 
-                if occlusion_texture != INVALID_TEXTURE_HANDLE {
+                if occlusion_texture != TextureHandle::INVALID {
                     pbr_material_mut_ref.set_ao_map(occlusion_texture);
                 }
 
-                if normal_texture != INVALID_TEXTURE_HANDLE {
+                if normal_texture != TextureHandle::INVALID {
                     pbr_material_mut_ref.set_normal_map(normal_texture);
                 }
 
@@ -203,7 +203,7 @@ impl GLTFLoader {
                     emissive_factor[1],
                     emissive_factor[2],
                 ));
-                if emissive_texture != INVALID_TEXTURE_HANDLE {
+                if emissive_texture != TextureHandle::INVALID {
                     pbr_material_mut_ref.set_emissive_map(emissive_texture);
                 }
             }
@@ -396,7 +396,7 @@ impl GLTFLoader {
             let texture_index = texture_info.texture().index();
             self.get_texture_by_index(engine, texture_index, images, is_linear)
         } else {
-            INVALID_TEXTURE_HANDLE
+            TextureHandle::INVALID
         }
     }
 
@@ -415,7 +415,7 @@ impl GLTFLoader {
                 self.get_sampler(engine, document, texture_index),
             )
         } else {
-            (INVALID_TEXTURE_HANDLE, INVALID_SAMPLER_HANDLE)
+            (TextureHandle::INVALID, SamplerHandle::INVALID)
         }
     }
 
@@ -494,7 +494,7 @@ impl GLTFLoader {
             );
             sampler
         } else {
-            INVALID_SAMPLER_HANDLE
+            SamplerHandle::INVALID
         }
     }
 

@@ -2,8 +2,9 @@ use std::hash::{Hash, Hasher};
 
 use ahash::AHasher;
 
-pub type SamplerHandle = u64;
-pub const INVALID_SAMPLER_HANDLE: SamplerHandle = SamplerHandle::MAX;
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+pub enum SamplerTag {}
+pub type SamplerHandle = crate::types::Handle<SamplerTag>;
 
 pub type AddressMode = wgpu::AddressMode;
 pub type FilterMode = wgpu::FilterMode;
@@ -35,8 +36,8 @@ impl Sampler {
         mag_filter.hash(&mut hasher);
         min_filter.hash(&mut hasher);
         mipmap_filter.hash(&mut hasher);
-        let handle = hasher.finish();
-        handle
+        let id = hasher.finish();
+        SamplerHandle::new(id)
     }
 
     #[allow(unused)]
@@ -85,8 +86,8 @@ impl Sampler {
     /// The default sampler which is linear filter and address mode of clamp to edge.
     /// If your material does not provide a sampler which is necessary, this default sampler will be used.
     pub fn default_sampler() -> SamplerHandle {
-        static mut _SAMPLER_HANDLE: SamplerHandle = INVALID_SAMPLER_HANDLE;
-        if unsafe { _SAMPLER_HANDLE } == INVALID_SAMPLER_HANDLE {
+        static mut _SAMPLER_HANDLE: SamplerHandle = SamplerHandle::INVALID;
+        if unsafe { _SAMPLER_HANDLE } == SamplerHandle::INVALID {
             // Note: here we just compute its handle. The init function of [`TextureSamplerManager`] will really create this sampler.
             let handle = Self::compute_sampler_handle(
                 AddressMode::ClampToEdge,

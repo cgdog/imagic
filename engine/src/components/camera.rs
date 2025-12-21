@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 
 use crate::{
-    assets::{INVALID_TEXTURE_HANDLE, TextureDimension, TextureFormat, TextureHandle, TextureSamplerManager, sampler::INVALID_SAMPLER_HANDLE},
+    assets::{TextureDimension, TextureFormat, TextureHandle, TextureSamplerManager},
     core::layer::LayerMask,
     graphics::uniform::BuiltinUniforms,
     impl_component,
@@ -76,8 +76,8 @@ impl Default for Camera {
             clear_color: Some(Color::new(0.1, 0.2, 0.3, 1.0)),
             visible_layers: LayerMask::default(),
             priority: 0,
-            color_attachment: INVALID_TEXTURE_HANDLE,
-            depth_attachment: INVALID_SAMPLER_HANDLE,
+            color_attachment: TextureHandle::INVALID,
+            depth_attachment: TextureHandle::INVALID,
             depth_format: TextureFormat::Depth24PlusStencil8,
             per_camera_uniforms: RefCell::new(BuiltinUniforms::new("Camera".to_owned())),
         }
@@ -124,7 +124,7 @@ impl Camera {
         physical_size: &WindowSize,
         logical_size: &WindowSize,
     ) {
-        if self.color_attachment != INVALID_TEXTURE_HANDLE {
+        if self.color_attachment != TextureHandle::INVALID {
             // This is a off screen camera. Do not need to resize attachments according to window size.
             return;
         }

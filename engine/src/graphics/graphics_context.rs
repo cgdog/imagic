@@ -8,12 +8,12 @@ use winit::dpi::{LogicalSize, PhysicalSize};
 
 use crate::{
     assets::{
-        sampler::{Sampler, INVALID_SAMPLER_HANDLE}, shaders::shader::ShaderPropertyPacket, textures::{texture::TextureFormat, texture_sampler_manager::TextureSamplerManager}, Texture, INVALID_TEXTURE_HANDLE
+        Texture, TextureHandle, sampler::{SamplerHandle, Sampler}, shaders::shader::ShaderPropertyPacket, textures::{texture::TextureFormat, texture_sampler_manager::TextureSamplerManager}
     },
     graphics::{
         bind_group::{BindGroupID, BindGroupManager},
         buffer::BufferManager,
-        render_pipeline::RenderPipelineManager, uniform::{UniformValue, UniformMap},
+        render_pipeline::RenderPipelineManager, uniform::{UniformMap, UniformValue},
     },
     window::Window,
 };
@@ -269,7 +269,7 @@ impl GraphicsContext {
                     }
                     UniformValue::Sampler(sampler_handle) => {
                         let mut sampler_handle = *sampler_handle;
-                        if INVALID_SAMPLER_HANDLE == sampler_handle {
+                        if SamplerHandle::INVALID == sampler_handle {
                             sampler_handle = Sampler::default_sampler();
                         }
                         if let Some(sampler) = texture_sampler_manager.get_sampler(&sampler_handle)
@@ -284,7 +284,7 @@ impl GraphicsContext {
                     }
                     UniformValue::Texture(texture_handle) => {
                         let mut texture_handle = *texture_handle;
-                        if INVALID_TEXTURE_HANDLE == texture_handle {
+                        if TextureHandle::INVALID == texture_handle {
                             texture_handle = Texture::white();
                         }
                         if let Some(texture) = texture_sampler_manager.get_texture(&texture_handle)

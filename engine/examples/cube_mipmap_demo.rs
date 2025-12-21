@@ -82,8 +82,8 @@ impl Game {
             skybox_material: skybox_material,
             skybox_node,
             lod: 0.0,
-            background_cube_map: INVALID_TEXTURE_HANDLE,
-            reflection_cube_map: INVALID_TEXTURE_HANDLE,
+            background_cube_map: TextureHandle::INVALID,
+            reflection_cube_map: TextureHandle::INVALID,
             show_background_cube_map: true,
         };
         self.engine.add_behavior(skybox_behavior);
