@@ -108,6 +108,7 @@ impl Game {
         let current_scene = self.engine.world.current_scene_mut();
         let camera_node = current_scene.create_node("Main Camera");
         let mut camera = Camera::default();
+        // let mut camera = Camera::new_orthogonal(-10.0, 10.0, -10.0, 10.0, 0.1, 100.0);
         camera.clear_color = Some(Color::scalar(0.3));
         current_scene.get_node_mut_forcely(&camera_node).transform
             .set_position(Vec3::new(0.0, 8.0, 12.0)); // front

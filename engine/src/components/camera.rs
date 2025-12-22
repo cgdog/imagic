@@ -9,14 +9,18 @@ use crate::{
     window::window_size::WindowSize,
 };
 
+/// The camera projection mode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CameraMode {
+    /// Perspective projection.
     Perspective,
+    /// Orthogonal projection.
     Orthogonal,
 }
 
 /// The camera component used to render the scene.
-#[allow(dead_code)]
 pub struct Camera {
+    /// The projection mode.
     pub mode: CameraMode,
     /// Field of view in radians.
     pub fov: f32,
@@ -34,10 +38,26 @@ pub struct Camera {
     pub clear_color: Option<Color>,
     /// The layers visible to the camera.
     pub visible_layers: LayerMask,
+    /// The render priority.
+    /// The camera with lower priority will be rendered first.
     pub priority: u32,
 
-    physical_size: WindowSize,
-    logical_size: WindowSize,
+    /// The left of orthogonal frustum.
+    pub left: f32,
+    /// The right of orthogonal frustum.
+    pub right: f32,
+    /// The top of orthogonal frustum.
+    pub top: f32,
+    /// The bottom of orthogonal frustum.
+    pub bottom: f32,
+
+    /// The color attachment texture handle that the camera renders to.
+    /// If it is `TextureHandle::INVALID`(default), the camera will render to screen.
+    pub color_attachment: TextureHandle,
+    /// The depth attachment texture handle. If `color_attachment` is `TextureHandle::INVALID`, `depth_attachment` will be set automatically.
+    pub depth_attachment: TextureHandle,
+    /// The depth attachment texture format.
+    pub depth_format: TextureFormat,
 
     /// Normalized viewport. Each component is in [0.0, 1.0].
     pub(crate) view_port: Vec4,
@@ -49,11 +69,10 @@ pub struct Camera {
     /// It is the real view port used by renderpass.
     pub(crate) physical_view_port: Vec4,
 
-    pub color_attachment: TextureHandle,
-    pub depth_attachment: TextureHandle,
-    pub depth_format: TextureFormat,
-
     pub(crate) per_camera_uniforms: RefCell<BuiltinUniforms>,
+
+    physical_size: WindowSize,
+    logical_size: WindowSize,
 }
 
 impl_component!(Camera);
@@ -80,6 +99,10 @@ impl Default for Camera {
             depth_attachment: TextureHandle::INVALID,
             depth_format: TextureFormat::Depth24PlusStencil8,
             per_camera_uniforms: RefCell::new(BuiltinUniforms::new("Camera".to_owned())),
+            left: -1.0,
+            right: 1.0,
+            top: 1.0,
+            bottom: -1.0,
         }
     }
 }
@@ -89,6 +112,20 @@ impl Camera {
         let camera = Self {
             fov,
             aspect,
+            near,
+            far,
+            ..Default::default()
+        };
+        camera
+    }
+
+    pub fn new_orthogonal(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) -> Self {
+        let camera = Self {
+            mode: CameraMode::Orthogonal,
+            left,
+            right,
+            bottom,
+            top,
             near,
             far,
             ..Default::default()
@@ -189,7 +226,11 @@ impl Camera {
     }
 
     pub fn get_projection_matrix(&self) -> Mat4 {
-        let projection = Mat4::perspective_rh(self.fov, self.aspect, self.near, self.far);
+        let projection = if self.mode == CameraMode::Perspective {
+            Mat4::perspective_rh(self.fov, self.aspect, self.near, self.far)
+        } else {
+            Mat4::orthographic_rh(self.left, self.right, self.bottom, self.top, self.near, self.far)
+        };
         projection
     }
 }
