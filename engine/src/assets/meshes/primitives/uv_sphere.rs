@@ -88,8 +88,9 @@ impl From<UVSphere> for Mesh {
             }
         }
 
-        let sub_mesh = SubMesh::new(IndexData::new_u32(indices));
+        let index_data = IndexData::new_u32(indices);
+        let sub_mesh = SubMesh::new(0, index_data.index_count(), 0);
 
-        Mesh::new(vertex_attributes, vec![sub_mesh])
+        Mesh::new(vertex_attributes, index_data, vec![sub_mesh])
     }
 }

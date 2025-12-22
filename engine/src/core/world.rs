@@ -398,9 +398,11 @@ impl World {
                             bind_group_ids,
                             render_pipeline_hash,
                             mesh_mut_ref.vertex_buffer,
-                            Some(sub_mesh.index_buffer),
-                            sub_mesh.index_data.index_format(),
-                            sub_mesh.index_data.index_count(),
+                            Some(mesh_mut_ref.index_buffer),
+                            mesh_mut_ref.index_data.index_format(),
+                            sub_mesh.index_start,
+                            sub_mesh.index_count,
+                            sub_mesh.base_vertex,
                         );
                         match material_mut_ref.render_state.render_queue {
                             RenderQueue::Opaque => {

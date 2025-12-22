@@ -63,7 +63,7 @@ impl From<Quad> for Mesh {
             pos_y.push(y_pos);
         }
 
-        let mut indices = Vec::<u16>::new();
+        let mut indices = Vec::<u32>::new();
         for y in 0..y_num {
             let not_last_y = y < (y_num - 1);
             for x in 0..x_num {
@@ -80,9 +80,9 @@ impl From<Quad> for Mesh {
                     // v2 - v3
                     // |  / |
                     // v0 - v1
-                    let v0 = (x + y * x_num) as u16;
+                    let v0 = (x + y * x_num) as u32;
                     let v1 = v0 + 1;
-                    let v2 = (x + (y + 1) * x_num) as u16;
+                    let v2 = (x + (y + 1) * x_num) as u32;
                     let v3 = v2 + 1;
                     // CCW triangle 1: (v0, v2, v1)
                     indices.push(v0);
@@ -96,8 +96,9 @@ impl From<Quad> for Mesh {
             }
         }
 
-        let sub_mesh = SubMesh::new(IndexData::new_u16(indices));
+        let index_data = IndexData::new_u32(indices);
+        let sub_mesh = SubMesh::new(0, index_data.index_count(), 0);
 
-        Mesh::new(vertex_attributes, vec![sub_mesh])
+        Mesh::new(vertex_attributes, index_data, vec![sub_mesh])
     }
 }

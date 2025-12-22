@@ -120,9 +120,11 @@ impl Skybox {
                 vec![],
                 render_pipeline_hash,
                 mesh_mut_ref.vertex_buffer,
-                Some(sub_mesh.index_buffer),
-                sub_mesh.index_data.index_format(),
-                sub_mesh.index_data.index_count(),
+                Some(mesh_mut_ref.index_buffer),
+                mesh_mut_ref.index_data.index_format(),
+                sub_mesh.index_start,
+                sub_mesh.index_count,
+                sub_mesh.base_vertex,
             );
         }
         let physical_view_port = Vec4::new(0.0, 0.0, rt_size as f32, rt_size as f32);
@@ -220,9 +222,11 @@ impl Skybox {
                 bind_group_ids,
                 render_pipeline_hash,
                 mesh_mut_ref.vertex_buffer,
-                Some(sub_mesh.index_buffer),
-                sub_mesh.index_data.index_format(),
-                sub_mesh.index_data.index_count(),
+                Some(mesh_mut_ref.index_buffer),
+                mesh_mut_ref.index_data.index_format(),
+                sub_mesh.index_start,
+                sub_mesh.index_count,
+                sub_mesh.base_vertex,
             );
         }
 
@@ -265,9 +269,11 @@ impl Skybox {
             vec![],
             INVALID_PIPELINE_HASH,
             mesh_mut_ref.vertex_buffer,
-            Some(sub_mesh.index_buffer),
-            sub_mesh.index_data.index_format(),
-            sub_mesh.index_data.index_count(),
+            Some(mesh_mut_ref.index_buffer),
+            mesh_mut_ref.index_data.index_format(),
+            sub_mesh.index_start,
+            sub_mesh.index_count,
+            sub_mesh.base_vertex,
         );
 
         self.prefilter_reflection_map_core(graphics_context, texture_sampler_manager, texture_format, mesh_mut_ref, &mut item_render_data);

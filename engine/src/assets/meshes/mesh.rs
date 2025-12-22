@@ -1,16 +1,21 @@
 use crate::{
     assets::{
         asset::IAsset,
-        meshes::{sub_mesh::SubMesh, vertex_attribute::VertexAttributes},
+        meshes::{sub_mesh::SubMesh, vertex_attribute::VertexAttributes}, vertex_index::IndexData,
     },
     graphics::{buffer_view::BufferView, graphics_context::GraphicsContext},
 };
 
+/// Mesh is a collection of submeshes.
 pub struct Mesh {
     /// Vertex attributes, e.g., Position, Normal, UV, etc.
     pub vertex_attributes: VertexAttributes,
     // Gpu buffer of vertex attributes.
     pub(crate) vertex_buffer: BufferView,
+    /// Index data.
+    pub index_data: IndexData,
+    /// Gpu buffer of index data.
+    pub(crate) index_buffer: BufferView,
     /// Submeshes.
     pub sub_meshes: Vec<SubMesh>,
 
@@ -21,11 +26,13 @@ pub struct Mesh {
 impl IAsset for Mesh {}
 
 impl Mesh {
-    pub fn new(mut vertex_attributes: VertexAttributes, sub_meshes: Vec<SubMesh>) -> Mesh {
+    pub fn new(mut vertex_attributes: VertexAttributes, index_data: IndexData, sub_meshes: Vec<SubMesh>) -> Mesh {
         vertex_attributes.compute_vertex_attributes();
         Self {
             vertex_buffer: BufferView::INVALID,
             vertex_attributes,
+            index_data,
+            index_buffer: BufferView::INVALID,
             sub_meshes,
             is_dirty: true,
         }
@@ -42,10 +49,15 @@ impl Mesh {
         self.vertex_buffer = graphics_context.buffer_manager.allocate_vertex_buffer(content_size);
         graphics_context.buffer_manager.write_data(&self.vertex_buffer, bytemuck::cast_slice(&content));
 
-        for sub_mesh in &mut self.sub_meshes {
-            sub_mesh.upload(graphics_context);
-        }
+        self.upload_index_buffer(graphics_context);
 
         self.is_dirty = false;
+    }
+
+    fn upload_index_buffer(&mut self, graphics_context: &mut GraphicsContext) {
+        let content = self.index_data.content();
+        let content_size = (content.len() * size_of::<u8>()) as u64;
+        self.index_buffer = graphics_context.buffer_manager.allocate_index_buffer(content_size);
+        graphics_context.buffer_manager.write_data(&self.index_buffer, content);
     }
 }

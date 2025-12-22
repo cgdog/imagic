@@ -108,6 +108,7 @@ impl GLTFLoader {
         log::info!("mesh name: {}, index: {}", mesh_name, mesh_index);
 
         let mut vertex_attributes = VertexAttributes::default();
+        let mut indices = Vec::<u32>::new();
         let mut sub_meshes = vec![];
         let mut materials: Vec<RR<Material>> = vec![];
 
@@ -215,13 +216,16 @@ impl GLTFLoader {
                 self.process_primitive_geometry(
                     primitive,
                     &mut vertex_attributes,
+                    &mut indices,
                     &mut sub_meshes,
                     buffers,
                 );
             }
         }
 
-        let mesh = Mesh::new(vertex_attributes, sub_meshes);
+        let index_data = IndexData::new_u32(indices);
+
+        let mesh = Mesh::new(vertex_attributes, index_data, sub_meshes);
         let mesh_render = MeshRenderer::new(RR_new!(mesh), materials);
         engine.world.current_scene_mut().add_component::<MeshRenderer>(node, mesh_render);
     }
@@ -230,9 +234,11 @@ impl GLTFLoader {
         &self,
         primitive: gltf::Primitive,
         vertex_attributes: &mut VertexAttributes,
+        indices: &mut Vec<u32>,
         sub_meshes: &mut Vec<SubMesh>,
         buffers: &Vec<gltf::buffer::Data>,
     ) {
+        let sub_mesh_vertex_start = vertex_attributes.position.len() as u32;
         // geometry info
         let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));
         if let Some(positions) = reader.read_positions() {
@@ -312,7 +318,7 @@ impl GLTFLoader {
             }
         }
 
-        let mut indices = Vec::<u32>::new();
+        let sub_mesh_index_start = indices.len() as u32;
         if let Some(indices_data) = reader.read_indices() {
             // process indices
             let indices_iter = indices_data.into_u32();
@@ -320,8 +326,13 @@ impl GLTFLoader {
                 indices.push(index);
             }
         }
+        let sub_mesh_index_count = indices.len() as u32 - sub_mesh_index_start;
 
-        let sub_mesh = SubMesh::new(IndexData::new_u32(indices));
+        let sub_mesh = SubMesh::new(
+            sub_mesh_index_start,
+            sub_mesh_index_count,
+            sub_mesh_vertex_start,
+        );
         sub_meshes.push(sub_mesh);
     }
 

@@ -65,9 +65,9 @@ impl Cuboid {
         last_y: f32,
         z: f32,
         vertex_attributes: &mut VertexAttributes,
-        indices: &mut Vec<u16>,
+        indices: &mut Vec<u32>,
         normal: Vec3,
-        cur_base_index: &mut u16,
+        cur_base_index: &mut u32,
         face: CuboidFace,
     ) {
         let is_reverse_x = matches!(face, CuboidFace::Back | CuboidFace::Right);
@@ -126,9 +126,9 @@ impl Cuboid {
                     // v2 - v3
                     // |  / |
                     // v0 - v1
-                    let v0 = (x + y * x_num) as u16;
+                    let v0 = (x + y * x_num) as u32;
                     let v1 = v0 + 1;
-                    let v2 = (x + (y + 1) * x_num) as u16;
+                    let v2 = (x + (y + 1) * x_num) as u32;
                     let v3 = v2 + 1;
                     // CCW triangle 1: (v0, v2, v1)
                     indices.push(*cur_base_index + v0);
@@ -141,7 +141,7 @@ impl Cuboid {
                 }
             }
         }
-        *cur_base_index += (x_num * y_num) as u16;
+        *cur_base_index += (x_num * y_num) as u32;
     }
 }
 
@@ -160,7 +160,7 @@ impl From<Cuboid> for Mesh {
         vertex_attributes.normal.reserve_exact(vertex_num);
         vertex_attributes.uv.reserve_exact(vertex_num);
 
-        let mut indices = Vec::<u16>::new();
+        let mut indices = Vec::<u32>::new();
         let mut cur_base_index = 0;
         // front face
         Cuboid::create_face(
@@ -258,8 +258,10 @@ impl From<Cuboid> for Mesh {
             CuboidFace::Bottom,
         );
 
-        let sub_mesh = SubMesh::new(IndexData::new_u16(indices));
+        let index_data = IndexData::new_u32(indices);
 
-        Mesh::new(vertex_attributes, vec![sub_mesh])
+        let sub_mesh = SubMesh::new(0, index_data.index_count(), 0);
+
+        Mesh::new(vertex_attributes, index_data, vec![sub_mesh])
     }
 }

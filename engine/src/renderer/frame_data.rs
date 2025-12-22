@@ -13,7 +13,9 @@ pub(crate) struct ItemRenderData {
     pub vertex_buffer: BufferView,
     pub index_buffer: Option<BufferView>,
     pub index_format: IndexFormat,
+    pub index_start: u32,
     pub index_count: u32,
+    pub base_vertex: u32,
 }
 
 impl ItemRenderData {
@@ -23,8 +25,9 @@ impl ItemRenderData {
         vertex_buffer: BufferView,
         index_buffer: Option<BufferView>,
         index_format: IndexFormat,
+        index_start: u32,
         index_count: u32,
-        // model_matrix: Mat4,
+        base_vertex: u32,
     ) -> Self {
         Self {
             bind_group,
@@ -32,7 +35,9 @@ impl ItemRenderData {
             vertex_buffer,
             index_buffer,
             index_format,
+            index_start,
             index_count,
+            base_vertex,
         }
     }
 }

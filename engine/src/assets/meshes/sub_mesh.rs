@@ -1,25 +1,26 @@
-use crate::{
-    assets::meshes::vertex_index::IndexData,
-    graphics::{buffer_view::BufferView, graphics_context::GraphicsContext},
-};
-
+/// A sub-mesh of a mesh. A SubMesh is corresponding to single material.
 pub struct SubMesh {
-    pub index_data: IndexData,
-    pub index_buffer: BufferView,
+    /// The start index of the sub-mesh in the index buffer.
+    pub index_start: u32,
+    /// The number of indices in the sub-mesh.
+    pub index_count: u32,
+    /// The base vertex of the sub-mesh.
+    pub base_vertex: u32,
 }
 
 impl SubMesh {
-    pub fn new(index_data: IndexData) -> Self {
+    /// Creates a new sub-mesh.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `index_start` - The start index of the sub-mesh in the index buffer.
+    /// * `index_count` - The number of indices in the sub-mesh.
+    /// * `base_vertex` - The base vertex of the sub-mesh.
+    pub fn new(index_start: u32, index_count: u32, base_vertex: u32) -> Self {
         Self {
-            index_data,
-            index_buffer: BufferView::INVALID,
+            index_start,
+            index_count,
+            base_vertex,
         }
-    }
-
-    pub(crate) fn upload(&mut self, graphics_context: &mut GraphicsContext) {
-        let content = self.index_data.content();
-        let content_size = (content.len() * size_of::<u8>()) as u64;
-        self.index_buffer = graphics_context.buffer_manager.allocate_index_buffer(content_size);
-        graphics_context.buffer_manager.write_data(&self.index_buffer, content);
     }
 }

@@ -150,7 +150,7 @@ impl RenderAPI {
                     .buffer_manager
                     .get_buffer_slice(&render_item.index_buffer.as_ref().unwrap());
                 rpass.set_index_buffer(index_buffer_slice, render_item.index_format.into());
-                rpass.draw_indexed(0..render_item.index_count, 0, 0..1);
+                rpass.draw_indexed(render_item.index_start..(render_item.index_start + render_item.index_count), render_item.base_vertex as i32, 0..1);
             } else {
                 if cfg!(debug_assertions) {
                     log::warn!("Failed to get render pipeline.");
