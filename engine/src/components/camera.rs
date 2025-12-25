@@ -42,6 +42,9 @@ pub struct Camera {
     /// The camera with lower priority will be rendered first.
     pub priority: u32,
 
+    /// The size of orthogonal frustum.
+    pub orthogonal_frustum_size: f32,
+
     /// The left of orthogonal frustum.
     pub left: f32,
     /// The right of orthogonal frustum.
@@ -99,6 +102,7 @@ impl Default for Camera {
             depth_attachment: TextureHandle::INVALID,
             depth_format: TextureFormat::Depth24PlusStencil8,
             per_camera_uniforms: RefCell::new(BuiltinUniforms::new("Camera".to_owned())),
+            orthogonal_frustum_size: 2.0,
             left: -1.0,
             right: 1.0,
             top: 1.0,
@@ -126,6 +130,22 @@ impl Camera {
             right,
             bottom,
             top,
+            near,
+            far,
+            orthogonal_frustum_size: top,
+            ..Default::default()
+        };
+        camera
+    }
+
+    pub fn new_orthogonal_by_size(orthogonal_frustum_size: f32, aspect: f32, near: f32, far: f32) -> Self {
+        let camera = Self {
+            mode: CameraMode::Orthogonal,
+            orthogonal_frustum_size,
+            left: -orthogonal_frustum_size * aspect,
+            right: orthogonal_frustum_size * aspect,
+            bottom: -orthogonal_frustum_size,
+            top: orthogonal_frustum_size,
             near,
             far,
             ..Default::default()
@@ -218,6 +238,11 @@ impl Camera {
         self.logical_view_port.x = self.view_port.x * self.logical_size.width;
         self.logical_view_port.y = self.view_port.y * self.logical_size.height;
         self.logical_view_port.z = self.view_port.z * self.logical_size.width;
+
+        if self.mode == CameraMode::Orthogonal {
+            self.left = -self.orthogonal_frustum_size * self.aspect;
+            self.right = self.orthogonal_frustum_size * self.aspect;
+        }
     }
 
     pub fn get_view_matrix(&self, camera_pos: &Vec3) -> Mat4 {
@@ -229,7 +254,9 @@ impl Camera {
         let projection = if self.mode == CameraMode::Perspective {
             Mat4::perspective_rh(self.fov, self.aspect, self.near, self.far)
         } else {
-            Mat4::orthographic_rh(self.left, self.right, self.bottom, self.top, self.near, self.far)
+            let m = Mat4::orthographic_rh(self.left, self.right, self.bottom, self.top, self.near, self.far);
+            // dbg!(m);
+            m
         };
         projection
     }

@@ -11,13 +11,18 @@ struct VSOutput {
 };
 
 @group(0) @binding(0)
-var<uniform> _mvp_matrix: mat4x4<f32>;
+var<uniform> _model_matrix: mat4x4<f32>;
+// camera related uniforms must use different group from model or object related uniforms.
+@group(1) @binding(0)
+var<uniform> _view_matrix: mat4x4<f32>;
+@group(1) @binding(1)
+var<uniform> _projection_matrix: mat4x4<f32>;
 
 @vertex
 fn vs_main(vs_in: VSInput) -> VSOutput {
     var result: VSOutput;
     result.uv0 = vs_in.uv0;
-    result.position = _mvp_matrix * vec4f(vs_in.position, 1.0);
+    result.position = _projection_matrix * _view_matrix * _model_matrix * vec4f(vs_in.position, 1.0);
     return result;
 }
 
