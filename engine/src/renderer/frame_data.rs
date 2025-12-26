@@ -1,6 +1,6 @@
 use crate::{
     assets::{TextureHandle, meshes::vertex_index::IndexFormat},
-    core::node::NodeId,
+    core::node::NodeHandle,
     graphics::{bind_group::BindGroupID, buffer_view::BufferView, render_pipeline::PipelineHashType},
     math::{Mat4, Vec3, Vec4, color::Color},
 };
@@ -44,7 +44,7 @@ impl ItemRenderData {
 
 /// Data used to render a frame for a give camera.
 pub(crate) struct CameraRenderData {
-    pub(crate) _camera_id: NodeId,
+    pub(crate) _camera_id: NodeHandle,
     pub priority: u32,
     pub view_matrix: Mat4,
     pub projection_matrix: Mat4,
@@ -61,7 +61,7 @@ pub(crate) struct CameraRenderData {
 
 impl CameraRenderData {
     pub fn new(
-        camera_id: NodeId,
+        camera_id: NodeHandle,
         priority: u32,
         view_matrix: Mat4,
         projection_matrix: Mat4,

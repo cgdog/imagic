@@ -4,7 +4,7 @@ use crate::{
         environment::{ibldata::IBLData, skybox::Skybox},
     },
     components::mesh_renderer::MeshRenderer,
-    core::{INVALID_NODE_ID, NodeArena, NodeId},
+    core::{NodeArena, NodeHandle},
     graphics::graphics_context::GraphicsContext,
     math::{Mat4, color::Color},
     prelude::{Camera, Component, component_storage::ComponentStorages},
@@ -21,15 +21,15 @@ pub(crate) struct SH {
 
 pub struct Scene {
     /// Root nodes which have no parent.
-    pub root_nodes: Vec<NodeId>,
+    pub root_nodes: Vec<NodeHandle>,
     pub(crate) node_arena: NodeArena,
     pub clear_color: Color,
     pub fog_enabled: bool,
     pub fog_color: Color,
     pub ibl_data: Option<IBLData>,
-    pub(crate) cached_cameras: Vec<NodeId>,
-    pub(crate) cached_renderables: Vec<NodeId>,
-    pub(crate) cached_skybox_: NodeId,
+    pub(crate) cached_cameras: Vec<NodeHandle>,
+    pub(crate) cached_renderables: Vec<NodeHandle>,
+    pub(crate) cached_skybox_: NodeHandle,
     pub(crate) sh: SH,
 
     pub(crate) component_storages: ComponentStorages,
@@ -47,7 +47,7 @@ impl Scene {
             ibl_data: None,
             cached_cameras: vec![],
             cached_renderables: vec![],
-            cached_skybox_: INVALID_NODE_ID,
+            cached_skybox_: NodeHandle::INVALID,
             sh: Default::default(),
             component_storages: ComponentStorages::new(),
         };
@@ -58,23 +58,23 @@ impl Scene {
     /// # Arguments
     /// 
     /// * `node_id` - The node to add.
-    pub fn add(&mut self, node_id: NodeId) {
+    pub fn add(&mut self, node_id: NodeHandle) {
         self.root_nodes.push(node_id);
     }
 
-    pub fn get_node(&self, node_id: &NodeId) -> Option<&Node> {
+    pub fn get_node(&self, node_id: &NodeHandle) -> Option<&Node> {
         self.node_arena.get(node_id)
     }
 
-    pub fn get_node_forcely(&self, node_id: &NodeId) -> &Node {
+    pub fn get_node_forcely(&self, node_id: &NodeHandle) -> &Node {
         self.node_arena.get_forcely(node_id)
     }
 
-    pub fn get_node_mut(&mut self, node_id: &NodeId) -> Option<&mut Node> {
+    pub fn get_node_mut(&mut self, node_id: &NodeHandle) -> Option<&mut Node> {
         self.node_arena.get_mut(node_id)
     }
 
-    pub fn get_node_mut_forcely(&mut self, node_id: &NodeId) -> &mut Node {
+    pub fn get_node_mut_forcely(&mut self, node_id: &NodeHandle) -> &mut Node {
         self.node_arena.get_mut_forcely(node_id)
     }
 
@@ -87,19 +87,19 @@ impl Scene {
     /// # Returns
     /// 
     /// * `bool` - Returns `true` if the attachment was successful, `false` otherwise.
-    pub fn attach_to_parent(&mut self, node_id: &NodeId, parent_id: NodeId) -> bool {
+    pub fn attach_to_parent(&mut self, node_id: &NodeHandle, parent_id: NodeHandle) -> bool {
         self.node_arena.attach_to_parent(parent_id, node_id)
     }
 
-    pub fn detach_from_parent(&mut self, node_id: &NodeId) -> bool {
+    pub fn detach_from_parent(&mut self, node_id: &NodeHandle) -> bool {
         self.node_arena.detach_from_parent(node_id)
     }
 
-    pub fn create_node(&mut self, name: impl Into<String>) -> NodeId {
+    pub fn create_node(&mut self, name: impl Into<String>) -> NodeHandle {
         self.node_arena.create_node(name)
     }
 
-    pub fn destroy_node(&mut self, node_id: &NodeId) {
+    pub fn destroy_node(&mut self, node_id: &NodeHandle) {
         if let Some(node) = self.node_arena.get_mut(node_id) {
             for (component_type_id, component_id) in &node.components {
                 self.component_storages.remove_component_internal(component_id, component_type_id);
@@ -108,7 +108,7 @@ impl Scene {
         }
     }
 
-    pub fn add_component<T: Component>(&mut self, node_id: &NodeId, component: T) -> Option<T>  {
+    pub fn add_component<T: Component>(&mut self, node_id: &NodeHandle, component: T) -> Option<T>  {
         if let Some(node) = self.node_arena.get_mut(node_id) {
             let component_type_id = std::any::TypeId::of::<T>();
             if let Some(old_component_id) = node.components.get(&component_type_id) {
@@ -138,7 +138,7 @@ impl Scene {
         }
     }
 
-    pub fn remove_component<T: Component>(&mut self, node_id: &NodeId) -> Option<T> {
+    pub fn remove_component<T: Component>(&mut self, node_id: &NodeHandle) -> Option<T> {
         if let Some(node) = self.node_arena.get_mut(node_id) {
             let component_type_id = std::any::TypeId::of::<T>();
             if let Some(component_id) = node.components.remove(&component_type_id) {
@@ -147,7 +147,7 @@ impl Scene {
                 } else if component_type_id == std::any::TypeId::of::<MeshRenderer>() {
                     self.cached_renderables.retain(|&id| id != *node_id);
                 } else if  component_type_id == std::any::TypeId::of::<Skybox>() {
-                    self.cached_skybox_ = INVALID_NODE_ID;
+                    self.cached_skybox_ = NodeHandle::INVALID;
                 }
                 self.component_storages.remove_component(&component_id, component_type_id)
             } else {
@@ -158,7 +158,7 @@ impl Scene {
         }
     }
 
-    pub fn get_component<T: Component>(&self, node_id: &NodeId) -> Option<&T> {
+    pub fn get_component<T: Component>(&self, node_id: &NodeHandle) -> Option<&T> {
         let component_type_id = std::any::TypeId::of::<T>();
         if let Some(node) = self.node_arena.get(node_id) && let Some(component_id) = node.components.get(&component_type_id) {
             self.component_storages.get_component(component_id)
@@ -167,7 +167,7 @@ impl Scene {
         }
     }
 
-    pub fn get_component_mut<T: Component>(&mut self, node_id: &NodeId) -> Option<&mut T> {
+    pub fn get_component_mut<T: Component>(&mut self, node_id: &NodeHandle) -> Option<&mut T> {
         let component_type_id = std::any::TypeId::of::<T>();
         if let Some(node) = self.node_arena.get(node_id) && let Some(component_id) = node.components.get(&component_type_id) {
             self.component_storages.get_component_mut(component_id)
@@ -188,7 +188,7 @@ impl Scene {
         graphics_context: &mut GraphicsContext,
         texture_sampler_manager: &mut TextureSamplerManager,
     ) {
-        if INVALID_NODE_ID != self.cached_skybox_ {
+        if NodeHandle::INVALID != self.cached_skybox_ {
             let skybox_node_id = self.cached_skybox_;
             let mut need_refresh_skybox_texture = false;
             let mut skybox_texture_handle = TextureHandle::INVALID;
@@ -213,7 +213,7 @@ impl Scene {
     }
 
     pub fn get_environment_reflection_info(&self) -> (TextureHandle, TextureHandle) {
-        if INVALID_NODE_ID != self.cached_skybox_ {
+        if NodeHandle::INVALID != self.cached_skybox_ {
             if let Some(skybox_component) = self.get_component::<Skybox>(&self.cached_skybox_) {
                 return (
                     skybox_component.reflection_cube_map,
@@ -230,7 +230,7 @@ impl Scene {
         }
     }
 
-    fn update_node_hierarchy(node_arena: &mut NodeArena, node_id: &NodeId, parent_model_matrix: Option<Mat4>) {
+    fn update_node_hierarchy(node_arena: &mut NodeArena, node_id: &NodeHandle, parent_model_matrix: Option<Mat4>) {
         let mut model_matrix = None;
         let mut children = None;
         let mut node_is_valid = false;

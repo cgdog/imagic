@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 
 use crate::{
-    core::{LogicContext, NodeId},
+    core::{LogicContext, NodeHandle},
     impl_as_any,
     math::{Vec3, spherical_coordinate::SphericalCoordinate},
     prelude::Behavior
@@ -10,7 +10,7 @@ use crate::{
 /// The target of the camera controlled by the camera controller.
 pub enum CameraTarget {
     /// The target is a node.
-    Node(NodeId),
+    Node(NodeHandle),
     /// The target is a position with type of Vec3.
     Position(Vec3),
 }
@@ -21,7 +21,7 @@ pub enum CameraTarget {
 /// - Press right mouse button and move mouse to zoom.
 /// - Press middle mouse button and move to pan.
 pub struct CameraController {
-    pub camera_node_id: NodeId,
+    pub camera_node_id: NodeHandle,
     /// camera target
     pub target: CameraTarget,
     pub distance: f32,
@@ -39,7 +39,7 @@ pub struct CameraController {
 }
 
 impl CameraController {
-    pub fn new(camera_node_id: NodeId, target: CameraTarget) -> Self {
+    pub fn new(camera_node_id: NodeHandle, target: CameraTarget) -> Self {
         Self {
             camera_node_id,
             target,

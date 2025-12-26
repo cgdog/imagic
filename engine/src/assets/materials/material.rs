@@ -4,7 +4,6 @@ use std::{
 };
 
 use ahash::AHasher;
-use log::info;
 
 use crate::{
     RR_new, assets::{
@@ -24,6 +23,9 @@ use crate::{
     }, math::{IVec4, Mat3, Mat4, UVec4, Vec4, color::Color}, types::{HashID, RR}
 };
 
+pub enum MaterialTag {}
+pub type MaterialHandle = crate::types::Handle<MaterialTag>;
+
 #[derive(PartialEq, Clone)]
 pub struct Material {
     pub render_state: RenderState,
@@ -41,7 +43,7 @@ impl IAsset for Material {}
 #[allow(unused)]
 impl Material {
     pub fn new(shader: RR<Shader>) -> RR<Self> {
-        info!("shader hash: {}", shader.borrow().hash);
+        log::info!("shader hash: {}", shader.borrow().hash);
         let mut hasher = AHasher::default();
         let shader_hash = shader.borrow().hash;
         shader_hash.hash(&mut hasher);

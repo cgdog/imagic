@@ -1,7 +1,7 @@
 use imagic::prelude::*;
 
 struct MoveBehavior {
-    node_id: NodeId,
+    node_id: NodeHandle,
     cur_pos: Vec3,
     speed: f32,
     dir: f32,
@@ -10,7 +10,7 @@ struct MoveBehavior {
 }
 
 impl MoveBehavior {
-    pub fn new(node_id: NodeId) -> Self {
+    pub fn new(node_id: NodeHandle) -> Self {
         Self {
             node_id,
             cur_pos: Vec3::ZERO,

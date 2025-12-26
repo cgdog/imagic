@@ -5,6 +5,7 @@ pub mod world;
 pub mod layer;
 pub mod engine_loop;
 pub mod node_arena;
+pub mod arena;
 
 pub use engine::*;
 pub use scene::*;

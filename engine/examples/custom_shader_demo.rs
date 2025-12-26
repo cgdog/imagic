@@ -10,7 +10,7 @@ struct ColorInfo {
 
 /// Behavior to control the color change of custom shader / material.
 struct CustomShaderBehavior {
-    quad_node: NodeId,
+    quad_node: NodeHandle,
     /// Available colors.
     colors: Vec<Color>,
     cur_time: f32,
@@ -54,7 +54,7 @@ impl Behavior for CustomShaderBehavior {
 }
 
 impl CustomShaderBehavior {
-    pub fn new(node: NodeId) -> Self {
+    pub fn new(node: NodeHandle) -> Self {
         Self {
             quad_node: node,
             colors: vec![Color::BLUE, Color::RED, Color::PURPLE, Color::new(1.0, 0.0784, 0.5765, 1.0)],

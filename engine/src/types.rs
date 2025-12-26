@@ -12,22 +12,32 @@ pub type OWR<T> = Option<std::rc::Weak<std::cell::RefCell<T>>>;
 pub type HashID = u64;
 
 /// Handle type for resource.
-#[repr(transparent)]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Handle<T> {
-    id: u64,
+    pub(crate) id: u64,
+    pub(crate) generation: u32,
     _marker: std::marker::PhantomData<T>,
 }
 
 impl<T> Handle<T> {
     pub const INVALID: Self = Self {
         id: u64::MAX,
+        generation: 0,
         _marker: std::marker::PhantomData,
     };
 
     pub(crate) fn new(id: u64) -> Self {
         Self {
             id,
+            generation: 0,
+            _marker: std::marker::PhantomData,
+        }
+    }
+
+    pub(crate) fn new_with_generation(id: u64, generation: u32) -> Self {
+        Self {
+            id,
+            generation,
             _marker: std::marker::PhantomData,
         }
     }

@@ -8,7 +8,7 @@ use crate::{
         TextureHandle, model_loader::ModelLoaderTrait, sub_mesh::SubMesh,
         vertex_attribute::VertexAttributes, vertex_index::IndexData,
     },
-    core::{Engine, NodeId},
+    core::{Engine, NodeHandle},
     math::{Color, Vec2, Vec3, Vec4},
     prelude::{MeshRenderer, PolygonMode},
     types::RR,
@@ -28,7 +28,7 @@ impl ModelLoaderTrait for GLTFLoader {
         &self,
         engine: &mut Engine,
         path: &str,
-    ) -> Result<NodeId, Box<dyn std::error::Error>> {
+    ) -> Result<NodeHandle, Box<dyn std::error::Error>> {
         let (document, buffers, images) = gltf::import(path)?;
         for gltf_scene in document.scenes() {
             let scene_name = if let Some(scene_name) = gltf_scene.name() {
@@ -62,7 +62,7 @@ impl GLTFLoader {
         engine: &mut Engine,
         document: &gltf::Document,
         gltf_node: &gltf::Node,
-        parent: &NodeId,
+        parent: &NodeHandle,
         buffers: &Vec<gltf::buffer::Data>,
         images: &Vec<gltf::image::Data>,
     ) {
@@ -94,7 +94,7 @@ impl GLTFLoader {
         &self,
         engine: &mut Engine,
         document: &gltf::Document,
-        node: &NodeId,
+        node: &NodeHandle,
         gltf_mesh: gltf::Mesh,
         buffers: &Vec<gltf::buffer::Data>,
         images: &Vec<gltf::image::Data>,
@@ -336,7 +336,7 @@ impl GLTFLoader {
         sub_meshes.push(sub_mesh);
     }
 
-    fn process_camera(&self, _node: &NodeId, camera: gltf::Camera) {
+    fn process_camera(&self, _node: &NodeHandle, camera: gltf::Camera) {
         let camera_index = camera.index();
         let camera_name = if let Some(camera_name) = camera.name() {
             camera_name

@@ -7,7 +7,7 @@ struct Game {
 
 struct SkyboxBehavior {
     skybox_material: RR<Material>,
-    skybox_node: NodeId,
+    skybox_node: NodeHandle,
     lod: f32,
     background_cube_map: TextureHandle,
     reflection_cube_map: TextureHandle,

@@ -38,7 +38,7 @@ impl SkyboxBuilder {
         cube_map_data: Vec<Vec<u8>>,
         texture_format: TextureFormat,
         skybox_builder_options: SkyboxBuilderOptions,
-    ) ->crate::prelude::NodeId {
+    ) ->crate::prelude::NodeHandle {
         // create cubemap texture and sampler.
         let skybox_texture_handle: TextureHandle;
         let input_texture_handle: TextureHandle;

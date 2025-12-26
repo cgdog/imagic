@@ -1,7 +1,7 @@
 use imagic::prelude::*;
 
 struct ChangeMipLevelBehavior {
-    node: NodeId,
+    node: NodeHandle,
     cur_mip_level: f32,
     cur_time: f32,
     change_threshold: f32,
@@ -9,7 +9,7 @@ struct ChangeMipLevelBehavior {
 }
 
 impl ChangeMipLevelBehavior {
-    pub fn new(node: NodeId) -> Self {
+    pub fn new(node: NodeHandle) -> Self {
         Self {
             node,
             cur_mip_level: 0.0,

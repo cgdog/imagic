@@ -28,11 +28,11 @@ struct GameBehavior {
     materials: Vec<RR<Material>>,
     is_wireframe_mode: bool,
     material_type: MaterialType,
-    primitive_ids: Vec<NodeId>,
+    primitive_ids: Vec<NodeHandle>,
 }
 
 impl GameBehavior {
-    pub fn new(material: Vec<RR<Material>>, primitive_ids: Vec<NodeId>, material_type: MaterialType) -> Self {
+    pub fn new(material: Vec<RR<Material>>, primitive_ids: Vec<NodeHandle>, material_type: MaterialType) -> Self {
         Self {
             materials: material,
             is_wireframe_mode: false,
@@ -184,7 +184,7 @@ impl Game {
         self.engine.run();
     }
 
-    fn create_camera(&mut self) -> NodeId {
+    fn create_camera(&mut self) -> NodeHandle {
         let current_scene = self.engine.world.current_scene_mut();
         let camera_node = current_scene.create_node("Main Camera");
         let mut camera = Camera::default();
@@ -201,7 +201,7 @@ impl Game {
         camera_node
     }
 
-    fn create_quad(&mut self, cur_material: RR<Material>) -> NodeId {
+    fn create_quad(&mut self, cur_material: RR<Material>) -> NodeHandle {
         let scene = self.engine.world.current_scene_mut();
         let quad_node = scene.create_node("quad");
         {
@@ -222,7 +222,7 @@ impl Game {
         quad_node
     }
 
-    fn create_cuboid(&mut self, cur_material: RR<Material>) -> NodeId {
+    fn create_cuboid(&mut self, cur_material: RR<Material>) -> NodeHandle {
         let scene = self.engine.world.current_scene_mut();
         let cuboid_node =
             scene.create_node("Cuboid");
@@ -237,7 +237,7 @@ impl Game {
         cuboid_node
     }
 
-    fn create_sphere(&mut self, cur_material: RR<Material>) -> NodeId {
+    fn create_sphere(&mut self, cur_material: RR<Material>) -> NodeHandle {
         let scene = self.engine.world.current_scene_mut();
         let uv_sphere_node =
             scene.create_node("UVSphere");

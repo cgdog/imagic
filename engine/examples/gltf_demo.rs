@@ -84,7 +84,7 @@ fn load_model(engine: &mut Engine) {
     }
 }
 
-fn get_material_in_children(scene: & Scene, node: &NodeId) -> ORR<Material> {
+fn get_material_in_children(scene: & Scene, node: &NodeHandle) -> ORR<Material> {
     if let Some(mesh_renderer) = scene.get_component::<MeshRenderer>(node) {
         return Some(mesh_renderer.materials[0].clone());
     } else if let Some(node) = &scene.get_node(&node) && let Some(children) = &node.children {

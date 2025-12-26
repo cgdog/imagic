@@ -2,7 +2,7 @@ use imagic::prelude::*;
 
 struct Game {
     engine: Box::<Engine>,
-     _sphere: NodeId,
+     _sphere: NodeHandle,
 }
 
 struct GameBehavior {
@@ -73,7 +73,7 @@ impl Game {
         pbr_material
     }
 
-    fn create_sphere(world: &mut World, material: RR<Material>) -> NodeId {
+    fn create_sphere(world: &mut World, material: RR<Material>) -> NodeHandle {
         let scene = world.current_scene_mut();
         let uv_sphere_node = scene.create_node("UVSphere");
         let mesh: Mesh = UVSphere::default().into();

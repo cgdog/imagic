@@ -4,7 +4,7 @@ use crate::{
     assets::{
         BuiltinGlobalShaderFeatures, Sampler, Texture, TextureFormat, TextureHandle, TextureSamplerManager, shaders::shader_property::BuiltinShaderUniformNames
     }, components::{camera::Camera, mesh_renderer::MeshRenderer},
-    core::{LayerMask, NodeId, SH, scene::Scene}, graphics::{
+    core::{LayerMask, NodeHandle, SH, scene::Scene}, graphics::{
         bind_group::BindGroupID, graphics_context::GraphicsContext, render_states::RenderQueue,
         uniform::{BuiltinUniforms, CameraUniformSyncFlags, GlobalUniformSyncFlags}
     }, math::Vec4, renderer::{
@@ -152,7 +152,7 @@ impl World {
         texture_sampler_manager: &mut TextureSamplerManager,
         time: &mut Time,
         camera_render_data: &mut CameraRenderData,
-        cached_renderables: &Vec<NodeId>,
+        cached_renderables: &Vec<NodeHandle>,
         global_uniform_sync_flags: &mut GlobalUniformSyncFlags,
         reflection_map: TextureHandle,
         brdf_lut: TextureHandle,
