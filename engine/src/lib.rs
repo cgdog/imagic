@@ -1,3 +1,7 @@
+//！**Imagic** is a thin rendering framework, implemented by Rust and WGPU.
+//！It is designed to be simple, efficient, and easy to use.
+
+
 pub mod core;
 pub mod graphics;
 pub mod math;
