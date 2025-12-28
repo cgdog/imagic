@@ -313,4 +313,8 @@ impl GraphicsContext {
         let bind_group_id = self.bind_group_manager.add(bind_group);
         bind_group_id
     }
+
+    pub(crate) fn remove_bind_group(&mut self, bind_group_id: &BindGroupID) {
+        self.bind_group_manager.remove(bind_group_id);
+    }
 }

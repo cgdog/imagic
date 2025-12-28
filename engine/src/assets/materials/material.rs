@@ -19,7 +19,7 @@ use crate::{
         bind_group::BindGroupID,
         graphics_context::GraphicsContext,
         render_states::RenderState, uniform::Uniforms,
-    }, math::{IVec4, Mat3, Mat4, UVec4, Vec4, color::Color}, types::HashID
+    }, math::{IVec4, Mat3, Mat4, UVec4, Vec4, color::Color}, prelude::bind_group::INVALID_BINDGROUP_ID, types::HashID
 };
 
 /// Material tag used to declare MaterialHandle.
@@ -189,7 +189,9 @@ impl Material {
         self.uniforms.sync_properties(graphics_context, texture_sampler_manager);
         // info!("lxy before create bind groups");
         if self.uniforms.should_create_bind_group() || self.is_texture_changed {
-            // TODO: add logic to remove old bind group.
+            if (self.uniforms.bind_group_id != INVALID_BINDGROUP_ID) {
+                graphics_context.remove_bind_group(&self.uniforms.bind_group_id);
+            }
             self.create_bind_group(graphics_context, texture_sampler_manager, shader_manager);
             self.is_texture_changed = false;
         }
