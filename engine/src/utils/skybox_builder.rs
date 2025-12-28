@@ -65,18 +65,19 @@ impl SkyboxBuilder {
         }
 
         // create skybox material
-        let shader_skybox = engine.shader_manager.get_builtin_skybox_shader();
-        let material_skybox = Material::new(shader_skybox);
+        let (_, shader_skybox_handle) = engine.shader_manager.get_builtin_skybox_shader();
+        let mut material_skybox = Material::new(*shader_skybox_handle, &mut engine.shader_manager);
         {
-            let mut material_skybox_mut_ref = material_skybox.borrow_mut();
             if is_inpunt_cube_map {
-                material_skybox_mut_ref.set_texture("skybox_cube_texture", skybox_texture_handle);
+                material_skybox.set_texture("skybox_cube_texture", skybox_texture_handle);
             }
-            material_skybox_mut_ref.set_sampler("skybox_cube_sampler", skybox_sampler);
+            material_skybox.set_sampler("skybox_cube_sampler", skybox_sampler);
             // note here.
-            material_skybox_mut_ref.render_state.cull_mode = CullMode::Front;
-            material_skybox_mut_ref.render_state.render_queue = RenderQueue::Skybox;
+            material_skybox.render_state.cull_mode = CullMode::Front;
+            material_skybox.render_state.render_queue = RenderQueue::Skybox;
         }
+
+        let material_skybox_handle = engine.material_manager.add_material(material_skybox);
 
         // create cuboid that represents Skybox geometry.
         let scene = engine.world.current_scene_mut();
@@ -84,7 +85,7 @@ impl SkyboxBuilder {
         {
             let mesh: Mesh = Cuboid::default().into();
             let mesh = RR_new!(mesh);
-            let mesh_renderer = MeshRenderer::new(mesh, vec![material_skybox]);
+            let mesh_renderer = MeshRenderer::new(mesh, vec![material_skybox_handle]);
             scene.add_component(&cuboid_node, mesh_renderer);
             let skybox_component = Skybox::new(input_texture_handle, is_inpunt_cube_map);
             scene.add_component(&cuboid_node, skybox_component);

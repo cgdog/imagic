@@ -1,13 +1,14 @@
 use imagic::prelude::*;
 
 pub struct GameBehavior {
-    material: RR<Material>,
+    material: MaterialHandle,
     metallic_roughness_ao: Vec4,
 }
 
 impl GameBehavior {
-    pub fn new(material: RR<Material>) -> Self {
-        let metallic_roughness_ao = if let Some(mra) = material.borrow().get_vec4f(BuiltinShaderUniformNames::_METALLIC_ROUGHNESS_AO) {
+    pub fn new(material: MaterialHandle, engine: &mut Engine) -> Self {
+        let metallic_roughness_ao = if let Some(mra) = engine.material_manager
+            .get_material_mut_forcely(&material).get_vec4f(BuiltinShaderUniformNames::_METALLIC_ROUGHNESS_AO) {
             mra
         } else {
             Vec4::new(1.0, 1.0, 1.0, 1.0)
@@ -29,7 +30,8 @@ impl Behavior for GameBehavior {
                     .text("metallic")
                     .step_by(0.1),
             ).changed() {
-                self.material.borrow_mut().set_vec4f(BuiltinShaderUniformNames::_METALLIC_ROUGHNESS_AO, self.metallic_roughness_ao);
+                logic_context.material_manager.get_material_mut_forcely(&self.material)
+                    .set_vec4f(BuiltinShaderUniformNames::_METALLIC_ROUGHNESS_AO, self.metallic_roughness_ao);
             }
 
             if ui.add(
@@ -37,7 +39,8 @@ impl Behavior for GameBehavior {
                     .text("roughness")
                     .step_by(0.1),
             ).changed() {
-                self.material.borrow_mut().set_vec4f(BuiltinShaderUniformNames::_METALLIC_ROUGHNESS_AO, self.metallic_roughness_ao);
+                logic_context.material_manager.get_material_mut_forcely(&self.material)
+                    .set_vec4f(BuiltinShaderUniformNames::_METALLIC_ROUGHNESS_AO, self.metallic_roughness_ao);
             }
         });
     }
@@ -74,7 +77,7 @@ fn load_model(engine: &mut Engine) {
         Ok(node) => {
             log::info!("Model loaded successfully: {:?}", engine.world.current_scene().get_node_forcely(&node).name);
             if let Some(material) = get_material_in_children(engine.world.current_scene(), &node) {
-                let game_behavior = GameBehavior::new(material);
+                let game_behavior = GameBehavior::new(material, engine);
                 engine.add_behavior(game_behavior);
             } else {
                 log::warn!("Model has no material.");
@@ -84,7 +87,7 @@ fn load_model(engine: &mut Engine) {
     }
 }
 
-fn get_material_in_children(scene: & Scene, node: &NodeHandle) -> ORR<Material> {
+fn get_material_in_children(scene: & Scene, node: &NodeHandle) -> Option<MaterialHandle> {
     if let Some(mesh_renderer) = scene.get_component::<MeshRenderer>(node) {
         return Some(mesh_renderer.materials[0].clone());
     } else if let Some(node) = &scene.get_node(&node) && let Some(children) = &node.children {

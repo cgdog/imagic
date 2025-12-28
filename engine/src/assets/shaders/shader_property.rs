@@ -58,6 +58,7 @@ impl From<ShaderPropertyBinding> for wgpu::naga::ResourceBinding {
     }
 }
 
+/// A property of a shader, such as a uniform, storage buffer, texture, or sampler.
 #[derive(PartialEq, Clone, Hash)]
 pub struct ShaderProperty {
     pub name: String,

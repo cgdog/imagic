@@ -1,9 +1,9 @@
-use std::{cell::RefMut, collections::HashMap, rc::Rc};
+use std::{collections::HashMap, rc::Rc};
 
 use log::info;
 use wgpu::{ColorTargetState, Device, VertexBufferLayout};
 
-use crate::{assets::materials::material::Material, graphics::{graphics_context::GraphicsLimits, render_states::PolygonMode}};
+use crate::{assets::{Shader, materials::material::Material}, graphics::{graphics_context::GraphicsLimits, render_states::PolygonMode}};
 
 pub type RenderPipeLine = wgpu::RenderPipeline;
 
@@ -55,7 +55,8 @@ impl RenderPipelineManager {
     pub(crate) fn create_render_pipeline(
         &mut self,
         pipeline_hash: PipelineHashType,
-        material: &RefMut<Material>,
+        material: &Material,
+        shader: &Shader,
         vertex_buffer_layouts: &[VertexBufferLayout],
         targets: &[Option<ColorTargetState>],
         depth_format: wgpu::TextureFormat,
@@ -63,12 +64,12 @@ impl RenderPipelineManager {
         if cfg!(debug_assertions) {
             info!("Create render pipeline with hash: {}", pipeline_hash);
         }
-        let shader = material.get_shader();
+        
         let pipeline_layout =
             self.device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                     label: None,
-                    bind_group_layouts: &material.get_shader().borrow().get_bind_group_layouts(),
+                    bind_group_layouts: &shader.get_bind_group_layouts(),
                     push_constant_ranges: &[],
                 });
         let polygon_mode = if material.render_state.polygon_mode == PolygonMode::Fill {
@@ -101,13 +102,13 @@ impl RenderPipelineManager {
                     label: Some("create pipeline"),
                     layout: Some(&pipeline_layout),
                     vertex: wgpu::VertexState {
-                        module: shader.borrow().get_shader_module(),
+                        module: shader.get_shader_module(),
                         entry_point: Some("vs_main"),
                         buffers: vertex_buffer_layouts,
                         compilation_options: Default::default(),
                     },
                     fragment: Some(wgpu::FragmentState {
-                        module: shader.borrow().get_shader_module(),
+                        module: shader.get_shader_module(),
                         entry_point: Some("fs_main"),
                         compilation_options: Default::default(),
                         targets: targets,

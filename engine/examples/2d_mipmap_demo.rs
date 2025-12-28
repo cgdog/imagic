@@ -32,9 +32,8 @@ impl Behavior for ChangeMipLevelBehavior {
             }
 
             if let Some(renderer) = logic_context.world.current_scene_mut().get_component_mut::<MeshRenderer>(&self.node) {
-                renderer.materials[0]
-                    .borrow_mut()
-                    .set_float("lod", self.cur_mip_level);
+                let material_mut_ref = logic_context.material_manager.get_material_mut_forcely(&renderer.materials[0]);
+                material_mut_ref.set_float("lod", self.cur_mip_level);
             }
         }
     }
@@ -64,26 +63,24 @@ fn main() {
         FilterMode::Linear,
     );
 
-    let shader = Shader::new(
+    let shader_handle = engine.shader_manager.create_shader(
         include_str!("shaders/show_mipmaps_2d.wgsl"),
         "custom/show_mipmaps_2d".to_owned(),
     );
     let quad_node = engine.world.current_scene_mut().create_node("quad");
-    {
-        let mesh: Mesh = Quad::default().into();
-        let mesh = RR_new!(mesh);
+    let mesh: Mesh = Quad::default().into();
+    let mesh = RR_new!(mesh);
 
-        let show_mipmap_material = Material::new(shader);
-        {
-            let mut show_mipmap_material_mut_ref = show_mipmap_material.borrow_mut();
-            show_mipmap_material_mut_ref.set_albedo_color(Color::new(1.0, 1.0, 1.0, 1.0));
-            show_mipmap_material_mut_ref.set_albedo_map(color_texture_handle);
-            show_mipmap_material_mut_ref.set_albedo_map_sampler(color_map_sampler);
-            show_mipmap_material_mut_ref.set_float("lod", 0.0);
-        }
-        let mesh_renderer = MeshRenderer::new(mesh, vec![show_mipmap_material]);
-        engine.world.current_scene_mut().add_component(&quad_node, mesh_renderer);
-    }
+    let show_mipmap_material_handle = engine.material_manager.create_material(shader_handle, &mut engine.shader_manager);
+    
+    let show_mipmap_material_mut_ref = engine.material_manager.get_material_mut_forcely(&show_mipmap_material_handle);
+    show_mipmap_material_mut_ref.set_albedo_color(Color::new(1.0, 1.0, 1.0, 1.0));
+    show_mipmap_material_mut_ref.set_albedo_map(color_texture_handle);
+    show_mipmap_material_mut_ref.set_albedo_map_sampler(color_map_sampler);
+    show_mipmap_material_mut_ref.set_float("lod", 0.0);
+    
+    let mesh_renderer = MeshRenderer::new(mesh, vec![show_mipmap_material_handle]);
+    engine.world.current_scene_mut().add_component(&quad_node, mesh_renderer);
 
     let camera_node = engine.world.current_scene_mut().create_node("Main Camera");
     let mut camera = Camera::default();

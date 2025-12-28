@@ -25,16 +25,16 @@ impl MaterialType {
 }
 
 struct GameBehavior {
-    materials: Vec<RR<Material>>,
+    materials: Vec<MaterialHandle>,
     is_wireframe_mode: bool,
     material_type: MaterialType,
     primitive_ids: Vec<NodeHandle>,
 }
 
 impl GameBehavior {
-    pub fn new(material: Vec<RR<Material>>, primitive_ids: Vec<NodeHandle>, material_type: MaterialType) -> Self {
+    pub fn new(materials: Vec<MaterialHandle>, primitive_ids: Vec<NodeHandle>, material_type: MaterialType) -> Self {
         Self {
-            materials: material,
+            materials,
             is_wireframe_mode: false,
             material_type,
             primitive_ids,
@@ -42,15 +42,17 @@ impl GameBehavior {
     }
 
     pub fn change_material(&mut self, logic_context: &mut LogicContext) {
-        let material = self.materials[self.material_type as usize].clone();
+        let material_handle = &self.materials[self.material_type as usize];
+        let material = logic_context.material_manager.get_material_mut_forcely(material_handle);
         if self.is_wireframe_mode {
-            material.borrow_mut().render_state.polygon_mode = PolygonMode::Line;
+            material.render_state.polygon_mode = PolygonMode::Line;
         } else {
-            material.borrow_mut().render_state.polygon_mode = PolygonMode::Fill;
+            material.render_state.polygon_mode = PolygonMode::Fill;
         }
+        material.mark_dirty();
         self.primitive_ids.iter().for_each(|node_id| {
             let mesh_renderer = logic_context.world.current_scene_mut().get_component_mut::<MeshRenderer>(node_id).unwrap();
-            mesh_renderer.materials[0] = material.clone();
+            mesh_renderer.materials[0] = *material_handle;
         });
     }
 }
@@ -69,15 +71,15 @@ impl Behavior for GameBehavior {
                 .checkbox(&mut self.is_wireframe_mode, "Wireframe Mode")
                 .changed()
             {
+                let material_mut_ref = logic_context.material_manager.get_material_mut_forcely(&self.materials[self.material_type as usize]);
                 if self.is_wireframe_mode {
                     log::info!("Switch to Wireframe Mode");
-                    self.materials[self.material_type as usize].borrow_mut().render_state.polygon_mode = PolygonMode::Line;
-                    self.materials[self.material_type as usize].borrow_mut().mark_dirty();
+                    material_mut_ref.render_state.polygon_mode = PolygonMode::Line;
                 } else {
                     log::info!("Switch to Fill Mode");
-                    self.materials[self.material_type as usize].borrow_mut().render_state.polygon_mode = PolygonMode::Fill;
-                    self.materials[self.material_type as usize].borrow_mut().mark_dirty();
+                    material_mut_ref.render_state.polygon_mode = PolygonMode::Fill;
                 }
+                material_mut_ref.mark_dirty();
             }
             let old_material_type = self.material_type;
             let _response = egui::ComboBox::from_label("Material Type")
@@ -109,12 +111,12 @@ impl Game {
         }
     }
 
-    fn create_material(engine: &mut Engine) -> Vec<RR<Material>> {
+    fn create_material(engine: &mut Engine) -> Vec<MaterialHandle> {
         let mut materials = Vec::new();
         {
             let shader_show_uv =
-                Shader::new(include_str!("shaders/show_uv.wgsl"), "show_uv".to_owned());
-            let material_show_uv = Material::new(shader_show_uv);
+                engine.shader_manager.create_shader(include_str!("shaders/show_uv.wgsl"), "show_uv".to_owned());
+            let material_show_uv = engine.material_manager.create_material(shader_show_uv, &mut engine.shader_manager);
             // material_show_uv.borrow_mut().render_state.cull_mode = CullMode::None;
             materials.push(material_show_uv);
         }
@@ -127,23 +129,22 @@ impl Game {
                 true,
             );
             
-            let shader = engine.shader_manager.get_builtin_unlit_shader();
-            let unlit_material = Material::new(shader);
-            unlit_material
-                .borrow_mut()
-                .set_albedo_color(Color::new(1.0, 1.0, 1.0, 1.0));
-            unlit_material.borrow_mut().set_albedo_map(albedo_map);
-            materials.push(unlit_material);
+            let (_, shader_handle) = engine.shader_manager.get_builtin_unlit_shader();
+            let unlit_material_handle = engine.material_manager.create_material(*shader_handle, &mut engine.shader_manager);
+            let unlit_material = engine.material_manager.get_material_mut_forcely(&unlit_material_handle);
+            unlit_material.set_albedo_color(Color::new(1.0, 1.0, 1.0, 1.0));
+            unlit_material.set_albedo_map(albedo_map);
+            materials.push(unlit_material_handle);
         }
         {
-            let shader = engine.shader_manager.get_builtin_pbr_shader();
-            let pbr_material = Material::new(shader);
+            let (_, shader_handle) = engine.shader_manager.get_builtin_pbr_shader();
+            let pbr_material_handle = engine.material_manager.create_material(*shader_handle, &mut engine.shader_manager);
             {
-                let mut pbr_material_mut_ref = pbr_material.borrow_mut();
+                let pbr_material_mut_ref = engine.material_manager.get_material_mut_forcely(&pbr_material_handle);
                 pbr_material_mut_ref.set_vec4f(BuiltinShaderUniformNames::_ALBEDO_COLOR, Vec4::new(1.0, 1.0, 1.0, 1.0));
                 pbr_material_mut_ref.set_vec4f(BuiltinShaderUniformNames::_METALLIC_ROUGHNESS_AO, Vec4::new(0.0, 1.0, 1.0, 1.0));
             }
-            materials.push(pbr_material);
+            materials.push(pbr_material_handle);
         }
         materials
     }
@@ -159,12 +160,12 @@ impl Game {
         let material_type = MaterialType::Pbr;
         let materials = Self::create_material(&mut self.engine);
 
-        let cur_material = materials[material_type as usize].clone();
+        let cur_material_handle = materials[material_type as usize];
 
         let _camera_node = self.create_camera();
-        let quad_node = self.create_quad(cur_material.clone());
-        let cuboid_node = self.create_cuboid(cur_material.clone());
-        let sphere_node = self.create_sphere(cur_material);
+        let quad_node = self.create_quad(cur_material_handle);
+        let cuboid_node = self.create_cuboid(cur_material_handle);
+        let sphere_node = self.create_sphere(cur_material_handle);
         let mut primitive_ids = Vec::new();
         primitive_ids.push(quad_node);
         primitive_ids.push(cuboid_node);
@@ -201,7 +202,7 @@ impl Game {
         camera_node
     }
 
-    fn create_quad(&mut self, cur_material: RR<Material>) -> NodeHandle {
+    fn create_quad(&mut self, cur_material: MaterialHandle) -> NodeHandle {
         let scene = self.engine.world.current_scene_mut();
         let quad_node = scene.create_node("quad");
         {
@@ -222,7 +223,7 @@ impl Game {
         quad_node
     }
 
-    fn create_cuboid(&mut self, cur_material: RR<Material>) -> NodeHandle {
+    fn create_cuboid(&mut self, cur_material: MaterialHandle) -> NodeHandle {
         let scene = self.engine.world.current_scene_mut();
         let cuboid_node =
             scene.create_node("Cuboid");
@@ -237,7 +238,7 @@ impl Game {
         cuboid_node
     }
 
-    fn create_sphere(&mut self, cur_material: RR<Material>) -> NodeHandle {
+    fn create_sphere(&mut self, cur_material: MaterialHandle) -> NodeHandle {
         let scene = self.engine.world.current_scene_mut();
         let uv_sphere_node =
             scene.create_node("UVSphere");

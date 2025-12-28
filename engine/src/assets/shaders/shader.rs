@@ -5,7 +5,6 @@ use log::info;
 use wgpu::{BindGroupLayout, BindGroupLayoutEntry, ShaderModule};
 
 use crate::{
-    RR_new,
     assets::{
         asset::IAsset,
         shaders::{
@@ -14,10 +13,9 @@ use crate::{
         },
     },
     graphics::graphics_context::GraphicsContext,
-    types::RR,
 };
 
-pub type ShaderID = u64;
+/// Map of shader property name to ShaderProperty.
 pub type ShaderPropertyMap = ahash::AHashMap<String, ShaderProperty>;
 
 #[derive(Clone)]
@@ -242,17 +240,29 @@ impl ShaderProperties {
     }
 }
 
+/// Shader tag used to declare ShaderHandle.
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+pub enum ShaderTag {}
+
+/// Handle type for Shader.
+pub type ShaderHandle = crate::types::Handle<ShaderTag>;
+
+/// Representation of a shader asset and instance.
 #[derive(Clone)]
 pub struct Shader {
+    /// The shader module.
     pub(crate) shader_module: Option<wgpu::ShaderModule>,
-    // pub source: String,
+    /// The name of the shader.
     pub name: String,
+    /// The properties defined in the shader.
     pub(crate) shader_properties: ShaderProperties,
     /// Has builtin uniforms in this shader?
     pub(crate) builtin_uniform_flags: BuilinUniformFlags,
-    pub hash: ShaderID,
-    // pub(crate) bind_group_layouts: Vec<BindGroupLayout>,
+    /// Unique hash of the shader source code.
+    pub hash: u64,
+    /// Whether the shader has been initialized.
     pub(crate) is_inited: bool,
+    /// The Naga module.
     pub(crate) naga_module: Option<wgpu::naga::Module>,
 }
 
@@ -272,7 +282,7 @@ impl PartialEq for Shader {
 impl IAsset for Shader {}
 
 impl Shader {
-    pub fn new(source: &str, name: String) -> RR<Self> {
+    pub(crate) fn new(source: &str, name: String) -> Self {
         let mut hasher = AHasher::default();
         let (shader_properties, _max_bind_group, naga_module, builtin_uniform_flags) =
             parse_shader_module(&source, &mut hasher);
@@ -289,7 +299,7 @@ impl Shader {
             is_inited: false,
             naga_module: Some(naga_module),
         };
-        RR_new!(shader)
+        shader
     }
 
     pub(crate) fn init(&mut self, graphics_context: &mut GraphicsContext) {

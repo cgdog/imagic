@@ -6,7 +6,7 @@ struct Game {
 }
 
 struct SkyboxBehavior {
-    skybox_material: RR<Material>,
+    skybox_material: MaterialHandle,
     skybox_node: NodeHandle,
     lod: f32,
     background_cube_map: TextureHandle,
@@ -17,37 +17,43 @@ struct SkyboxBehavior {
 impl Behavior for SkyboxBehavior {
     impl_as_any!();
 
-    fn on_start(&mut self, _logic_context: &mut LogicContext) {
-        if let Some(mesh_renderer) = _logic_context.world.current_scene_mut().get_component_mut::<MeshRenderer>(&self.skybox_node) {
-            mesh_renderer.materials[0] = self.skybox_material.clone();
+    fn on_start(&mut self, logic_context: &mut LogicContext) {
+        if let Some(mesh_renderer) = logic_context.world.current_scene_mut().get_component_mut::<MeshRenderer>(&self.skybox_node) {
+            mesh_renderer.materials[0] = self.skybox_material;
         }
 
-        if let Some(skybox_component) = _logic_context.world.current_scene().get_component::<Skybox>(&self.skybox_node) {
+        if let Some(skybox_component) = logic_context.world.current_scene().get_component::<Skybox>(&self.skybox_node) {
             self.background_cube_map = skybox_component.background_cube_map;
             self.reflection_cube_map = skybox_component.reflection_cube_map;
-            self.skybox_material.borrow_mut().set_texture("skybox_cube_texture", self.background_cube_map);
-            self.skybox_material.borrow_mut().render_state.cull_mode = CullMode::Front;
+            let material_mut_ref = logic_context.material_manager.get_material_mut_forcely(&self.skybox_material);
+            material_mut_ref.set_texture("skybox_cube_texture", self.background_cube_map);
+            material_mut_ref.render_state.cull_mode = CullMode::Front;
+            material_mut_ref.set_float("lod", self.lod);
+            material_mut_ref.mark_dirty();
         }
-        self.skybox_material.borrow_mut().set_float("lod", self.lod);
     }
 
-    fn on_gui(&mut self, _logic_context: &mut LogicContext, ctx: &egui::Context) {
+    fn on_gui(&mut self, logic_context: &mut LogicContext, ctx: &egui::Context) {
         egui::Window::new("Skybox LOD Control").show(ctx, |ui| {
             if ui.add(
                 egui::Slider::new(&mut self.lod, 0.0..=7.0)
                     .text("Skybox LOD")
                     .step_by(1.0),
             ).changed() {
-                self.skybox_material.borrow_mut().set_float("lod", self.lod);
+                logic_context.material_manager.get_material_mut_forcely(&self.skybox_material).set_float("lod", self.lod);
             }
             if ui.add(egui::RadioButton::new(self.show_background_cube_map, "Show background map")).clicked() {
                 self.show_background_cube_map = true;
-                self.skybox_material.borrow_mut().set_texture("skybox_cube_texture", self.background_cube_map);
+                let material_mut = logic_context.material_manager.get_material_mut_forcely(&self.skybox_material);
+                material_mut.set_texture("skybox_cube_texture", self.background_cube_map);
+                material_mut.mark_dirty();
                 log::warn!("Switched to background cube map");
             }
             if ui.add(egui::RadioButton::new(!self.show_background_cube_map, "Show reflection map")).clicked() {
                 self.show_background_cube_map = false;
-                self.skybox_material.borrow_mut().set_texture("skybox_cube_texture", self.reflection_cube_map);
+                let material_mut = logic_context.material_manager.get_material_mut_forcely(&self.skybox_material);
+                material_mut.set_texture("skybox_cube_texture", self.reflection_cube_map);
+                material_mut.mark_dirty();
                 log::warn!("Switched to reflection cube map");
             }
         });
@@ -76,8 +82,8 @@ impl Game {
         );
 
         let custom_skybox_shader =
-            Shader::new(include_str!("./shaders/custom_skybox.wgsl"), "custom_skybox".to_owned());
-        let skybox_material = Material::new(custom_skybox_shader);
+            self.engine.shader_manager.create_shader(include_str!("./shaders/custom_skybox.wgsl"), "custom_skybox".to_owned());
+        let skybox_material = self.engine.material_manager.create_material(custom_skybox_shader, &mut self.engine.shader_manager);
         let skybox_behavior = SkyboxBehavior {
             skybox_material: skybox_material,
             skybox_node,

@@ -1,7 +1,6 @@
 use crate::{
     assets::{
-        Texture, TextureHandle, TextureSamplerManager,
-        environment::{ibldata::IBLData, skybox::Skybox},
+        MaterialManager, ShaderManager, Texture, TextureHandle, TextureSamplerManager, environment::{ibldata::IBLData, skybox::Skybox}
     },
     components::mesh_renderer::MeshRenderer,
     core::{NodeArena, NodeHandle},
@@ -187,6 +186,8 @@ impl Scene {
         &mut self,
         graphics_context: &mut GraphicsContext,
         texture_sampler_manager: &mut TextureSamplerManager,
+        shader_manager: &mut ShaderManager,
+        material_manager: &mut MaterialManager,
     ) {
         if NodeHandle::INVALID != self.cached_skybox_ {
             let skybox_node_id = self.cached_skybox_;
@@ -196,17 +197,16 @@ impl Scene {
                 && skybox_component.should_init()
             {
                 need_refresh_skybox_texture = true;
-                skybox_component.on_init(graphics_context, texture_sampler_manager);
+                skybox_component.on_init(graphics_context, texture_sampler_manager, shader_manager);
                 skybox_texture_handle = skybox_component.background_cube_map;
                 self.sh.sh = skybox_component.sh;
             }
             if need_refresh_skybox_texture {
                 if let Some(mesh_renderer) = self.get_component_mut::<MeshRenderer>(&skybox_node_id)
-                    && let Some(skybox_material) = mesh_renderer.materials.first()
+                    && let Some(skybox_material_handle) = mesh_renderer.materials.first()
+                    && let Some(skybox_material) = material_manager.get_material_mut(skybox_material_handle)
                 {
-                    skybox_material
-                        .borrow_mut()
-                        .set_texture("skybox_cube_texture", skybox_texture_handle);
+                    skybox_material.set_texture("skybox_cube_texture", skybox_texture_handle);
                 }
             }
         }

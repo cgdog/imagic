@@ -4,6 +4,7 @@ pub mod node;
 pub mod world;
 pub mod layer;
 pub mod engine_loop;
+pub mod engine_utils;
 pub mod node_arena;
 pub mod arena;
 

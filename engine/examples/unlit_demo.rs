@@ -63,15 +63,15 @@ fn main() {
             FilterMode::Linear,
         );
 
-        let shader = engine.shader_manager.get_builtin_unlit_shader();
+        let (_, shader) = engine.shader_manager.get_builtin_unlit_shader();
         let quad_node =engine.world.current_scene_mut().create_node("quad");
         {
             let mesh: Mesh = Quad::default().into();
             let mesh = RR_new!(mesh);
 
-            let unlit_material = Material::new(shader);
+            let unlit_material = engine.material_manager.create_material(*shader, &mut engine.shader_manager);
             {
-                let mut unlit_material_mut_ref = unlit_material.borrow_mut();
+                let unlit_material_mut_ref = engine.material_manager.get_material_mut_forcely(&unlit_material);
                 unlit_material_mut_ref.set_albedo_color(Color::new(1.0, 1.0, 1.0, 1.0));
                 unlit_material_mut_ref.set_albedo_map(color_texture_handle);
                 unlit_material_mut_ref.set_albedo_map_sampler(color_map_sampler);

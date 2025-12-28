@@ -26,14 +26,14 @@ impl Behavior for CustomShaderBehavior {
         log::info!("rt_demo behavior start");
     }
 
-    fn on_update(&mut self, engine: &mut LogicContext) {
+    fn on_update(&mut self, logic_context: &mut LogicContext) {
         if !self.change_color_over_time {
             return;
         }
-        self.cur_time += engine.time.delta();
+        self.cur_time += logic_context.time.delta();
 
         // info!("custom shader total time: {}, delta time: {}", _time.elapsed(), _time.delta());
-        if let Some(mesh_renderer) = engine.world.current_scene_mut().get_component_mut::<MeshRenderer>(&self.quad_node)
+        if let Some(mesh_renderer) = logic_context.world.current_scene_mut().get_component_mut::<MeshRenderer>(&self.quad_node)
         {
             let material = &mut mesh_renderer.materials[0];
             if self.cur_time >= self.max_time {
@@ -45,7 +45,7 @@ impl Behavior for CustomShaderBehavior {
             let color =
                 self.colors[self.cur_color_index].mix(&self.colors[next_color_index], ratio);
             // material.borrow_mut().set_color("color", color);
-            material.borrow_mut().set_struct(
+            logic_context.material_manager.get_material_mut_forcely(material).set_struct(
                 "color",
                 bytemuck::bytes_of(&ColorInfo {
                     input_color: color,
@@ -102,11 +102,11 @@ pub fn main() {
         app_name: "lxy rt demo",
     };
     let mut engine = Engine::new(engine_options);
-    let shader = Shader::new(
+    let shader = engine.shader_manager.create_shader(
         include_str!("shaders/circle.wgsl"),
         "custom/circle".to_owned(),
     );
-    let material = Material::new(shader);
+    let material = engine.material_manager.create_material(shader, &mut engine.shader_manager);
     let mesh: Mesh = Quad::default().into();
     let mesh = RR_new!(mesh);
     // material.borrow_mut().set_color("color", Color::BLUE);
@@ -160,11 +160,11 @@ pub fn main() {
     engine.world.current_scene_mut().get_node_mut_forcely(&camera_node_with_rt).transform
         .set_position(Vec3::new(0.0, 0.0, 1.5));
 
-    let shader = engine.shader_manager.get_builtin_unlit_shader();
+    let (_, shader) = engine.shader_manager.get_builtin_unlit_shader();
     let quad_node = engine.world.current_scene_mut().create_node("quad");
-    let unlit_material = Material::new(shader);
+    let unlit_material = engine.material_manager.create_material(*shader, &mut engine.shader_manager);
     {
-        let mut unlit_material_mute_ref = unlit_material.borrow_mut();
+        let unlit_material_mute_ref = engine.material_manager.get_material_mut_forcely(&unlit_material);
         unlit_material_mute_ref.set_albedo_color(Color::new(1.0, 1.0, 1.0, 1.0));
         unlit_material_mute_ref.set_albedo_map(color_attachment);
         unlit_material_mute_ref.set_albedo_map_sampler(color_map_sampler);

@@ -1,6 +1,6 @@
 use crate::{
-    assets::{ShaderManager, TextureSamplerManager},
-    core::{World},
+    assets::{MaterialManager, ShaderManager, TextureSamplerManager},
+    core::World,
     event::{event_dispatcher::EventDispatcher, events::Events},
     graphics::graphics_context::GraphicsContext,
     input::input_manager::InputManager,
@@ -34,6 +34,7 @@ pub struct LogicContext<'a> {
     pub time: &'a mut Time,
     pub performance_tracker: &'a mut PerformanceTracker,
     pub shader_manager: &'a mut ShaderManager,
+    pub material_manager: &'a mut MaterialManager,
     pub texture_sampler_manager: &'a mut TextureSamplerManager,
     pub input_manager: &'a mut InputManager,
 }
@@ -46,6 +47,7 @@ pub struct Engine {
     pub performance_tracker: PerformanceTracker,
     pub input_manager: InputManager,
     pub shader_manager: ShaderManager,
+    pub material_manager: MaterialManager,
     pub texture_sampler_manager: TextureSamplerManager,
     pub(crate) frame_renderer: FrameRenderer,
     pub(crate) global_uniforms: BuiltinUniforms,
@@ -74,6 +76,7 @@ impl Engine {
             performance_tracker: PerformanceTracker::new(),
             input_manager: InputManager::new(),
             shader_manager: ShaderManager::new(),
+            material_manager: MaterialManager::new(),
             texture_sampler_manager: TextureSamplerManager::new(),
             frame_renderer: FrameRenderer::new(),
             global_uniforms: BuiltinUniforms::new("Global".to_owned()),
@@ -105,7 +108,7 @@ impl Engine {
 
     pub(crate) fn init(&mut self, mut graphics_context: GraphicsContext) {
         self.texture_sampler_manager.init(graphics_context.device.clone(), graphics_context.queue.clone());
-        self.world.on_init(&mut graphics_context, &mut self.texture_sampler_manager, &mut self.time);
+        self.world.on_init(&mut graphics_context, &mut self.texture_sampler_manager, &mut self.shader_manager, &mut self.material_manager, &mut self.time);
         self.execute_behaviors();
         self._graphics_context = Some(graphics_context);
     }
@@ -139,13 +142,14 @@ impl Engine {
     pub(crate) fn render(&mut self) {
         match &mut self._graphics_context {
             Some(graphics_context) => {
-                self.world.generate_render_frame(graphics_context, &mut self.texture_sampler_manager,
-                    &mut self.time, &mut self.frame_renderer, &mut self.global_uniforms);
+                self.world.generate_render_frame(graphics_context, &mut self.texture_sampler_manager, &mut self.shader_manager,
+                    &mut self.material_manager, &mut self.time, &mut self.frame_renderer, &mut self.global_uniforms);
                 let mut logic_context = LogicContext {
                     world: &mut self.world,
                     time: &mut self.time,
                     performance_tracker: &mut self.performance_tracker,
                     shader_manager: &mut self.shader_manager,
+                    material_manager: &mut self.material_manager,
                     texture_sampler_manager: &mut self.texture_sampler_manager,
                     input_manager: &mut self.input_manager,
                 };
@@ -169,6 +173,7 @@ impl Engine {
                     time: &mut self.time,
                     performance_tracker: &mut self.performance_tracker,
                     shader_manager: &mut self.shader_manager,
+                    material_manager: &mut self.material_manager,
                     texture_sampler_manager: &mut self.texture_sampler_manager,
                     input_manager: &mut self.input_manager,
                 };
@@ -186,6 +191,7 @@ impl Engine {
             time: &mut self.time,
             performance_tracker: &mut self.performance_tracker,
             shader_manager: &mut self.shader_manager,
+            material_manager: &mut self.material_manager,
             texture_sampler_manager: &mut self.texture_sampler_manager,
             input_manager: &mut self.input_manager,
         };
@@ -202,6 +208,7 @@ impl Engine {
                 time: &mut self.time,
                 performance_tracker: &mut self.performance_tracker,
                 shader_manager: &mut self.shader_manager,
+                material_manager: &mut self.material_manager,
                 texture_sampler_manager: &mut self.texture_sampler_manager,
                 input_manager: &mut self.input_manager,
             };

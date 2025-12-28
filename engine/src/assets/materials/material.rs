@@ -6,13 +6,12 @@ use std::{
 use ahash::AHasher;
 
 use crate::{
-    RR_new, assets::{
-        TextureSamplerManager, asset::IAsset, shaders::{
-            shader::Shader,
+    assets::{
+        ShaderHandle, ShaderManager, TextureSamplerManager, asset::IAsset, shaders::
             shader_property::{
                 BuiltinMaterialShaderFeatures, BuiltinShaderUniformNames,
-            },
-        }, textures::{
+            }
+        , textures::{
             sampler::SamplerHandle,
             texture::TextureHandle,
         }
@@ -20,56 +19,86 @@ use crate::{
         bind_group::BindGroupID,
         graphics_context::GraphicsContext,
         render_states::RenderState, uniform::Uniforms,
-    }, math::{IVec4, Mat3, Mat4, UVec4, Vec4, color::Color}, types::{HashID, RR}
+    }, math::{IVec4, Mat3, Mat4, UVec4, Vec4, color::Color}, types::HashID
 };
 
+/// Material tag used to declare MaterialHandle.
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum MaterialTag {}
+
+/// Handle type for Material.
 pub type MaterialHandle = crate::types::Handle<MaterialTag>;
 
+/// Material struct
 #[derive(PartialEq, Clone)]
 pub struct Material {
+    /// Render state.
     pub render_state: RenderState,
-    pub(crate) shader: RR<Shader>,
+    /// Shader handle.
+    pub shader_handle: ShaderHandle,
     material_hash: HashID,
     is_inited: bool,
     pub(crate) uniforms: Uniforms,
     /// Enabled features bit mask.
     /// 4 u32 is enough for 128 features.
     features: UVec4,
+
+    is_dirty: bool,
+    /// Changing texture needs to recreate bind group.
+    is_texture_changed: bool,
 }
 
 impl IAsset for Material {}
 
 #[allow(unused)]
 impl Material {
-    pub fn new(shader: RR<Shader>) -> RR<Self> {
-        log::info!("shader hash: {}", shader.borrow().hash);
+    pub(crate) fn new(shader_handle: ShaderHandle, shader_manager: &mut ShaderManager) -> Self {
+        let shader = shader_manager.get_shader_forcely(&shader_handle);
+        log::info!("shader hash: {}", shader.hash);
         let mut hasher = AHasher::default();
-        let shader_hash = shader.borrow().hash;
+        let shader_hash = shader.hash;
         shader_hash.hash(&mut hasher);
         let render_state = RenderState::default();
         render_state.hash(&mut hasher);
         let material_hash = hasher.finish();
 
-        let uniforms = Uniforms::new(&shader.borrow().shader_properties.per_material_properties);
+        let uniforms = Uniforms::new(&shader.shader_properties.per_material_properties);
         let material = Self {
             render_state,
-            shader,
+            shader_handle,
             material_hash,
             is_inited: false,
             uniforms,
             features: UVec4::ZERO,
+            is_dirty: false,
+            is_texture_changed: false,
         };
-        RR_new!(material)
+        material
     }
 
+    /// Mark material as dirty, it will be refreshed when it is used.
+    /// This recalculates material hash which may cause render pipeline to be recreated.
     pub fn mark_dirty(&mut self) {
-        let mut hasher = AHasher::default();
-        let shader_hash = self.shader.borrow().hash;
-        shader_hash.hash(&mut hasher);
-        self.render_state.hash(&mut hasher);
-        self.material_hash = hasher.finish();
-        log::info!("Material marked dirty, new hash: {}", self.material_hash);
+        self.is_dirty = true;
+    }
+
+    fn refresh_hash(&mut self, shader_manager: &mut ShaderManager) {
+        if let Some(shader) = shader_manager.get_shader(&self.shader_handle) {
+            let mut hasher = AHasher::default();
+            let shader_hash = shader.hash;
+            shader_hash.hash(&mut hasher);
+            self.render_state.hash(&mut hasher);
+            self.material_hash = hasher.finish();
+            log::info!("Material marked dirty, new hash: {}", self.material_hash);
+        } else {
+            #[cfg(debug_assertions)]
+            {
+                log::warn!(
+                    "Failed to refresh material hash: shader {:?} not found in shader manager.",
+                    self.shader_handle
+                );
+            }
+        }
     }
 
     pub fn set_float(&mut self, property_name: &str, value: f32) {
@@ -113,6 +142,7 @@ impl Material {
 
     pub fn set_texture(&mut self, property_name: &str, value: TextureHandle) {
         self.uniforms.set_texture(property_name, value);
+        self.is_texture_changed = true;
     }
 
     pub fn get_texture(&self, property_name: &str) -> TextureHandle {
@@ -127,33 +157,41 @@ impl Material {
         self.uniforms.get_sampler(property_name)
     }
 
-    fn create_bind_group(&mut self, graphics_context: &mut GraphicsContext, texture_sampler_manager: &TextureSamplerManager,) {
-        self.uniforms.bind_group_id = graphics_context.create_bind_group(
-            &self
-                .shader
-                .borrow()
-                .shader_properties
-                .per_material_properties,
-            &self.uniforms.uniforms,
-            "Create material bindgroup",
-            texture_sampler_manager,
-        );
+    fn create_bind_group(&mut self, graphics_context: &mut GraphicsContext, texture_sampler_manager: &TextureSamplerManager, shader_manager: &mut ShaderManager) {
+        if let Some(shader) = shader_manager.get_shader(&self.shader_handle) {
+            self.uniforms.bind_group_id = graphics_context.create_bind_group(
+                &shader.shader_properties.per_material_properties,
+                &self.uniforms.uniforms,
+                "Create material bindgroup",
+                texture_sampler_manager,
+            );
+        }
     }
 
-    pub(crate) fn on_update(&mut self, graphics_context: &mut GraphicsContext, texture_sampler_manager: &mut TextureSamplerManager,) {
+    pub(crate) fn on_update(&mut self, graphics_context: &mut GraphicsContext, texture_sampler_manager: &mut TextureSamplerManager, shader_manager: &mut ShaderManager) {
+        if self.is_dirty {
+            self.refresh_hash(shader_manager);
+            self.is_dirty = false;
+        }
         if !self.is_inited {
-            let mut shader_mut_ref = self.shader.borrow_mut();
-            if !shader_mut_ref.is_inited {
-                shader_mut_ref.init(graphics_context);
-                shader_mut_ref.is_inited = true;
+            if let Some(shader_mut_ref) = shader_manager.get_shader_mut(&self.shader_handle) {
+                if !shader_mut_ref.is_inited {
+                    shader_mut_ref.init(graphics_context);
+                    shader_mut_ref.is_inited = true;
+                }
+            } else {
+                #[cfg(debug_assertions)]
+                log::warn!("Failed to init material: shader {:?} not found in shader manager.", self.shader_handle);
             }
             self.is_inited = true;
         }
 
         self.uniforms.sync_properties(graphics_context, texture_sampler_manager);
         // info!("lxy before create bind groups");
-        if self.uniforms.should_create_bind_group(){
-            self.create_bind_group(graphics_context, texture_sampler_manager);
+        if self.uniforms.should_create_bind_group() || self.is_texture_changed {
+            // TODO: add logic to remove old bind group.
+            self.create_bind_group(graphics_context, texture_sampler_manager, shader_manager);
+            self.is_texture_changed = false;
         }
     }
 
@@ -165,8 +203,12 @@ impl Material {
         self.uniforms.bind_group_id
     }
 
-    pub fn get_shader(&self) -> &RR<Shader> {
-        &self.shader
+    /// Get the shader handle of this material.
+    /// # Returns
+    ///
+    /// The shader handle of this material.
+    pub fn get_shader_handle(&self) -> &ShaderHandle {
+        &self.shader_handle
     }
 
     pub(crate) fn set_time(&mut self, time: Vec4) {

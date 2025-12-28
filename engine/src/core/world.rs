@@ -2,7 +2,8 @@ use std::cell::RefCell;
 
 use crate::{
     assets::{
-        BuiltinGlobalShaderFeatures, Sampler, Texture, TextureFormat, TextureHandle, TextureSamplerManager, shaders::shader_property::BuiltinShaderUniformNames
+        BuiltinGlobalShaderFeatures, MaterialManager, Sampler, ShaderManager, Texture, TextureFormat,
+        TextureHandle, TextureSamplerManager, shaders::shader_property::BuiltinShaderUniformNames
     }, components::{camera::Camera, mesh_renderer::MeshRenderer},
     core::{LayerMask, NodeHandle, SH, scene::Scene}, graphics::{
         bind_group::BindGroupID, graphics_context::GraphicsContext, render_states::RenderQueue,
@@ -43,9 +44,10 @@ impl World {
         self.scenes[self.current_scene_index].on_stop(time);
     }
 
-    pub(crate) fn on_init(&mut self, graphics_context: &mut GraphicsContext, texture_sampler_manager: &mut TextureSamplerManager, time: &mut Time) {
+    pub(crate) fn on_init(&mut self, graphics_context: &mut GraphicsContext, texture_sampler_manager: &mut TextureSamplerManager,
+        shader_manager: &mut ShaderManager, material_manager: &mut MaterialManager, time: &mut Time) {
         log::info!("world on_init");
-        self.scenes[self.current_scene_index].try_init_skybox(graphics_context, texture_sampler_manager);
+        self.scenes[self.current_scene_index].try_init_skybox(graphics_context, texture_sampler_manager, shader_manager, material_manager);
         self.on_resize(&graphics_context, texture_sampler_manager);
         self.scenes[self.current_scene_index].on_init(time);
     }
@@ -75,7 +77,8 @@ impl World {
     // fn get_camera_render_data
 
     pub(crate) fn generate_render_frame(&mut self, graphics_context: &mut GraphicsContext,
-        texture_sampler_manager: &mut TextureSamplerManager, time: &mut Time,
+        texture_sampler_manager: &mut TextureSamplerManager, shader_manager: &mut ShaderManager,
+        material_manager: &mut MaterialManager, time: &mut Time,
         frame_renderer: &mut FrameRenderer, global_uniforms: &mut BuiltinUniforms) {
         frame_renderer.frame_render_data.reset();
         let cur_scene = &mut self.scenes[self.current_scene_index];
@@ -124,6 +127,8 @@ impl World {
                         global_uniforms,
                         graphics_context,
                         texture_sampler_manager,
+                        shader_manager,
+                        material_manager,
                         time,
                         &mut camera_render_data,
                         &cached_renderables,
@@ -150,6 +155,8 @@ impl World {
         global_uniforms: &mut BuiltinUniforms,
         graphics_context: &mut GraphicsContext,
         texture_sampler_manager: &mut TextureSamplerManager,
+        shader_manager: &mut ShaderManager,
+        material_manager: &mut MaterialManager,
         time: &mut Time,
         camera_render_data: &mut CameraRenderData,
         cached_renderables: &Vec<NodeHandle>,
@@ -174,9 +181,10 @@ impl World {
                 }
                 for (sub_mesh_index, sub_mesh) in mesh_mut_ref.sub_meshes.iter().enumerate() {
                     if let Some(material) = mesh_renderer.materials.get(sub_mesh_index) {
-                        let mut material_mut_ref = material.borrow_mut();
-                        material_mut_ref.on_update(graphics_context, texture_sampler_manager);
+                        let material_mut_ref = material_manager.get_material_mut_forcely(material);
+                        material_mut_ref.on_update(graphics_context, texture_sampler_manager, shader_manager);
                         let render_pipeline_hash = material_mut_ref.hash_value();
+                        let shader_ref = shader_manager.get_shader_forcely(&material_mut_ref.shader_handle);
                         if !graphics_context
                             .render_pipelines
                             .contains(render_pipeline_hash)
@@ -187,7 +195,8 @@ impl World {
                                 .compute_vertex_buffer_layout();
                             graphics_context.render_pipelines.create_render_pipeline(
                                 render_pipeline_hash,
-                                &material_mut_ref,
+                                material_mut_ref,
+                                shader_ref,
                                 &[vertex_buffer_layout],
                                 &[Some(target)],
                                 depth_format,
@@ -201,7 +210,7 @@ impl World {
                                 material_mut_ref.uniforms.bind_group_id,
                             ));
                         }
-                        let shader_ref = material_mut_ref.shader.borrow();
+                        
                         let builtin_uniform_flags = &shader_ref.builtin_uniform_flags;
                         // per object uniforms
                         if shader_ref.shader_properties.per_object_properties.is_valid() {

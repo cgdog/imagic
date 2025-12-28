@@ -6,25 +6,26 @@ struct Game {
 }
 
 struct GameBehavior {
-    material: RR<Material>,
+    material: MaterialHandle,
     metallic_roughness_ao: Vec4,
 }
 
 impl Behavior for GameBehavior {
     impl_as_any!();
 
-    fn on_start(&mut self, _engine: &mut LogicContext) {
+    fn on_start(&mut self, _logic_context: &mut LogicContext) {
         log::info!("Game started.");
     }
 
-    fn on_gui(&mut self, _engine: &mut LogicContext, ctx: &egui::Context) {
+    fn on_gui(&mut self, logic_context: &mut LogicContext, ctx: &egui::Context) {
         egui::Window::new("Skybox LOD Control").show(ctx, |ui| {
             if ui.add(
                 egui::Slider::new(&mut self.metallic_roughness_ao.x, 0.0..=1.0)
                     .text("metallic")
                     .step_by(0.1),
             ).changed() {
-                self.material.borrow_mut().set_vec4f("_metallic_roughness_ao", self.metallic_roughness_ao);
+                logic_context.material_manager.get_material_mut_forcely(&self.material)
+                    .set_vec4f("_metallic_roughness_ao", self.metallic_roughness_ao);
             }
 
             if ui.add(
@@ -32,7 +33,8 @@ impl Behavior for GameBehavior {
                     .text("roughness")
                     .step_by(0.1),
             ).changed() {
-                self.material.borrow_mut().set_vec4f("_metallic_roughness_ao", self.metallic_roughness_ao);
+                logic_context.material_manager.get_material_mut_forcely(&self.material)
+                    .set_vec4f("_metallic_roughness_ao", self.metallic_roughness_ao);
             }
         });
     }
@@ -46,17 +48,17 @@ impl Game {
         };
         let mut engine = Engine::new(engine_options);
         let material = Self::create_material(&mut engine);
-        let sphere = Self::create_sphere(&mut engine.world, material.clone());
+        let sphere = Self::create_sphere(&mut engine.world, material);
         let game_behavior = GameBehavior { material: material, metallic_roughness_ao: Vec4::new(0.0, 1.0, 1.0, 1.0) };
         engine.add_behavior(game_behavior);
         Self { engine, _sphere: sphere }
     }
 
-    fn create_material(engine: &mut Engine) -> RR<Material> {
-        let pbr_shader = engine.shader_manager.get_builtin_pbr_shader();
-        let pbr_material = Material::new(pbr_shader);
+    fn create_material(engine: &mut Engine) -> MaterialHandle {
+        let (_, pbr_shader) = engine.shader_manager.get_builtin_pbr_shader();
+        let pbr_material = engine.material_manager.create_material(*pbr_shader, &mut engine.shader_manager);
         {
-            let mut pbr_material_mut_ref = pbr_material.borrow_mut();
+            let pbr_material_mut_ref = engine.material_manager.get_material_mut_forcely(&pbr_material);
             pbr_material_mut_ref.set_vec4f("_albedo_color", Vec4::new(1.0, 1.0, 1.0, 1.0));
             pbr_material_mut_ref.set_vec4f("_metallic_roughness_ao", Vec4::new(0.0, 1.0, 1.0, 1.0));
             // _reflection_cube_sampler
@@ -73,7 +75,7 @@ impl Game {
         pbr_material
     }
 
-    fn create_sphere(world: &mut World, material: RR<Material>) -> NodeHandle {
+    fn create_sphere(world: &mut World, material: MaterialHandle) -> NodeHandle {
         let scene = world.current_scene_mut();
         let uv_sphere_node = scene.create_node("UVSphere");
         let mesh: Mesh = UVSphere::default().into();

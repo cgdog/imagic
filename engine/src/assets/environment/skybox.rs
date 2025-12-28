@@ -1,17 +1,15 @@
 use crate::{
     assets::{
-        Quad, Sampler, TextureAspect, TextureDimension, TextureFormat,
-        TextureHandle, TextureSamplerManager, TextureUsages, TextureViewDescriptor, TextureViewDimension,
-        materials::material::Material,
-        meshes::{mesh::Mesh, primitives::cuboid::Cuboid},
-        sampler::{AddressMode, FilterMode},
-        shaders::shader::Shader, texture_view::TextureView
+        Quad, Sampler, ShaderHandle, ShaderManager, TextureAspect, TextureDimension, TextureFormat, TextureHandle,
+        TextureSamplerManager, TextureUsages, TextureViewDescriptor, TextureViewDimension, materials::material::Material,
+        meshes::{mesh::Mesh, primitives::cuboid::Cuboid}, sampler::{AddressMode, FilterMode},
+        texture_view::TextureView
     },
     components::camera::Camera, graphics::{
         bind_group::BindGroupID, graphics_context::GraphicsContext, render_api::RenderAPI,
         render_states::CullMode,
     }, impl_component, math::{Mat4, Vec3, Vec4, color::Color},
-    prelude::render_pipeline::INVALID_PIPELINE_HASH, renderer::frame_data::ItemRenderData, types::RR
+    prelude::render_pipeline::INVALID_PIPELINE_HASH, renderer::frame_data::ItemRenderData
 };
 
 /// Skybox component.
@@ -51,16 +49,18 @@ impl Skybox {
         !self.is_inpunt_cube_map || self.reflection_cube_map == TextureHandle::INVALID
     }
 
-    pub(crate) fn on_init(&mut self, graphics_context: &mut GraphicsContext, texture_sampler_manager: &mut TextureSamplerManager) {
+    pub(crate) fn on_init(&mut self, graphics_context: &mut GraphicsContext, texture_sampler_manager: &mut TextureSamplerManager,
+        shader_manager: &mut ShaderManager) {
+            
         log::info!("Skybox componnet on_init");
 
         if !self.is_inpunt_cube_map {
-            self.convert_equirect_to_cube(graphics_context, texture_sampler_manager);
+            self.convert_equirect_to_cube(graphics_context, texture_sampler_manager, shader_manager);
             self.is_inpunt_cube_map = true;
         }
         else {
             // self._convolute(graphics_context);
-            self.prefilter_reflection_map(graphics_context, texture_sampler_manager);
+            self.prefilter_reflection_map(graphics_context, texture_sampler_manager, shader_manager);
         }
         
         let sh_tools = crate::utils::sh_tools::CubeMapToSHTools::new();
@@ -73,11 +73,11 @@ impl Skybox {
         });
 
         if self.brdf_lut == TextureHandle::INVALID {
-            self.generate_brdf_lut(graphics_context, texture_sampler_manager);
+            self.generate_brdf_lut(graphics_context, texture_sampler_manager, shader_manager);
         }
     }
 
-    fn generate_brdf_lut(&mut self, graphics_context: &mut GraphicsContext, texture_sampler_manager: &mut TextureSamplerManager) {
+    fn generate_brdf_lut(&mut self, graphics_context: &mut GraphicsContext, texture_sampler_manager: &mut TextureSamplerManager, shader_manager: &mut ShaderManager) {
         let mut quad_mesh: Mesh = Quad::default().into();
         quad_mesh.upload(graphics_context);
         let mesh_mut_ref = &mut quad_mesh;
@@ -89,27 +89,28 @@ impl Skybox {
             Self::create_2d_rt(texture_sampler_manager, rt_size, rt_size, color_attachment_format, depth_attachment_format);
         self.brdf_lut = color_attachment;
 
-        let brdf_lut_shader = Shader::new(
+        let brdf_lut_shader_handle = shader_manager.create_shader(
             include_str!("../shaders/wgsl/brdf_integration.wgsl"),
             "brdf_integration".to_owned(),
         );
         let item_render_data: ItemRenderData;
-        let brdf_lut_material = Material::new(brdf_lut_shader);
+        let mut brdf_lut_material = Material::new(brdf_lut_shader_handle, shader_manager);
         {
-            let mut brdf_lut_material_mut_ref = brdf_lut_material.borrow_mut();
-            brdf_lut_material_mut_ref.on_update(graphics_context, texture_sampler_manager);
-            let render_pipeline_hash = brdf_lut_material_mut_ref.hash_value();
+            brdf_lut_material.on_update(graphics_context, texture_sampler_manager, shader_manager);
+            let render_pipeline_hash = brdf_lut_material.hash_value();
             if !graphics_context
                 .render_pipelines
                 .contains(render_pipeline_hash)
             {
+                let brdf_lut_shader = shader_manager.get_shader_forcely(&brdf_lut_shader_handle);
                 let depth_format = Self::DEFAULT_DEPTH_ATTACHMENT_FORMAT;
                 let vertex_buffer_layout = mesh_mut_ref
                     .vertex_attributes
                     .compute_vertex_buffer_layout();
                 graphics_context.render_pipelines.create_render_pipeline(
                     render_pipeline_hash,
-                    &brdf_lut_material_mut_ref,
+                    &brdf_lut_material,
+                    brdf_lut_shader,
                     &[vertex_buffer_layout],
                     &[Some(color_attachment_format.into())],
                     depth_format,
@@ -136,9 +137,12 @@ impl Skybox {
             &depth_attachment_view,
             &item_render_data,
         );
+        shader_manager.destroy_shader(&brdf_lut_shader_handle);
     }
 
-    fn convert_equirect_to_cube(&mut self, graphics_context: &mut GraphicsContext, texture_sampler_manager: &mut TextureSamplerManager) {
+    fn convert_equirect_to_cube(&mut self, graphics_context: &mut GraphicsContext, texture_sampler_manager: &mut TextureSamplerManager,
+        shader_manager: &mut ShaderManager) {
+
         let mut cube_mesh: Mesh = Cuboid::default().into();
         // The cube mesh used to rendering (convert equirect to cubemap).
         cube_mesh.upload(graphics_context);
@@ -183,39 +187,41 @@ impl Skybox {
         );
         texture_sampler_manager.create_gpu_sampler(&sampler_2d);
 
-        let equirect_to_cube_shader = Shader::new(
-            include_str!("../shaders/wgsl/equirect_to_cube.wgsl"),
-            "equirect_to_cube".to_owned(),
-        );
+        let equirect_to_cube_shader_handle: ShaderHandle;
+        {
+            let (_, equirect_to_cube_shader_handle_) = shader_manager.get_builtin_equirect_to_cube_shader();
+            equirect_to_cube_shader_handle = *equirect_to_cube_shader_handle_;
+        }
         let mut bind_group_ids: Vec<BindGroupID> = Vec::new();
         let mut item_render_data: ItemRenderData;
-        let euqirect_to_cube_material = Material::new(equirect_to_cube_shader);
+        let mut euqirect_to_cube_material = Material::new(equirect_to_cube_shader_handle, shader_manager);
         {
-            let mut euqirect_to_cube_material_mut_ref = euqirect_to_cube_material.borrow_mut();
-            euqirect_to_cube_material_mut_ref.set_texture("skybox_2d_texture", self.input_texture);
-            euqirect_to_cube_material_mut_ref.set_sampler("skybox_2d_sampler", sampler_2d);
-            euqirect_to_cube_material_mut_ref.render_state.cull_mode = CullMode::Front;
-            euqirect_to_cube_material_mut_ref.on_update(graphics_context, texture_sampler_manager);
+            euqirect_to_cube_material.set_texture("skybox_2d_texture", self.input_texture);
+            euqirect_to_cube_material.set_sampler("skybox_2d_sampler", sampler_2d);
+            euqirect_to_cube_material.render_state.cull_mode = CullMode::Front;
+            euqirect_to_cube_material.on_update(graphics_context, texture_sampler_manager, shader_manager);
 
-            let render_pipeline_hash = euqirect_to_cube_material_mut_ref.hash_value();
+            let render_pipeline_hash = euqirect_to_cube_material.hash_value();
             if !graphics_context
                 .render_pipelines
                 .contains(render_pipeline_hash)
             {
+                let (equirect_to_cube_shader, _) = shader_manager.get_builtin_equirect_to_cube_shader();
                 let depth_format = Self::DEFAULT_DEPTH_ATTACHMENT_FORMAT;
                 let vertex_buffer_layout = mesh_mut_ref
                     .vertex_attributes
                     .compute_vertex_buffer_layout();
                 graphics_context.render_pipelines.create_render_pipeline(
                     render_pipeline_hash,
-                    &euqirect_to_cube_material_mut_ref,
+                    &euqirect_to_cube_material,
+                    equirect_to_cube_shader,
                     &[vertex_buffer_layout],
                     &[Some(textuer_format.into())],
                     depth_format,
                 );
             }
 
-            bind_group_ids.push(euqirect_to_cube_material_mut_ref.get_bind_group());
+            bind_group_ids.push(euqirect_to_cube_material.get_bind_group());
             let sub_mesh = &mesh_mut_ref.sub_meshes[0];
 
             item_render_data = ItemRenderData::new(
@@ -238,22 +244,23 @@ impl Skybox {
 
         Self::render_cube_rt(
             texture_sampler_manager,
+            shader_manager,
             &mut camera,
             &vp_matrices,
             &cube_color_attachment_views,
             &cube_depth_attachment_views,
             &item_render_data,
-            &euqirect_to_cube_material,
+            &mut euqirect_to_cube_material,
             graphics_context,
             -1.0,
             skybox_face_resolution as f32,
         );
 
         // self._convolute_core(graphics_context, textuer_format, mesh_mut_ref, &mut item_render_data);
-        self.prefilter_reflection_map_core(graphics_context, texture_sampler_manager, textuer_format, mesh_mut_ref, &mut item_render_data);
+        self.prefilter_reflection_map_core(graphics_context, texture_sampler_manager, shader_manager, textuer_format, mesh_mut_ref, &mut item_render_data);
     }
 
-    fn prefilter_reflection_map(&mut self, graphics_context: &mut GraphicsContext, texture_sampler_manager: &mut TextureSamplerManager) {
+    fn prefilter_reflection_map(&mut self, graphics_context: &mut GraphicsContext, texture_sampler_manager: &mut TextureSamplerManager, shader_manager: &mut ShaderManager) {
         let texture_format: TextureFormat;
         if let Some(texture) = texture_sampler_manager.get_texture(&self.background_cube_map) {
             texture_format = texture.format;
@@ -276,10 +283,11 @@ impl Skybox {
             sub_mesh.base_vertex,
         );
 
-        self.prefilter_reflection_map_core(graphics_context, texture_sampler_manager, texture_format, mesh_mut_ref, &mut item_render_data);
+        self.prefilter_reflection_map_core(graphics_context, texture_sampler_manager, shader_manager, texture_format, mesh_mut_ref, &mut item_render_data);
     }
     
-    fn prefilter_reflection_map_core(&mut self, graphics_context: &mut GraphicsContext, texture_sampler_manager: &mut TextureSamplerManager, textuer_format: TextureFormat,
+    fn prefilter_reflection_map_core(&mut self, graphics_context: &mut GraphicsContext, texture_sampler_manager: &mut TextureSamplerManager,
+        shader_manager: &mut ShaderManager, textuer_format: TextureFormat,
         mesh_mut_ref: &mut Mesh, item_render_data: &mut ItemRenderData) {
 
         let mip_level_count = self.reflection_cube_face_resolution.ilog2() + 1;
@@ -299,40 +307,41 @@ impl Skybox {
         texture_sampler_manager.generate_mipmaps(&self.background_cube_map);
 
         self.reflection_cube_map = reflection_cube_map;
-        let environmetn_prefilter_shader = Shader::new(
+        let environmetn_prefilter_shader_handle = shader_manager.create_shader(
             include_str!("../shaders/wgsl/environmetn_prefilter.wgsl"),
             "environmetn_prefilter".to_owned(),
         );
 
         let mut bind_group_ids: Vec<BindGroupID> = Vec::new();
-        let prefilter_material = Material::new(environmetn_prefilter_shader);
+        let mut prefilter_material = Material::new(environmetn_prefilter_shader_handle, shader_manager);
         {
-            let mut material_mut_ref = prefilter_material.borrow_mut();
-            material_mut_ref.set_texture("input_cube_texture", self.background_cube_map);
-            material_mut_ref.set_sampler("cube_sampler", input_cube_map_sampler);
-            material_mut_ref.set_float("roughness", 0.0);
-            material_mut_ref.render_state.cull_mode = CullMode::Front;
-            material_mut_ref.on_update(graphics_context, texture_sampler_manager);
+            prefilter_material.set_texture("input_cube_texture", self.background_cube_map);
+            prefilter_material.set_sampler("cube_sampler", input_cube_map_sampler);
+            prefilter_material.set_float("roughness", 0.0);
+            prefilter_material.render_state.cull_mode = CullMode::Front;
+            prefilter_material.on_update(graphics_context, texture_sampler_manager, shader_manager);
 
-            let render_pipeline_hash = material_mut_ref.hash_value();
+            let render_pipeline_hash = prefilter_material.hash_value();
             if !graphics_context
                 .render_pipelines
                 .contains(render_pipeline_hash)
             {
+                let environment_prefilter_shader_ref = shader_manager.get_shader_forcely(&environmetn_prefilter_shader_handle);
                 let depth_format = Self::DEFAULT_DEPTH_ATTACHMENT_FORMAT;
                 let vertex_buffer_layout = mesh_mut_ref
                     .vertex_attributes
                     .compute_vertex_buffer_layout();
                 graphics_context.render_pipelines.create_render_pipeline(
                     render_pipeline_hash,
-                    &material_mut_ref,
+                    &prefilter_material,
+                    environment_prefilter_shader_ref,
                     &[vertex_buffer_layout],
                     &[Some(textuer_format.into())],
                     depth_format,
                 );
             }
 
-            bind_group_ids.push(material_mut_ref.get_bind_group());
+            bind_group_ids.push(prefilter_material.get_bind_group());
 
             item_render_data.bind_group = bind_group_ids;
             item_render_data.render_pipeline = render_pipeline_hash;
@@ -346,12 +355,13 @@ impl Skybox {
 
         Self::render_cube_rt(
             texture_sampler_manager,
+            shader_manager,
             &mut camera,
             &vp_matrices,
             &cube_color_attachment_views,
             &cube_depth_attachment_views,
             &item_render_data,
-            &prefilter_material,
+            &mut prefilter_material,
             graphics_context,
             mip_level_count as f32,
             self.reflection_cube_face_resolution as f32,
@@ -571,12 +581,13 @@ impl Skybox {
 
     fn render_cube_rt(
         texture_sampler_manager: &mut TextureSamplerManager,
+        shader_manager: &mut ShaderManager,
         camera: &mut Camera,
         vp_matrices: &[Mat4; 6],
         cube_color_attachment_views: &Vec<Vec<TextureView>>,
         cube_depth_attachment_views: &Vec<Vec<TextureView>>,
         item_render_data: &ItemRenderData,
-        material: &RR<Material>,
+        material: &mut Material,
         graphics_context: &mut GraphicsContext,
         max_mip_level_count: f32,
         face_resolution: f32,
@@ -605,12 +616,11 @@ impl Skybox {
                         .zip(vp_matrices.iter())
                         .for_each(
                             |((color_attachment_view, depth_attachment_view), vp_matrix)| {
-                                let mut material = material.borrow_mut();
                                 material.set_matrix4x4("vp", *vp_matrix);
                                 if is_prefilter_environment_map {
                                     material.set_float("roughness", roughness);
                                 }
-                                material.on_update(graphics_context, texture_sampler_manager);
+                                material.on_update(graphics_context, texture_sampler_manager, shader_manager);
             
                                 RenderAPI::render_item_to_rt_directly(
                                     graphics_context,

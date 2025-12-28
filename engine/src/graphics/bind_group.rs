@@ -22,6 +22,14 @@ impl BindGroupManager {
         }
     }
 
+    /// Add a bind group.
+    /// TODO: add remove bind group method. use arena to manage bind groups.
+    /// # Arguments
+    /// 
+    /// * `bind_group` - The bind group to add.
+    /// # Returns
+    /// 
+    /// * `BindGroupID` - The ID of the added bind group.
     pub fn add(&mut self, bind_group: BindGroup) -> BindGroupID{
         static mut ID: BindGroupID = 0;
         let cur_id: BindGroupID;

@@ -3,15 +3,13 @@ use gltf::mesh::Mode;
 use crate::{
     RR_new,
     assets::{
-        AddressMode, BuiltinShaderUniformNames, FilterMode,
-        Material, Mesh, SamplerHandle, TextureDimension, TextureFormat,
-        TextureHandle, model_loader::ModelLoaderTrait, sub_mesh::SubMesh,
-        vertex_attribute::VertexAttributes, vertex_index::IndexData,
+        AddressMode, BuiltinShaderUniformNames, FilterMode, Material, MaterialHandle, Mesh, SamplerHandle, TextureDimension,
+        TextureFormat, TextureHandle, model_loader::ModelLoaderTrait, sub_mesh::SubMesh, vertex_attribute::VertexAttributes,
+        vertex_index::IndexData
     },
     core::{Engine, NodeHandle},
     math::{Color, Vec2, Vec3, Vec4},
     prelude::{MeshRenderer, PolygonMode},
-    types::RR,
 };
 
 /// A loader for GLTF models.
@@ -110,7 +108,7 @@ impl GLTFLoader {
         let mut vertex_attributes = VertexAttributes::default();
         let mut indices = Vec::<u32>::new();
         let mut sub_meshes = vec![];
-        let mut materials: Vec<RR<Material>> = vec![];
+        let mut materials: Vec<MaterialHandle> = vec![];
 
         let primitives_count = gltf_mesh.primitives().len();
         log::info!("primitives_count: {}", primitives_count);
@@ -161,54 +159,54 @@ impl GLTFLoader {
             };
 
             let mode = primitive.mode();
-            let pbr_shader = engine.shader_manager.get_builtin_pbr_shader();
-            let material = Material::new(pbr_shader);
+            let (_, pbr_shader_handle) = engine.shader_manager.get_builtin_pbr_shader();
+            let mut material = Material::new(*pbr_shader_handle, &mut engine.shader_manager);
             {
-                let mut pbr_material_mut_ref = material.borrow_mut();
-                pbr_material_mut_ref.set_albedo_color(Color::from_array(base_color_factor));
-                pbr_material_mut_ref.set_vec4f(
+                material.set_albedo_color(Color::from_array(base_color_factor));
+                material.set_vec4f(
                     "_metallic_roughness_ao",
                     Vec4::new(metallic_factor, roughness_factor, 1.0, 1.0),
                 );
 
-                pbr_material_mut_ref.render_state.polygon_mode = match mode {
+                material.render_state.polygon_mode = match mode {
                     Mode::Triangles | Mode::TriangleFan | Mode::TriangleStrip => PolygonMode::Fill,
                     Mode::Points => PolygonMode::Point,
                     Mode::Lines | Mode::LineLoop | Mode::LineStrip => PolygonMode::Line,
                 };
 
                 if base_color_texture != TextureHandle::INVALID {
-                    pbr_material_mut_ref.set_albedo_map(base_color_texture);
+                    material.set_albedo_map(base_color_texture);
                 }
                 if albdeo_sampler != SamplerHandle::INVALID {
-                    pbr_material_mut_ref.set_sampler(
+                    material.set_sampler(
                         BuiltinShaderUniformNames::_ALBEDO_MAP_SAMPLER,
                         albdeo_sampler,
                     );
                 }
 
                 if metallic_roughness_texture != TextureHandle::INVALID {
-                    pbr_material_mut_ref.set_metallic_roughness_map(metallic_roughness_texture);
+                    material.set_metallic_roughness_map(metallic_roughness_texture);
                 }
 
                 if occlusion_texture != TextureHandle::INVALID {
-                    pbr_material_mut_ref.set_ao_map(occlusion_texture);
+                    material.set_ao_map(occlusion_texture);
                 }
 
                 if normal_texture != TextureHandle::INVALID {
-                    pbr_material_mut_ref.set_normal_map(normal_texture);
+                    material.set_normal_map(normal_texture);
                 }
 
-                pbr_material_mut_ref.set_emissive_color(Color::rgb(
+                material.set_emissive_color(Color::rgb(
                     emissive_factor[0],
                     emissive_factor[1],
                     emissive_factor[2],
                 ));
                 if emissive_texture != TextureHandle::INVALID {
-                    pbr_material_mut_ref.set_emissive_map(emissive_texture);
+                    material.set_emissive_map(emissive_texture);
                 }
             }
-            materials.push(material);
+            let material_handle = engine.material_manager.add_material(material);
+            materials.push(material_handle);
 
             if primitive_index == 0 {
                 // at preset, only supports submeshes sharing one same vertex buffer.

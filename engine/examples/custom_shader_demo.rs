@@ -32,7 +32,7 @@ impl Behavior for CustomShaderBehavior {
         // info!("custom shader total time: {}, delta time: {}", _time.elapsed(), _time.delta());
         if let Some(mesh_renderer) = logic_context.world.current_scene_mut().get_component_mut::<MeshRenderer>(&self.quad_node)
         {
-            let material = &mut mesh_renderer.materials[0];
+            let material_handle = &mut mesh_renderer.materials[0];
             if self.cur_time >= self.max_time {
                 self.cur_time = 0.0;
                 self.cur_color_index = (self.cur_color_index + 1) % self.colors.len();
@@ -41,7 +41,7 @@ impl Behavior for CustomShaderBehavior {
             let next_color_index = (self.cur_color_index + 1) % self.colors.len();
             let color = self.colors[self.cur_color_index].mix(&self.colors[next_color_index], ratio);
             // material.borrow_mut().set_color("color", color);
-            material.borrow_mut().set_struct("color", bytemuck::bytes_of(&ColorInfo {
+            logic_context.material_manager.get_material_mut_forcely(material_handle).set_struct("color", bytemuck::bytes_of(&ColorInfo {
                 input_color: color,
                 final_filter: Color::WHITE, // you can change this to other color to see the effect.
             }).to_vec());
@@ -73,12 +73,12 @@ pub fn main() {
         app_name: "lxy custom shader demo",
     };
     let mut engine = Engine::new(engine_options);
-    let shader = Shader::new(
+    let shader = engine.create_shader(
         include_str!("shaders/circle.wgsl"),
         "custom/circle".to_owned(),
     );
 
-    let material = Material::new(shader);
+    let material = engine.create_material(shader);
     {
         let quad_node = engine.world.current_scene_mut().create_node("quad");
         engine.world.current_scene_mut().get_node_mut_forcely(&quad_node)
