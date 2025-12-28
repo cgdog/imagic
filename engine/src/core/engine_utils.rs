@@ -1,4 +1,4 @@
-use crate::{assets::{Material, MaterialHandle, ShaderHandle}, core::{Engine, LogicContext, NodeHandle}, math::Vec3, prelude::{CameraController, CameraTarget}};
+use crate::{assets::{Material, MaterialHandle, ModelLoader, ModelLoaderTrait, ShaderHandle}, core::{Engine, LogicContext, NodeHandle}, math::Vec3, prelude::{CameraController, CameraTarget}};
 
 
 impl Engine {
@@ -112,6 +112,19 @@ impl Engine {
     /// * `&mut Material` - The material.
     pub fn get_material_mut_forcely(&mut self, handle: &MaterialHandle) -> &mut Material {
         self.material_manager.get_material_mut_forcely(handle)
+    }
+
+    /// Load a model from file.
+    /// # Arguments
+    /// 
+    /// * `path` - The path of the model file.
+    /// # Returns
+    /// 
+    /// * `Result<NodeHandle, Box<dyn std::error::Error>>` - The handle of the loaded model node if successful, or an error.
+    pub fn load_model(&mut self, path: &str) -> Result<NodeHandle, Box<dyn std::error::Error>> {
+        let mut logic_context = self.get_logic_context();
+        let model_loader = ModelLoader::new();
+        model_loader.load(&mut logic_context, path)
     }
 
     /// Create a camera controller with target.
@@ -248,6 +261,18 @@ impl<'a> LogicContext<'a> {
     /// * `&mut Material` - The material.
     pub fn get_material_mut_forcely(&mut self, handle: &MaterialHandle) -> &mut Material {
         self.material_manager.get_material_mut_forcely(handle)
+    }
+
+    /// Load a model from file.
+    /// # Arguments
+    /// 
+    /// * `path` - The path of the model file.
+    /// # Returns
+    /// 
+    /// * `Result<NodeHandle, Box<dyn std::error::Error>>` - The handle of the loaded model node if successful, or an error.
+    pub fn load_model(&mut self, path: &str) -> Result<NodeHandle, Box<dyn std::error::Error>> {
+        let model_loader = ModelLoader::new();
+        model_loader.load(self, path)
     }
 
 }

@@ -73,7 +73,8 @@ fn load_model(engine: &mut Engine) {
         .join("DamagedHelmet.glb");
         // .join("monkey.glb");
     let model_loader = ModelLoader::new();
-    match model_loader.load(engine, model_path.to_str().unwrap()) {
+    let mut logic_context = engine.get_logic_context();
+    match model_loader.load(&mut logic_context, model_path.to_str().unwrap()) {
         Ok(node) => {
             log::info!("Model loaded successfully: {:?}", engine.world.current_scene().get_node_forcely(&node).name);
             if let Some(material) = get_material_in_children(engine.world.current_scene(), &node) {

@@ -7,7 +7,7 @@ use crate::{
         TextureFormat, TextureHandle, model_loader::ModelLoaderTrait, sub_mesh::SubMesh, vertex_attribute::VertexAttributes,
         vertex_index::IndexData
     },
-    core::{Engine, NodeHandle},
+    core::{LogicContext, NodeHandle},
     math::{Color, Vec2, Vec3, Vec4},
     prelude::{MeshRenderer, PolygonMode},
 };
@@ -24,7 +24,7 @@ impl ModelLoaderTrait for GLTFLoader {
     /// Returns an error if the GLTF file cannot be opened or processed.
     fn load(
         &self,
-        engine: &mut Engine,
+        engine: &mut LogicContext<'_>,
         path: &str,
     ) -> Result<NodeHandle, Box<dyn std::error::Error>> {
         let (document, buffers, images) = gltf::import(path)?;
@@ -57,7 +57,7 @@ impl GLTFLoader {
 
     fn process_node(
         &self,
-        engine: &mut Engine,
+        engine: &mut LogicContext<'_>,
         document: &gltf::Document,
         gltf_node: &gltf::Node,
         parent: &NodeHandle,
@@ -90,7 +90,7 @@ impl GLTFLoader {
 
     fn process_mesh(
         &self,
-        engine: &mut Engine,
+        engine: &mut LogicContext<'_>,
         document: &gltf::Document,
         node: &NodeHandle,
         gltf_mesh: gltf::Mesh,
@@ -396,7 +396,7 @@ impl GLTFLoader {
 
     fn get_pbr_texture(
         &self,
-        engine: &mut Engine,
+        engine: &mut LogicContext<'_>,
         texture_info: Option<gltf::texture::Info>,
         images: &Vec<gltf::image::Data>,
         is_linear: bool,
@@ -411,7 +411,7 @@ impl GLTFLoader {
 
     fn get_pbr_texture_and_sampler(
         &self,
-        engine: &mut Engine,
+        engine: &mut LogicContext<'_>,
         document: &gltf::Document,
         texture_info: Option<gltf::texture::Info>,
         images: &Vec<gltf::image::Data>,
@@ -430,7 +430,7 @@ impl GLTFLoader {
 
     fn get_texture_by_index(
         &self,
-        engine: &mut Engine,
+        engine: &mut LogicContext<'_>,
         texture_index: usize,
         images: &Vec<gltf::image::Data>,
         is_linear: bool,
@@ -455,7 +455,7 @@ impl GLTFLoader {
 
     fn get_sampler(
         &self,
-        engine: &mut Engine,
+        engine: &mut LogicContext<'_>,
         document: &gltf::Document,
         texture_index: usize,
     ) -> SamplerHandle {

@@ -96,6 +96,18 @@ impl Engine {
         let _ = event_loop.run_app(self);
     }
 
+    pub fn get_logic_context(&mut self) -> LogicContext<'_> {
+        LogicContext {
+            world: &mut self.world,
+            time: &mut self.time,
+            performance_tracker: &mut self.performance_tracker,
+            shader_manager: &mut self.shader_manager,
+            material_manager: &mut self.material_manager,
+            texture_sampler_manager: &mut self.texture_sampler_manager,
+            input_manager: &mut self.input_manager,
+        }
+    }
+
     pub(crate) fn graphics_context(&mut self) -> &mut GraphicsContext {
         if let Some(context) = &mut self._graphics_context {
             context
