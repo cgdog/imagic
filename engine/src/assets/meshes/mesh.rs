@@ -3,8 +3,15 @@ use crate::{
         asset::IAsset,
         meshes::{sub_mesh::SubMesh, vertex_attribute::VertexAttributes}, vertex_index::IndexData,
     },
-    graphics::{buffer_view::BufferView, graphics_context::GraphicsContext},
+    graphics::{buffer_view::BufferView, graphics_context::GraphicsContext}, types::Handle,
 };
+
+/// The tag of the mesh used to define MeshHandle.
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+pub enum MeshTag {}
+
+/// The handle of the mesh.
+pub type MeshHandle = Handle<MeshTag>;
 
 /// Mesh is a collection of submeshes.
 pub struct Mesh {

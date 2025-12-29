@@ -2,8 +2,8 @@ use std::cell::RefCell;
 
 use crate::{
     assets::{
-        BuiltinGlobalShaderFeatures, MaterialManager, Sampler, ShaderManager, Texture, TextureFormat,
-        TextureHandle, TextureSamplerManager, shaders::shader_property::BuiltinShaderUniformNames
+        BuiltinGlobalShaderFeatures, MaterialManager, MeshManager, Sampler, ShaderManager, Texture, TextureFormat, TextureHandle,
+        TextureSamplerManager, shaders::shader_property::BuiltinShaderUniformNames
     }, components::{camera::Camera, mesh_renderer::MeshRenderer},
     core::{LayerMask, NodeHandle, SH, scene::Scene}, graphics::{
         bind_group::BindGroupID, graphics_context::GraphicsContext, render_states::RenderQueue,
@@ -142,7 +142,7 @@ impl World {
     /// * `global_uniforms` - The global uniforms.
     pub(crate) fn generate_render_frame(&mut self, graphics_context: &mut GraphicsContext,
         texture_sampler_manager: &mut TextureSamplerManager, shader_manager: &mut ShaderManager,
-        material_manager: &mut MaterialManager, time: &mut Time,
+        material_manager: &mut MaterialManager, mesh_manager: &mut MeshManager, time: &mut Time,
         frame_renderer: &mut FrameRenderer, global_uniforms: &mut BuiltinUniforms) {
         frame_renderer.frame_render_data.reset();
         let cur_scene = &mut self.scenes[self.current_scene_index];
@@ -193,6 +193,7 @@ impl World {
                         texture_sampler_manager,
                         shader_manager,
                         material_manager,
+                        mesh_manager,
                         time,
                         &mut camera_render_data,
                         &cached_renderables,
@@ -221,6 +222,7 @@ impl World {
         texture_sampler_manager: &mut TextureSamplerManager,
         shader_manager: &mut ShaderManager,
         material_manager: &mut MaterialManager,
+        mesh_manager: &mut MeshManager,
         time: &mut Time,
         camera_render_data: &mut CameraRenderData,
         cached_renderables: &Vec<NodeHandle>,
@@ -238,8 +240,8 @@ impl World {
             }
             let model_matrix = node_mut_ref.transform.model_matrix;
             let normal_matrix = node_mut_ref.transform.normal_matrix;
-            if let Some(mesh_renderer) = &mut current_scene.get_component_mut::<MeshRenderer>(renderable_node) {
-                let mut mesh_mut_ref = mesh_renderer.mesh.borrow_mut();
+            if let Some(mesh_renderer) = &mut current_scene.get_component_mut::<MeshRenderer>(renderable_node) 
+                && let Some(mesh_mut_ref) = mesh_manager.get_mesh_mut(&mesh_renderer.mesh){
                 if mesh_mut_ref.is_dirty {
                     mesh_mut_ref.upload(graphics_context);
                 }

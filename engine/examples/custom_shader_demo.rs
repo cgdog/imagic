@@ -85,8 +85,8 @@ pub fn main() {
             .transform
             .set_uniform_scale(2.0);
         let mesh: Mesh = Quad::default().into();
-        let mesh = RR_new!(mesh);
-        let mesh_renderer = MeshRenderer::new(mesh, vec![material]);
+        let mesh_handle = engine.mesh_manager.add_mesh(mesh);
+        let mesh_renderer = MeshRenderer::new(mesh_handle, vec![material]);
         engine.world.current_scene_mut().add_component(&quad_node, mesh_renderer);
         
         let custom_behavior = CustomShaderBehavior::new(quad_node);

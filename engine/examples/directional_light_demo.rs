@@ -28,8 +28,8 @@ fn create_quad(engine: &mut Engine, cur_material: MaterialHandle) -> NodeHandle 
         ));
         transform.set_uniform_scale(5.0);
         let mesh: Mesh = Quad::new(2.0, 1.0, 2, 1).into();
-        let mesh = RR_new!(mesh);
-        let mesh_renderer = MeshRenderer::new(mesh, vec![cur_material]);
+        let mesh_handle = engine.mesh_manager.add_mesh(mesh);
+        let mesh_renderer = MeshRenderer::new(mesh_handle, vec![cur_material]);
         scene.add_component(&quad_node, mesh_renderer);
     }
     scene.add(quad_node);
@@ -43,8 +43,8 @@ fn create_cuboid(engine: &mut Engine, cur_material: MaterialHandle) -> NodeHandl
     {
         let mesh: Mesh = Cuboid::default().into();
         // let mesh: Mesh = Cuboid::new(2.0, 1.0, 1.0, 2, 1, 1).into();
-        let mesh = RR_new!(mesh);
-        let mesh_renderer = MeshRenderer::new(mesh, vec![cur_material]);
+        let mesh_handle = engine.mesh_manager.add_mesh(mesh);
+        let mesh_renderer = MeshRenderer::new(mesh_handle, vec![cur_material]);
         scene.add_component(&cuboid_node, mesh_renderer);
     }
     scene.add(cuboid_node);
@@ -58,8 +58,8 @@ fn create_sphere(engine: &mut Engine, cur_material: MaterialHandle) -> NodeHandl
     {
         scene.get_node_mut_forcely(&uv_sphere_node).transform.set_position_x(1.5);
         let mesh: Mesh = UVSphere::default().into();
-        let mesh = RR_new!(mesh);
-        let mesh_renderer = MeshRenderer::new(mesh, vec![cur_material]);
+        let mesh_handle = engine.mesh_manager.add_mesh(mesh);
+        let mesh_renderer = MeshRenderer::new(mesh_handle, vec![cur_material]);
         scene.add_component(&uv_sphere_node, mesh_renderer);
     }
     scene.add(uv_sphere_node);

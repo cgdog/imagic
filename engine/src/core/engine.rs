@@ -1,5 +1,5 @@
 use crate::{
-    assets::{MaterialManager, ShaderManager, TextureSamplerManager},
+    assets::{MaterialManager, MeshManager, ShaderManager, TextureSamplerManager},
     core::World,
     event::{event_dispatcher::EventDispatcher, events::Events},
     graphics::graphics_context::GraphicsContext,
@@ -47,6 +47,8 @@ pub struct LogicContext<'a> {
     pub shader_manager: &'a mut ShaderManager,
     /// The material manager of the engine.
     pub material_manager: &'a mut MaterialManager,
+    /// The mesh manager of the engine.
+    pub mesh_manager: &'a mut MeshManager,
     /// The texture sampler manager of the engine.
     pub texture_sampler_manager: &'a mut TextureSamplerManager,
     /// The input manager of the engine.
@@ -73,6 +75,8 @@ pub struct Engine {
     pub shader_manager: ShaderManager,
     /// The material manager of the engine.
     pub material_manager: MaterialManager,
+    /// The mesh manager of the engine.
+    pub mesh_manager: MeshManager,
     /// The texture sampler manager of the engine.
     pub texture_sampler_manager: TextureSamplerManager,
     pub(crate) frame_renderer: FrameRenderer,
@@ -103,6 +107,7 @@ impl Engine {
             input_manager: InputManager::new(),
             shader_manager: ShaderManager::new(),
             material_manager: MaterialManager::new(),
+            mesh_manager: MeshManager::new(),
             texture_sampler_manager: TextureSamplerManager::new(),
             frame_renderer: FrameRenderer::new(),
             global_uniforms: BuiltinUniforms::new("Global".to_owned()),
@@ -136,6 +141,7 @@ impl Engine {
             performance_tracker: &mut self.performance_tracker,
             shader_manager: &mut self.shader_manager,
             material_manager: &mut self.material_manager,
+            mesh_manager: &mut self.mesh_manager,
             texture_sampler_manager: &mut self.texture_sampler_manager,
             input_manager: &mut self.input_manager,
         }
@@ -188,13 +194,14 @@ impl Engine {
         match &mut self._graphics_context {
             Some(graphics_context) => {
                 self.world.generate_render_frame(graphics_context, &mut self.texture_sampler_manager, &mut self.shader_manager,
-                    &mut self.material_manager, &mut self.time, &mut self.frame_renderer, &mut self.global_uniforms);
+                    &mut self.material_manager, &mut self.mesh_manager, &mut self.time, &mut self.frame_renderer, &mut self.global_uniforms);
                 let mut logic_context = LogicContext {
                     world: &mut self.world,
                     time: &mut self.time,
                     performance_tracker: &mut self.performance_tracker,
                     shader_manager: &mut self.shader_manager,
                     material_manager: &mut self.material_manager,
+                    mesh_manager: &mut self.mesh_manager,
                     texture_sampler_manager: &mut self.texture_sampler_manager,
                     input_manager: &mut self.input_manager,
                 };
@@ -231,6 +238,7 @@ impl Engine {
                     performance_tracker: &mut self.performance_tracker,
                     shader_manager: &mut self.shader_manager,
                     material_manager: &mut self.material_manager,
+                    mesh_manager: &mut self.mesh_manager,
                     texture_sampler_manager: &mut self.texture_sampler_manager,
                     input_manager: &mut self.input_manager,
                 };
@@ -250,6 +258,7 @@ impl Engine {
             performance_tracker: &mut self.performance_tracker,
             shader_manager: &mut self.shader_manager,
             material_manager: &mut self.material_manager,
+            mesh_manager: &mut self.mesh_manager,
             texture_sampler_manager: &mut self.texture_sampler_manager,
             input_manager: &mut self.input_manager,
         };
@@ -267,6 +276,7 @@ impl Engine {
                 performance_tracker: &mut self.performance_tracker,
                 shader_manager: &mut self.shader_manager,
                 material_manager: &mut self.material_manager,
+                mesh_manager: &mut self.mesh_manager,
                 texture_sampler_manager: &mut self.texture_sampler_manager,
                 input_manager: &mut self.input_manager,
             };

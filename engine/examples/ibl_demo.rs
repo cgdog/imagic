@@ -61,7 +61,7 @@ impl Game {
         };
         let mut engine = Engine::new(engine_options);
         let material = Self::create_material(&mut engine);
-        let sphere = Self::create_sphere(&mut engine.world, material);
+        let sphere = Self::create_sphere(&mut engine, material);
         let game_behavior = GameBehavior { material: material, metallic_roughness_ao: Vec4::new(0.0, 1.0, 1.0, 1.0) };
         engine.add_behavior(game_behavior);
         Self { engine, _sphere: sphere }
@@ -88,13 +88,13 @@ impl Game {
         pbr_material
     }
 
-    fn create_sphere(world: &mut World, material: MaterialHandle) -> NodeHandle {
-        let scene = world.current_scene_mut();
+    fn create_sphere(engine: &mut Engine, material: MaterialHandle) -> NodeHandle {
+        let scene = engine.world.current_scene_mut();
         let uv_sphere_node = scene.create_node("UVSphere");
         {
             let mesh: Mesh = UVSphere::default().into();
-            let mesh = RR_new!(mesh);
-            let mesh_renderer = MeshRenderer::new(mesh, vec![material]);
+            let mesh_handle = engine.mesh_manager.add_mesh(mesh);
+            let mesh_renderer = MeshRenderer::new(mesh_handle, vec![material]);
             scene.add_component::<MeshRenderer>(&uv_sphere_node, mesh_renderer);
         }
         scene.add(uv_sphere_node.clone());
