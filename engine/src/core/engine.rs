@@ -15,9 +15,14 @@ use crate::{
     window::{WindowSize, window_input_processor::WindowInputProcessor},
 };
 
+/// The options of the engine.
 pub struct EngineOptions {
+    /// The window size of the engine.
     pub window_size: WindowSize,
+    /// The name of the engine.
     pub app_name: &'static str,
+    // /// Whether the engine is fullscreen.
+    // pub is_fullscreen: bool,
 }
 
 impl Default for EngineOptions {
@@ -25,29 +30,50 @@ impl Default for EngineOptions {
         Self {
             window_size: WindowSize::default(),
             app_name: "Imagic Engine",
+            // is_fullscreen: false,
         }
     }
 }
 
+/// The context of the logic update which provides the essential APIs for engine users to implement their own game logic.
 pub struct LogicContext<'a> {
+    /// The world of the engine.
     pub world: &'a mut World,
+    /// The time of the engine.
     pub time: &'a mut Time,
+    /// The performance tracker of the engine.
     pub performance_tracker: &'a mut PerformanceTracker,
+    /// The shader manager of the engine.
     pub shader_manager: &'a mut ShaderManager,
+    /// The material manager of the engine.
     pub material_manager: &'a mut MaterialManager,
+    /// The texture sampler manager of the engine.
     pub texture_sampler_manager: &'a mut TextureSamplerManager,
+    /// The input manager of the engine.
     pub input_manager: &'a mut InputManager,
 }
 
+/// The engine instance which contains the essential components of the engine and runs the game loop.
+/// 
+/// It is the core API of the engine. You have to create an Engine instance first to do any game logic.
 pub struct Engine {
+    /// The options of the engine.
     pub options: EngineOptions,
+    /// The world of the engine.
     pub world: World,
+    /// The time of the engine.
     pub time: Time,
+    /// The event dispatcher of the engine.
     pub event_dispatcher: RR<EventDispatcher>,
+    /// The performance tracker of the engine.
     pub performance_tracker: PerformanceTracker,
+    /// The input manager of the engine.
     pub input_manager: InputManager,
+    /// The shader manager of the engine.
     pub shader_manager: ShaderManager,
+    /// The material manager of the engine.
     pub material_manager: MaterialManager,
+    /// The texture sampler manager of the engine.
     pub texture_sampler_manager: TextureSamplerManager,
     pub(crate) frame_renderer: FrameRenderer,
     pub(crate) global_uniforms: BuiltinUniforms,
@@ -96,6 +122,13 @@ impl Engine {
         let _ = event_loop.run_app(self);
     }
 
+    /// Get the LogicContext of the engine.
+    /// 
+    /// The LogicContext provides the essential APIs for engine users to implement their own game logic.
+    /// 
+    /// # Returns
+    /// 
+    /// The LogicContext of the engine.
     pub fn get_logic_context(&mut self) -> LogicContext<'_> {
         LogicContext {
             world: &mut self.world,
@@ -172,11 +205,23 @@ impl Engine {
         }
     }
 
+    /// Add a behavior to the engine.
+    /// 
+    /// The behavior will be executed in the game loop.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `behavior` - The behavior to be added.
     pub fn add_behavior<T: 'static + Behavior>(&mut self, behavior: T) {
         self._behavior_wrappers
             .push(BehaviorWrapper::new(Box::new(behavior)));
     }
 
+    /// Remove a behavior from the engine.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `behavior` - The behavior to be removed.
     pub fn remove_behavior<T: 'static + Behavior>(&mut self) {
         self._behavior_wrappers.retain_mut(|behavior_wrapper| {
             if let Some(_behavior) = behavior_wrapper.behavior.as_any_mut().downcast_mut::<T>() {
@@ -197,6 +242,7 @@ impl Engine {
         });
     }
 
+    /// Remove all behaviors from the engine.
     pub fn remove_all_behavior(&mut self) {
         let mut logic_context = LogicContext {
             world: &mut self.world,

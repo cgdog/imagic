@@ -26,6 +26,15 @@ pub struct Mesh {
 impl IAsset for Mesh {}
 
 impl Mesh {
+    /// Create a new mesh.
+    /// 
+    /// # Arguments
+    /// * `vertex_attributes` - Vertex attributes, e.g., Position, Normal, UV, etc.
+    /// * `index_data` - Index data.
+    /// * `sub_meshes` - Submeshes.
+    /// 
+    /// # Returns
+    /// * `Mesh` - The new mesh.
     pub fn new(mut vertex_attributes: VertexAttributes, index_data: IndexData, sub_meshes: Vec<SubMesh>) -> Mesh {
         vertex_attributes.compute_vertex_attributes();
         Self {

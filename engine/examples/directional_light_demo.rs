@@ -77,6 +77,22 @@ fn create_material(engine: &mut Engine) -> MaterialHandle {
     pbr_material_handle
 }
 
+fn create_light(engine: &mut Engine) -> NodeHandle {
+    let scene = engine.world.current_scene_mut();
+    let light_node_handle = scene.create_node("Directional Light");
+    {
+        let light = Light::new_directional(
+            Vec3::new(-1.0, -1.0, -1.0).normalize(),
+            Color::WHITE,
+            3.0,
+            true,
+        );
+        scene.add_component(&light_node_handle, light);
+    }
+    scene.add(light_node_handle);
+    light_node_handle
+}
+
 fn init(engine: &mut Engine) {
     let _skybox_node = SkyboxBuilder::create_skybox(
         engine,
@@ -90,6 +106,8 @@ fn init(engine: &mut Engine) {
     let _quad_node = create_quad(engine, cur_material_handle);
     let _cuboid_node = create_cuboid(engine, cur_material_handle);
     let _sphere_node = create_sphere(engine, cur_material_handle);
+
+    let _directional_light_node = create_light(engine);
 }
 
 fn main() {
@@ -98,7 +116,7 @@ fn main() {
 
     let engine_options = EngineOptions {
         window_size: WindowSize::new(1000.0, 500.0),
-        app_name: "lxy primitives demo",
+        app_name: "lxy directional light demo",
     };
     let mut engine = Engine::new(engine_options);
     init(&mut engine);

@@ -18,19 +18,30 @@ pub(crate) struct SH {
     sh: [Color; 9],
 }
 
+/// A scene contains nodes and components, and manages their lifecycle.
 pub struct Scene {
     /// Root nodes which have no parent.
     pub root_nodes: Vec<NodeHandle>,
+    /// The arena for node allocation.
     pub(crate) node_arena: NodeArena,
+    /// The clear color of the scene.
     pub clear_color: Color,
+    /// Whether the scene has fog enabled.
     pub fog_enabled: bool,
+    /// The color of the fog.
     pub fog_color: Color,
+    /// The IBL data of the scene.
     pub ibl_data: Option<IBLData>,
+    /// Cached camera nodes in the scene used to render the scene.
     pub(crate) cached_cameras: Vec<NodeHandle>,
+    /// Cached renderable nodes in the scene used to render the scene.
     pub(crate) cached_renderables: Vec<NodeHandle>,
+    /// Cached skybox node in the scene used to render the scene.
     pub(crate) cached_skybox_: NodeHandle,
+    /// The SH coefficients of the scene.
     pub(crate) sh: SH,
 
+    /// Component storages for the scene.
     pub(crate) component_storages: ComponentStorages,
 }
 
@@ -90,14 +101,27 @@ impl Scene {
         self.node_arena.attach_to_parent(parent_id, node_id)
     }
 
+    /// Detach a node from its parent in the scene.
     pub fn detach_from_parent(&mut self, node_id: &NodeHandle) -> bool {
         self.node_arena.detach_from_parent(node_id)
     }
 
+    /// Create a new node with the given name.
+    /// # Arguments
+    /// 
+    /// * `name` - The name of the node.
+    /// 
+    /// # Returns
+    /// 
+    /// * `NodeHandle` - The ID of the created node.
     pub fn create_node(&mut self, name: impl Into<String>) -> NodeHandle {
         self.node_arena.create_node(name)
     }
 
+    /// Destroy a node in the scene.
+    /// # Arguments
+    /// 
+    /// * `node_id` - The ID of the node to destroy.
     pub fn destroy_node(&mut self, node_id: &NodeHandle) {
         if let Some(node) = self.node_arena.get_mut(node_id) {
             for (component_type_id, component_id) in &node.components {
@@ -107,6 +131,15 @@ impl Scene {
         }
     }
 
+    /// Add a component to a node in the scene.
+    /// # Arguments
+    /// 
+    /// * `node_id` - The ID of the node to add the component to.
+    /// * `component` - The component to add.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Option<T>` - Returns the old component if it exists, `None` otherwise.
     pub fn add_component<T: Component>(&mut self, node_id: &NodeHandle, component: T) -> Option<T>  {
         if let Some(node) = self.node_arena.get_mut(node_id) {
             let component_type_id = std::any::TypeId::of::<T>();
@@ -137,6 +170,14 @@ impl Scene {
         }
     }
 
+    /// Remove a component from a node in the scene.
+    /// # Arguments
+    /// 
+    /// * `node_id` - The ID of the node to remove the component from.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Option<T>` - Returns the removed component if it exists, `None` otherwise.
     pub fn remove_component<T: Component>(&mut self, node_id: &NodeHandle) -> Option<T> {
         if let Some(node) = self.node_arena.get_mut(node_id) {
             let component_type_id = std::any::TypeId::of::<T>();
@@ -157,6 +198,14 @@ impl Scene {
         }
     }
 
+    /// Get a reference to a component of a node in the scene.
+    /// # Arguments
+    /// 
+    /// * `node_id` - The ID of the node to get the component from.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Option<&T>` - Returns a reference to the component if it exists, `None` otherwise.
     pub fn get_component<T: Component>(&self, node_id: &NodeHandle) -> Option<&T> {
         let component_type_id = std::any::TypeId::of::<T>();
         if let Some(node) = self.node_arena.get(node_id) && let Some(component_id) = node.components.get(&component_type_id) {
@@ -166,6 +215,14 @@ impl Scene {
         }
     }
 
+    /// Get a mutable reference to a component of a node in the scene.
+    /// # Arguments
+    /// 
+    /// * `node_id` - The ID of the node to get the component from.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Option<&mut T>` - Returns a mutable reference to the component if it exists, `None` otherwise.
     pub fn get_component_mut<T: Component>(&mut self, node_id: &NodeHandle) -> Option<&mut T> {
         let component_type_id = std::any::TypeId::of::<T>();
         if let Some(node) = self.node_arena.get(node_id) && let Some(component_id) = node.components.get(&component_type_id) {
@@ -175,13 +232,25 @@ impl Scene {
         }
     }
 
+    /// Set the IBL data of the scene.
+     /// # Arguments
+     /// 
+     /// * `ibl_data` - The IBL data to set.
     pub fn set_ibl_data(&mut self, ibl_data: Option<IBLData>) {
         self.ibl_data = ibl_data
     }
 
+    /// Lifecycle method called when the scene is initialized.
     pub(crate) fn on_init(&mut self, _time: &mut Time) {
     }
 
+    /// Try to initialize the skybox if it exists.
+    /// # Arguments
+    /// 
+    /// * `graphics_context` - The graphics context to use for initialization.
+    /// * `texture_sampler_manager` - The texture sampler manager to use for initialization.
+    /// * `shader_manager` - The shader manager to use for initialization.
+    /// * `material_manager` - The material manager to use for initialization.
     pub(crate) fn try_init_skybox(
         &mut self,
         graphics_context: &mut GraphicsContext,
@@ -212,6 +281,10 @@ impl Scene {
         }
     }
 
+    /// Get the environment reflection information of the scene.
+    /// # Returns
+    /// 
+    /// * `(TextureHandle, TextureHandle)` - Returns the reflection cube map texture handle and the BRDF LUT texture handle.
     pub fn get_environment_reflection_info(&self) -> (TextureHandle, TextureHandle) {
         if NodeHandle::INVALID != self.cached_skybox_ {
             if let Some(skybox_component) = self.get_component::<Skybox>(&self.cached_skybox_) {
@@ -224,6 +297,10 @@ impl Scene {
         (Texture::default_cube_texture(), Texture::white())
     }
 
+    /// Lifecycle method called when the scene is updated.
+    /// # Arguments
+    /// 
+    /// * `time` - The time delta since the last update.
     pub(crate) fn on_update(&mut self, _time: &mut Time) {
         for root_node in &self.root_nodes {
             Self::update_node_hierarchy(&mut self.node_arena, root_node, None);
@@ -250,6 +327,7 @@ impl Scene {
         }
     }
 
+    /// Lifecycle method called when the scene is stopped.
     pub(crate) fn on_stop(&mut self, _time: &mut Time) {
     }
 }

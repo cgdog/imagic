@@ -58,5 +58,51 @@ pub struct Light {
     pub light_type: LightType,
 }
 
-
 impl_component!(Light);
+
+impl Light {
+    /// Creates a new light with the given parameters.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `light_type` - The type of the light.
+    /// * `color` - The color of the light.
+    /// * `intensity` - The intensity of the light.
+    /// * `cast_shadow` - Whether the light casts shadow.
+    pub fn new(
+        light_type: LightType,
+        color: Color,
+        intensity: f32,
+        cast_shadow: bool,
+    ) -> Self {
+        Self {
+            enabled: true,
+            color,
+            intensity,
+            cast_shadow,
+            light_type,
+        }
+    }
+
+    /// Creates a new directional light with the given parameters.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `direction` - The direction of the light.
+    /// * `color` - The color of the light.
+    /// * `intensity` - The intensity of the light.
+    /// * `cast_shadow` - Whether the light casts shadow.
+    pub fn new_directional(
+        direction: Vec3,
+        color: Color,
+        intensity: f32,
+        cast_shadow: bool,
+    ) -> Self {
+        Self::new(
+            LightType::Directional { direction },
+            color,
+            intensity,
+            cast_shadow,
+        )
+    }
+}

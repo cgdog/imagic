@@ -1,5 +1,8 @@
 use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign};
 
+/// Layer enum
+///
+/// The layer of the node.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Layer {
     Default = 1 << 0,

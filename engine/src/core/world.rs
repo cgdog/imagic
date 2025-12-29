@@ -13,17 +13,37 @@ use crate::{
     }, time::Time
 };
 
+/// A world in the scene. It is a container for scenes.
 pub struct World {
+    /// The scenes in the world. At least one scene is required.
+    /// 
+    /// (Now only one scene is supported. Two or more scenes are not tested.)
     pub scenes: Vec<Scene>,
+    /// The index of the current scene.
     pub current_scene_index: usize,
 }
 
 impl World {
+    
+    /// Creates a new world with a default scene.
+    /// 
+    /// # Returns
+    /// 
+    /// * `World` - The created world.
     pub(crate) fn new() -> World {
         let current_scene = Scene::new();
         Self::new_with_current_scene(current_scene)
     }
 
+    /// Creates a new world with the given scene.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `current_scene` - The scene to add to the world.
+    /// 
+    /// # Returns
+    /// 
+    /// * `World` - The created world.
     pub(crate) fn new_with_current_scene(current_scene: Scene) -> World {
         let world: World = World {
             scenes: vec![current_scene],
@@ -32,18 +52,42 @@ impl World {
         world
     }
 
+    /// Returns a mutable reference to the current scene.
+    /// 
+    /// # Returns
+    /// 
+    /// * `&mut Scene` - The current scene.
     pub fn current_scene_mut(&mut self) -> &mut Scene {
         &mut self.scenes[self.current_scene_index]
     }
 
+    /// Returns a reference to the current scene.
+    /// 
+    /// # Returns
+    /// 
+    /// * `&Scene` - The current scene.
     pub fn current_scene(&mut self) -> & Scene {
         &self.scenes[self.current_scene_index]
     }
 
+    /// Stops the world.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `time` - The time object.
     pub(crate) fn stop(&mut self, time: &mut Time) {
         self.scenes[self.current_scene_index].on_stop(time);
     }
 
+    /// Initializes the world.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `graphics_context` - The graphics context.
+    /// * `texture_sampler_manager` - The texture sampler manager.
+    /// * `shader_manager` - The shader manager.
+    /// * `material_manager` - The material manager.
+    /// * `time` - The time object.
     pub(crate) fn on_init(&mut self, graphics_context: &mut GraphicsContext, texture_sampler_manager: &mut TextureSamplerManager,
         shader_manager: &mut ShaderManager, material_manager: &mut MaterialManager, time: &mut Time) {
         log::info!("world on_init");
@@ -52,6 +96,12 @@ impl World {
         self.scenes[self.current_scene_index].on_init(time);
     }
 
+    /// Resizes the world.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `graphics_context` - The graphics context.
+    /// * `texture_sampler_manager` - The texture sampler manager.
     pub(crate) fn on_resize(&mut self, graphics_context: &GraphicsContext, texture_sampler_manager: &mut TextureSamplerManager,) {
         let physical_size = graphics_context.main_window().get_physical_size();
         let logical_size = graphics_context.main_window().get_logical_size();
@@ -70,12 +120,26 @@ impl World {
         current_scene.cached_cameras = cached_cameras;
     }
 
+    /// Updates the world.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `time` - The time object.
     pub(crate) fn updpate(&mut self, time: &mut Time) {
         self.current_scene_mut().on_update(time);
     }
 
-    // fn get_camera_render_data
-
+    /// Generates a render frame.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `graphics_context` - The graphics context.
+    /// * `texture_sampler_manager` - The texture sampler manager.
+    /// * `shader_manager` - The shader manager.
+    /// * `material_manager` - The material manager.
+    /// * `time` - The time object.
+    /// * `frame_renderer` - The frame renderer which contains the render data.
+    /// * `global_uniforms` - The global uniforms.
     pub(crate) fn generate_render_frame(&mut self, graphics_context: &mut GraphicsContext,
         texture_sampler_manager: &mut TextureSamplerManager, shader_manager: &mut ShaderManager,
         material_manager: &mut MaterialManager, time: &mut Time,
