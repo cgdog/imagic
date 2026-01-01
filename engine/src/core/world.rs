@@ -238,7 +238,7 @@ impl World {
         // let current_scene = self.current_scene_mut();
         for renderable_node in cached_renderables {
             let node_mut_ref = current_scene.node_arena.get_mut_forcely(renderable_node);
-            if !visible_layers.contains(node_mut_ref.layer) {
+            if !node_mut_ref.enabled || !visible_layers.contains(node_mut_ref.layer) {
                 continue;
             }
             let model_matrix = node_mut_ref.transform.model_matrix;

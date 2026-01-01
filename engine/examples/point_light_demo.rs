@@ -1,5 +1,46 @@
 use imagic::prelude::*;
 
+struct GameBehavior {
+    skybox_node_handle: NodeHandle,
+    point_light_node_handle: NodeHandle,
+    enable_skybox: bool,
+    enable_point_light: bool,
+    point_light_intensity: f32,
+    point_light_pos_x: f32,
+    point_light_pos_z: f32,
+}
+
+impl Behavior for GameBehavior {
+    impl_as_any!();
+    fn on_gui(&mut self, logic_context: &mut LogicContext, ui_context: &egui::Context) {
+        egui::Window::new("Point Light Demo").show(ui_context, |ui|{
+            if ui.checkbox(&mut self.enable_skybox, "Enable Skybox").changed() {
+                let node = logic_context.world.current_scene_mut().get_node_mut_forcely(&self.skybox_node_handle);
+                node.enabled = self.enable_skybox;
+            }
+            if ui.checkbox(&mut self.enable_point_light, "Enable Point Light").changed() {
+                let node = logic_context.world.current_scene_mut().get_node_mut_forcely(&self.point_light_node_handle);
+                node.enabled = self.enable_point_light;
+            }
+
+            if ui.add(egui::Slider::new(&mut self.point_light_intensity, 0.0..=10.0).text("Intensity")).changed() {
+                if let Some(light) = logic_context.world.current_scene_mut().get_component_mut::<Light>(&self.point_light_node_handle) {
+                    light.intensity = self.point_light_intensity;
+                }
+            }
+
+            if ui.add(egui::Slider::new(&mut self.point_light_pos_x, -10.0..=10.0).text("X")).changed() {
+                let transform = &mut logic_context.world.current_scene_mut().get_node_mut_forcely(&self.point_light_node_handle).transform;
+                transform.set_position_x(self.point_light_pos_x);
+            }
+            if ui.add(egui::Slider::new(&mut self.point_light_pos_z, -10.0..=10.0).text("Z")).changed() {
+                let transform = &mut logic_context.world.current_scene_mut().get_node_mut_forcely(&self.point_light_node_handle).transform;
+                transform.set_position_z(self.point_light_pos_z);
+            }
+        });
+    }
+}
+
 fn create_camera(engine: &mut Engine) -> NodeHandle {
     let current_scene = engine.world.current_scene_mut();
     let camera_node_handle = current_scene.create_node("Main Camera");
@@ -110,6 +151,17 @@ fn init(engine: &mut Engine) {
     let _sphere_node = create_sphere(engine, cur_material_handle);
 
     let _point_light_node = create_light(engine);
+
+    let game_behavior = GameBehavior {
+        skybox_node_handle: _skybox_node,
+        point_light_node_handle: _point_light_node,
+        enable_skybox: true,
+        enable_point_light: true,
+        point_light_intensity: 5.0,
+        point_light_pos_x: 0.0,
+        point_light_pos_z: 0.0,
+    };
+    engine.add_behavior(game_behavior);
 }
 
 fn main() {

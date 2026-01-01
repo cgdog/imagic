@@ -292,7 +292,9 @@ impl Scene {
     /// 
     /// * `(TextureHandle, TextureHandle)` - Returns the reflection cube map texture handle and the BRDF LUT texture handle.
     pub fn get_environment_reflection_info(&self) -> (TextureHandle, TextureHandle) {
-        if NodeHandle::INVALID != self.cached_skybox_ {
+        if NodeHandle::INVALID != self.cached_skybox_
+            && let Some(skybox_node) = self.get_node(&self.cached_skybox_)
+            && skybox_node.enabled {
             if let Some(skybox_component) = self.get_component::<Skybox>(&self.cached_skybox_) {
                 return (
                     skybox_component.reflection_cube_map,
@@ -339,15 +341,16 @@ impl Scene {
 
     pub(crate) fn collect_lights_data(&self) -> LightsGPUData {
         let mut lights_gpu_data = LightsGPUData::default();
-        lights_gpu_data.lights_count[0] = self.cached_lights.len() as u32;
+        let mut light_count = 0u32;
         for light_handle in &self.cached_lights {
-            if let Some(light) = self.get_component::<Light>(light_handle) {
+            let light_node = self.get_node_forcely(light_handle);
+            if light_node.enabled && let Some(light) = self.get_component::<Light>(light_handle) {
+                light_count += 1;
                 let mut light_data = GPULightData::default();
                 light_data.flags[0] = light.light_type.as_u32();
                 let light_color = light.color * light.intensity;
                 light_data.color = light_color.to_array();
 
-                let light_node = self.get_node_forcely(light_handle);
                 let light_position = light_node.transform.position;
                 light_data.position = [light_position.x, light_position.y, light_position.z, 1.0];
                 let light_direction = light_node.transform.model_matrix * Vec4::new(0.0, 0.0, -1.0, 0.0);
@@ -356,6 +359,7 @@ impl Scene {
                 lights_gpu_data.lights_info.push(light_data);
             }
         }
+        lights_gpu_data.lights_count[0] = light_count;
         lights_gpu_data
     }
 }
