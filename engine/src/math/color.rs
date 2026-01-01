@@ -82,6 +82,10 @@ impl Color {
         Self { r: arr[0], g: arr[1], b: arr[2], a: arr[3] }
     }
 
+    pub fn to_array(&self) -> [f32; 4] {
+        [self.r, self.g, self.b, self.a]
+    }
+
     pub fn scalar(value: ColorChannelType) -> Self {
         Self {
             r: value,

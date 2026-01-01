@@ -5,8 +5,8 @@ use crate::{
     components::mesh_renderer::MeshRenderer,
     core::{NodeArena, NodeHandle},
     graphics::graphics_context::GraphicsContext,
-    math::{Mat4, color::Color},
-    prelude::{Camera, Component, component_storage::ComponentStorages},
+    math::{Mat4, Vec4, color::Color},
+    prelude::{Camera, Component, GPULightData, Light, LightsGPUData, component_storage::ComponentStorages},
     time::Time,
 };
 
@@ -38,6 +38,7 @@ pub struct Scene {
     pub(crate) cached_renderables: Vec<NodeHandle>,
     /// Cached skybox node in the scene used to render the scene.
     pub(crate) cached_skybox_: NodeHandle,
+    pub(crate) cached_lights: Vec<NodeHandle>,
     /// The SH coefficients of the scene.
     pub(crate) sh: SH,
 
@@ -58,6 +59,7 @@ impl Scene {
             cached_cameras: vec![],
             cached_renderables: vec![],
             cached_skybox_: NodeHandle::INVALID,
+            cached_lights: vec![],
             sh: Default::default(),
             component_storages: ComponentStorages::new(),
         };
@@ -158,6 +160,8 @@ impl Scene {
                     self.cached_renderables.push(*node_id);
                 } else if  component_type_id == std::any::TypeId::of::<Skybox>() {
                     self.cached_skybox_ = *node_id;
+                } else if component_type_id == std::any::TypeId::of::<Light>() {
+                    self.cached_lights.push(*node_id);
                 }
                 None
             }
@@ -188,6 +192,8 @@ impl Scene {
                     self.cached_renderables.retain(|&id| id != *node_id);
                 } else if  component_type_id == std::any::TypeId::of::<Skybox>() {
                     self.cached_skybox_ = NodeHandle::INVALID;
+                } else if component_type_id == std::any::TypeId::of::<Light>() {
+                    self.cached_lights.retain(|&id| id != *node_id);
                 }
                 self.component_storages.remove_component(&component_id, component_type_id)
             } else {
@@ -329,5 +335,27 @@ impl Scene {
 
     /// Lifecycle method called when the scene is stopped.
     pub(crate) fn on_stop(&mut self, _time: &mut Time) {
+    }
+
+    pub(crate) fn collect_lights_data(&self) -> LightsGPUData {
+        let mut lights_gpu_data = LightsGPUData::default();
+        lights_gpu_data.lights_count[0] = self.cached_lights.len() as u32;
+        for light_handle in &self.cached_lights {
+            if let Some(light) = self.get_component::<Light>(light_handle) {
+                let mut light_data = GPULightData::default();
+                light_data.flags[0] = light.light_type.as_u32();
+                let light_color = light.color * light.intensity;
+                light_data.color = light_color.to_array();
+
+                let light_node = self.get_node_forcely(light_handle);
+                let light_position = light_node.transform.position;
+                light_data.position = [light_position.x, light_position.y, light_position.z, 1.0];
+                let light_direction = light_node.transform.model_matrix * Vec4::new(0.0, 0.0, -1.0, 0.0);
+                light_data.direction = [light_direction.x, light_direction.y, light_direction.z, 0.0];
+
+                lights_gpu_data.lights_info.push(light_data);
+            }
+        }
+        lights_gpu_data
     }
 }

@@ -40,6 +40,7 @@ impl CameraUniformSyncFlags {
 pub(crate) struct GlobalUniformSyncFlags {
     pub(crate) has_time_synced: bool,
     pub(crate) has_reflection_maps_synced: bool,
+    pub(crate) has_lights_synced: bool,
 }
 
 impl GlobalUniformSyncFlags {
@@ -47,6 +48,7 @@ impl GlobalUniformSyncFlags {
         Self {
             has_time_synced: false,
             has_reflection_maps_synced: false,
+            has_lights_synced: false,
         }
     }
 }
@@ -64,6 +66,7 @@ pub enum UniformValue {
     Mat3(Mat3, Option<BufferView>),
     Mat4(Mat4, Option<BufferView>),
     Struct(Vec<u8>, Option<BufferView>), // for struct, use Vec<u8> to store data.
+    Storage(Vec<u8>, Option<BufferView>), // for storage buffer.
     Texture(TextureHandle),
     Sampler(SamplerHandle),
 }
@@ -73,78 +76,96 @@ impl UniformValue {
         let size = self.size();
         match self {
             UniformValue::Float(value, buffer_view) => {
-                Self::write_uniform_buffer(
+                Self::write_buffer(
                     size,
                     &mut graphics_context.buffer_manager,
                     bytemuck::cast_slice(&[*value]),
                     buffer_view,
+                    false,
                 );
             }
             UniformValue::Vec2(value, buffer_view) => {
-                Self::write_uniform_buffer(
+                Self::write_buffer(
                     size,
                     &mut graphics_context.buffer_manager,
                     bytemuck::cast_slice(value.as_ref()),
                     buffer_view,
+                    false,
                 );
             }
             UniformValue::Vec3(value, buffer_view) => {
-                Self::write_uniform_buffer(
+                Self::write_buffer(
                     size,
                     &mut graphics_context.buffer_manager,
                     bytemuck::cast_slice(value.as_ref()),
                     buffer_view,
+                    false,
                 );
             }
             UniformValue::Vec4(value, buffer_view) => {
-                Self::write_uniform_buffer(
+                Self::write_buffer(
                     size,
                     &mut graphics_context.buffer_manager,
                     bytemuck::cast_slice(value.as_ref()),
                     buffer_view,
+                    false,
                 );
             }
             UniformValue::UVec4(value, buffer_view) => {
-                Self::write_uniform_buffer(
+                Self::write_buffer(
                     size,
                     &mut graphics_context.buffer_manager,
                     bytemuck::cast_slice(value.as_ref()),
                     buffer_view,
+                    false,
                 );
             }
             UniformValue::IVec4(value, buffer_view) => {
-                Self::write_uniform_buffer(
+                Self::write_buffer(
                     size,
                     &mut graphics_context.buffer_manager,
                     bytemuck::cast_slice(value.as_ref()),
                     buffer_view,
+                    false,
                 );
             }
             // MaterialPropertyValue::Color(value) => {
             //     buffer_manager.write_data(buffer_view, bytemuck::cast_slice(value.as_ref()))
             // }
             UniformValue::Mat3(value, buffer_view) => {
-                Self::write_uniform_buffer(
+                Self::write_buffer(
                     size,
                     &mut graphics_context.buffer_manager,
                     bytemuck::cast_slice(value.as_ref()),
                     buffer_view,
+                    false,
                 );
             }
             UniformValue::Struct(value, buffer_view) => {
-                Self::write_uniform_buffer(
+                Self::write_buffer(
                     size,
                     &mut graphics_context.buffer_manager,
                     &value,
                     buffer_view,
+                    false,
+                );
+            }
+            UniformValue::Storage(value, buffer_view) => {
+                Self::write_buffer(
+                    size,
+                    &mut graphics_context.buffer_manager,
+                    &value,
+                    buffer_view,
+                    true,
                 );
             }
             UniformValue::Mat4(value, buffer_view) => {
-                Self::write_uniform_buffer(
+                Self::write_buffer(
                     size,
                     &mut graphics_context.buffer_manager,
                     bytemuck::cast_slice(value.as_ref()),
                     buffer_view,
+                    false,
                 );
             }
             UniformValue::Texture(handle) => {
@@ -164,16 +185,21 @@ impl UniformValue {
         }
     }
 
-    fn write_uniform_buffer(
+    fn write_buffer(
         size: u64,
         buffer_manager: &mut BufferManager,
         data: &[u8],
         buffer_view: &mut Option<BufferView>,
+        is_storage_buffer: bool,
     ) {
         if let Some(real_buffer_view) = buffer_view {
             buffer_manager.write_data(real_buffer_view, data);
         } else {
-            let new_buffer_view = buffer_manager.allocate_uniform_buffer(size);
+            let new_buffer_view = if is_storage_buffer {
+                buffer_manager.allocate_storage_buffer(size)
+            } else {
+                buffer_manager.allocate_uniform_buffer(size)
+            };
             buffer_manager.write_data(&new_buffer_view, data);
             // let new_buffer_view = buffer_manager.allocate_uniform_buffer_init(size, data);
             *buffer_view = Some(new_buffer_view);
@@ -192,6 +218,7 @@ impl UniformValue {
             UniformValue::Mat3(_value, _) => 48,
             UniformValue::Mat4(_value, _) => 64,
             UniformValue::Struct(_value, _) => _value.len() as u64,
+            UniformValue::Storage(_value, _) => _value.len() as u64,
             UniformValue::Texture(_value) => 0,
             UniformValue::Sampler(_value) => 0,
             // _ => 0,
@@ -458,19 +485,6 @@ impl Uniforms {
         }
     }
 
-    // pub(crate) fn set_matrix3x3_buffer_view(&mut self, property_name: &str, buffer_view: BufferView) {
-    //     if let Some(property_value) = self.uniforms.get_mut(property_name) {
-    //         match &mut property_value.value {
-    //             UniformValue::Mat3(_mat3, bv) => {
-    //                 *bv = Some(buffer_view);
-    //                 property_value.is_dirty = true;
-    //                 self.is_dirty = true;
-    //             }
-    //             _ => unreachable!(),
-    //         }
-    //     }
-    // }
-
     pub fn set_matrix4x4(&mut self, property_name: &str, value: Mat4) {
         if let Some(property_value) = self.uniforms.get_mut(property_name) {
             match &mut property_value.value {
@@ -483,19 +497,6 @@ impl Uniforms {
             }
         }
     }
-
-    // pub(crate) fn set_matrix4x4_buffer_view(&mut self, property_name: &str, buffer_view: BufferView) {
-    //     if let Some(property_value) = self.uniforms.get_mut(property_name) {
-    //         match &mut property_value.value {
-    //             UniformValue::Mat4(_mat4, bv) => {
-    //                 *bv = Some(buffer_view);
-    //                 property_value.is_dirty = true;
-    //                 self.is_dirty = true;
-    //             }
-    //             _ => unreachable!(),
-    //         }
-    //     }
-    // }
 
     pub fn set_struct(&mut self, property_name: &str, value: Vec<u8>) {
         if let Some(property_value) = self.uniforms.get_mut(property_name) {
@@ -747,6 +748,28 @@ impl BuiltinUniforms {
                 Uniform::new(
                     property_name.to_string(),
                     UniformValue::Struct(value, None),
+                ),
+            );
+            self.is_dirty = true;
+        }
+    }
+
+    pub(crate) fn set_storage(&mut self, property_name: &str, value: Vec<u8>) {
+        if let Some(property_value) = self.uniforms.get_mut(property_name) {
+            match &mut property_value.value {
+                UniformValue::Storage(data, _) => {
+                    *data = value;
+                    property_value.is_dirty = true;
+                    self.is_dirty = true;
+                }
+                _ => unreachable!(),
+            }
+        } else {
+            self.uniforms.insert(
+                property_name.to_string(),
+                Uniform::new(
+                    property_name.to_string(),
+                    UniformValue::Storage(value, None),
                 ),
             );
             self.is_dirty = true;

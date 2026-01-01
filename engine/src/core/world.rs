@@ -4,11 +4,10 @@ use crate::{
     assets::{
         BuiltinGlobalShaderFeatures, MaterialManager, MeshManager, Sampler, ShaderManager, Texture, TextureFormat, TextureHandle,
         TextureSamplerManager, shaders::shader_property::BuiltinShaderUniformNames
-    }, components::{camera::Camera, mesh_renderer::MeshRenderer},
-    core::{LayerMask, NodeHandle, SH, scene::Scene}, graphics::{
+    }, components::{camera::Camera, mesh_renderer::MeshRenderer}, core::{LayerMask, NodeHandle, SH, scene::Scene}, graphics::{
         bind_group::BindGroupID, graphics_context::GraphicsContext, render_states::RenderQueue,
         uniform::{BuiltinUniforms, CameraUniformSyncFlags, GlobalUniformSyncFlags}
-    }, math::Vec4, renderer::{
+    }, math::Vec4, prelude::LightsGPUData, renderer::{
         frame_data::{CameraRenderData, ItemRenderData}, frame_renderer::FrameRenderer,
     }, time::Time
 };
@@ -152,6 +151,8 @@ impl World {
         let mut global_uniform_sync_flags = GlobalUniformSyncFlags::new();
         let cached_cameras = std::mem::take(&mut cur_scene.cached_cameras);
         let cached_renderables = std::mem::take(&mut cur_scene.cached_renderables);
+        let lights_gpu_data = cur_scene.collect_lights_data();
+        // let cached_lights = std::mem::take(&mut cur_scene.cached_lights);
         for camera_node_id in &cached_cameras {
             let camera_node_ref = cur_scene.node_arena.get_forcely(camera_node_id);
             let camera_position = camera_node_ref.transform.position;
@@ -197,6 +198,7 @@ impl World {
                         time,
                         &mut camera_render_data,
                         &cached_renderables,
+                        &lights_gpu_data,
                         &mut global_uniform_sync_flags,
                         reflection_map,
                         brdf_lut,
@@ -226,6 +228,7 @@ impl World {
         time: &mut Time,
         camera_render_data: &mut CameraRenderData,
         cached_renderables: &Vec<NodeHandle>,
+        lights_gpu_data: &LightsGPUData,
         global_uniform_sync_flags: &mut GlobalUniformSyncFlags,
         reflection_map: TextureHandle,
         brdf_lut: TextureHandle,
@@ -240,7 +243,7 @@ impl World {
             }
             let model_matrix = node_mut_ref.transform.model_matrix;
             let normal_matrix = node_mut_ref.transform.normal_matrix;
-            if let Some(mesh_renderer) = &mut current_scene.get_component_mut::<MeshRenderer>(renderable_node) 
+            if let Some(mesh_renderer) = current_scene.get_component_mut::<MeshRenderer>(renderable_node) 
                 && let Some(mesh_mut_ref) = mesh_manager.get_mesh_mut(&mesh_renderer.mesh){
                 if mesh_mut_ref.is_dirty {
                     mesh_mut_ref.upload(graphics_context);
@@ -446,6 +449,11 @@ impl World {
                                         !global_uniform_sync_flags.has_reflection_maps_synced);
                                 }
                                 global_uniform_sync_flags.has_reflection_maps_synced = true;
+                                need_sync_global_uniforms = true;
+                            }
+                            if builtin_uniform_flags.has_lights && !global_uniform_sync_flags.has_lights_synced {
+                                global_uniforms.set_storage(BuiltinShaderUniformNames::_LIGHTING_INFOS, lights_gpu_data.to_vec_u8());
+                                global_uniform_sync_flags.has_lights_synced = true;
                                 need_sync_global_uniforms = true;
                             }
                             if need_sync_global_uniforms {

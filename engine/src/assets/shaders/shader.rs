@@ -2,7 +2,7 @@ use std::{borrow::Cow, hash::{Hash, Hasher}};
 
 use ahash::AHasher;
 use log::info;
-use wgpu::{BindGroupLayout, BindGroupLayoutEntry, ShaderModule};
+use wgpu::{BindGroupLayout, BindGroupLayoutEntry, ShaderModule, naga::{AddressSpace, StorageAccess}};
 
 use crate::{
     assets::{
@@ -16,7 +16,7 @@ use crate::{
 };
 
 /// Map of shader property name to ShaderProperty.
-pub type ShaderPropertyMap = ahash::AHashMap<String, ShaderProperty>;
+pub(crate) type ShaderPropertyMap = ahash::AHashMap<String, ShaderProperty>;
 
 #[derive(Clone)]
 pub(crate) struct ShaderPropertyPacket {
@@ -79,12 +79,19 @@ impl ShaderPropertyPacket {
                 | ShaderPropertyType::Matrix3x3(min_binding_size)
                 | ShaderPropertyType::Matrix4x4(min_binding_size)
                 | ShaderPropertyType::Struct(min_binding_size) => {
-                    // uniform buffer
+                    // uniform or storage buffer
+                    let buffer_binding_type = match property.space {
+                        AddressSpace::Storage{access} => {
+                            let is_readonly = access == StorageAccess::LOAD;
+                            wgpu::BufferBindingType::Storage { read_only: is_readonly }
+                        }
+                        _ => wgpu::BufferBindingType::Uniform,
+                    };
                     let bind_group_layout_entry = wgpu::BindGroupLayoutEntry {
                         binding,
                         visibility,
                         ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
+                            ty: buffer_binding_type,
                             has_dynamic_offset: false,
                             min_binding_size: *min_binding_size,
                         },
@@ -156,6 +163,7 @@ pub(crate) struct BuilinUniformFlags {
     pub(crate) has_reflection_cube_map: bool,
     pub(crate) has_reflection_cube_sampler: bool,
     pub(crate) has_brdf_lut: bool,
+    pub(crate) has_lights: bool,
 }
 
 impl BuilinUniformFlags {
@@ -178,6 +186,7 @@ impl BuilinUniformFlags {
             has_reflection_cube_map: false,
             has_reflection_cube_sampler: false,
             has_brdf_lut: false,
+            has_lights: false,
         }
     }
 

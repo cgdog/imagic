@@ -79,17 +79,19 @@ fn create_material(engine: &mut Engine) -> MaterialHandle {
 
 fn create_light(engine: &mut Engine) -> NodeHandle {
     let scene = engine.world.current_scene_mut();
-    let light_node_handle = scene.create_node("Directional Light");
+    let light_node_handle = scene.create_node("Point Light");
     {
-        let light = Light::new_directional_light(
-            Vec3::new(-1.0, -1.0, -1.0).normalize(),
+        let light = Light::new_point_light(
+            5.0,
             Color::WHITE,
-            3.0,
+            5.0,
             true,
         );
         scene.add_component(&light_node_handle, light);
     }
     scene.add(light_node_handle);
+    scene.get_node_mut_forcely(&light_node_handle).transform
+        .set_position(Vec3::new(0.0, 1.0, 0.0)); // front
     light_node_handle
 }
 
@@ -107,19 +109,19 @@ fn init(engine: &mut Engine) {
     let _cuboid_node = create_cuboid(engine, cur_material_handle);
     let _sphere_node = create_sphere(engine, cur_material_handle);
 
-    let _directional_light_node = create_light(engine);
+    let _point_light_node = create_light(engine);
 }
 
 fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
-    log::info!("Directional Light Demo started.");
+    log::info!("Point Light Demo started.");
 
     let engine_options = EngineOptions {
         window_size: WindowSize::new(1000.0, 500.0),
-        app_name: "lxy directional light demo",
+        app_name: "lxy point light demo",
     };
     let mut engine = Engine::new(engine_options);
     init(&mut engine);
     engine.run();
-    log::info!("Directional Light Demo finished.");
+    log::info!("Point Light Demo finished.");
 }

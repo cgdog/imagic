@@ -46,13 +46,24 @@ struct SpotLightInfo {
     position: vec4f,
     color: vec4f,
     // x: inner angle, y: outter angle, z: angle decay, w: distance decay
-    angel_decay: vec4f,
+    angle_decay: vec4f,
+}
+
+struct LightData {
+    /// flags.x is light type, 0: directional, 1: point, 2: spot, 3: area.
+    flags: vec4<u32>,
+    // color.w is range or max distance for spot or point light.
+    color: vec4f,
+    // For spot light: direction.w is inner cone cosin.
+    direction: vec4f,
+    // For spot light: position.w is outter cone cosin.
+    position: vec4f,
 }
 
 struct LightsInfo {
-    // x,y,z: dir light, point light, spotlight
+    // x: lights count
     light_count: vec4<u32>,
-    lights_info: array<vec4f>,
+    lights_info: array<LightData>,
 }
 
 @group(1) @binding(1)
@@ -86,7 +97,6 @@ struct SH {
 @group(3) @binding(0)
 var _reflection_cube_sampler: sampler;
 @group(3) @binding(1)
-// var _irradiance_cube_map: texture_cube<f32>;
 var<uniform> _sh: SH;
 
 @group(3) @binding(2)
@@ -96,8 +106,8 @@ var _brdf_lut: texture_2d<f32>;
 @group(3) @binding(4)
 var<uniform> _global_features: vec4<u32>;
 
-// @group(3) @binding(0)
-// var<storage, read> lighting_infos: LightsInfo;
+@group(3) @binding(5)
+var<storage, read> _lighting_infos: LightsInfo;
 
 const PI = 3.1415926;
 
@@ -212,10 +222,9 @@ fn fresnel_schlick(cos_theta: f32, f0: vec3f) -> vec3f {
     return f0 + (1.0 - f0) * pow(clamp(1.0 - cos_theta, 0.0, 1.0), 5.0);
 }
 
-fn fresnel_schlick_roughness(cos_theta: f32, F0: vec3f, roughness: f32) -> vec3f
-{
+fn fresnel_schlick_roughness(cos_theta: f32, F0: vec3f, roughness: f32) -> vec3f {
     return F0 + (max(vec3f(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cos_theta, 0.0, 1.0), 5.0);
-}  
+}
 
 fn lighting_point(light_pos: vec3f, light_color: vec3f, surface_props: SurfaceProps, camera_props: CameraProps) -> vec3f {
     let light_dir = normalize(light_pos - surface_props.world_pos);
@@ -226,27 +235,27 @@ fn lighting_point(light_pos: vec3f, light_color: vec3f, surface_props: SurfacePr
     let radiance = light_color * attenuation;
 
     // Cook-Torrance BRDF
-    let NDF = distribution_ggx(surface_props.world_normal, half_dir, surface_props.roughness);   
-    let G   = geometry_smith(surface_props.world_normal, camera_props.view_dir, light_dir, surface_props.roughness);      
+    let NDF = distribution_ggx(surface_props.world_normal, half_dir, surface_props.roughness);
+    let G   = geometry_smith(surface_props.world_normal, camera_props.view_dir, light_dir, surface_props.roughness);
     let F   = fresnel_schlick(clamp(dot(half_dir, camera_props.view_dir), 0.0, 1.0), surface_props.f0);
-        
-    let numerator    = NDF * G * F; 
+
+    let numerator    = NDF * G * F;
     let denominator = 4.0 * max(dot(surface_props.world_normal, camera_props.view_dir), 0.0) * max(dot(surface_props.world_normal, light_dir), 0.0) + 0.0001;
     let specular = numerator / denominator;
-    
+
     // kS is equal to Fresnel
     let kS = F;
     // for energy conservation, the diffuse and specular light can't
     // be above 1.0 (unless the surface emits light); to preserve this
     // relationship the diffuse component (kD) should equal 1.0 - kS.
     var kD = vec3f(1.0) - kS;
-    // multiply kD by the inverse metalness such that only non-metals 
+    // multiply kD by the inverse metalness such that only non-metals
     // have diffuse lighting, or a linear blend if partly metal (pure metals
     // have no diffuse light).
     kD = kD * (1.0 - surface_props.metallic);
 
     // scale light by NdotL
-    let NdotL = max(dot(surface_props.world_normal, light_dir), 0.0);        
+    let NdotL = max(dot(surface_props.world_normal, light_dir), 0.0);
 
     // add to outgoing radiance Lo
     return (kD * surface_props.albedo / PI + specular) * radiance * NdotL;
@@ -267,7 +276,7 @@ fn compute_environment_irradiance(normal: vec3f) -> vec3f {
 // compute ambient lighting
 fn ambient_lighting(surface_props: SurfaceProps, camera_props: CameraProps) -> vec3f {
     // let ambient = vec3f(0.03) * albedo * surface_ao;
-    let F = fresnel_schlick_roughness(max(dot(surface_props.world_normal, camera_props.view_dir), 0.0), surface_props.f0, surface_props.roughness); 
+    let F = fresnel_schlick_roughness(max(dot(surface_props.world_normal, camera_props.view_dir), 0.0), surface_props.f0, surface_props.roughness);
     let kS = F;
     var kD = vec3f(1.0) - kS;
     kD *= 1.0 - surface_props.metallic;
@@ -287,11 +296,9 @@ fn ambient_lighting(surface_props: SurfaceProps, camera_props: CameraProps) -> v
 
 @fragment
 fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
-    
+
     //////////////////////////
-    // let world_normal = normalize(fs_in.world_normal);
     let world_normal = get_normal_from_map(fs_in.world_normal, fs_in.world_pos, fs_in.uv0);
-    // let _camera_position = fragment_uniforms._camera_position.xyz;
     let view_dir = normalize(_camera_position.xyz - fs_in.world_pos);
     let reflection_dir = reflect(-view_dir, world_normal);
 
@@ -313,7 +320,6 @@ fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
         surface_ao *= textureSample(_ao_map, _albedo_map_sampler, fs_in.uv0).r;
     }
 
-    // var surface_albedo = pow(fragment_uniforms.albedo.rgb, vec3f(2.2));
     var surface_albedo = _albedo_color.rgb;
     if is_albedo_map_enabled() {
         // Note: albedo texture has format of Rgba8UnormSrgb, which will convert sRGB color to linear space automatically.
@@ -345,13 +351,32 @@ fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
     var lo = vec3f(0.0);
     // var light_info_index: u32 = 0u;
     // // compute dir lighting
-    // // compute point lighting
-    // let point_light_count = lighting_infos.light_count.y * 2u;
-    // for (; light_info_index < point_light_count; light_info_index = light_info_index + 2u) {
-    //     let cur_point_light_pos = lighting_infos.lights_info[light_info_index];
-    //     let cur_point_light_color = lighting_infos.lights_info[light_info_index+1u];
+    // compute point lighting
+    // let point_light_data_item_count = _lighting_infos.light_count.y * 2u;
+    // for (; light_info_index < point_light_data_item_count; light_info_index = light_info_index + 2u) {
+    //     // 1. position is in world space
+    //     let cur_point_light_pos = _lighting_infos.lights_info[light_info_index];
+    //     // 2. color is in linear space
+    //     let cur_point_light_color = _lighting_infos.lights_info[light_info_index+1u];
     //     lo += lighting_point(cur_point_light_pos.xyz, cur_point_light_color.rgb, surface_props, camera_props);
     // }
+    for (var i = 0u; i < _lighting_infos.light_count.x; i = i + 1u) {
+        let cur_light_data = _lighting_infos.lights_info[i];
+        if cur_light_data.flags.x == 0u {
+            // directional light
+        } else if cur_light_data.flags.x == 1u {
+            // point light
+            let cur_point_light_pos = cur_light_data.position.xyz;
+            // 2. color is in linear space
+            let cur_point_light_color = cur_light_data.color.rgb;
+            lo += lighting_point(cur_point_light_pos.xyz, cur_point_light_color.rgb, surface_props, camera_props);
+        } else if cur_light_data.flags.x == 2u {
+            // spot light
+        } else if cur_light_data.flags.x == 3u {
+            // area light
+        }
+        // 1. position is in world space
+    }
     // compute spot lighting
 
     var color = lo;

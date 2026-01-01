@@ -254,7 +254,8 @@ impl GraphicsContext {
                     | UniformValue::UVec4(_, buffer_view)
                     | UniformValue::Mat3(_, buffer_view)
                     | UniformValue::Mat4(_, buffer_view)
-                    | UniformValue::Struct(_, buffer_view) => {
+                    | UniformValue::Struct(_, buffer_view)
+                    | UniformValue::Storage(_, buffer_view) => {
                         // info!("property_name: {}, group: {}, binding: {}", property_name, group, binding);
                         if let Some(real_buffer_view) = buffer_view {
                             let bind_group_entry = wgpu::BindGroupEntry {
