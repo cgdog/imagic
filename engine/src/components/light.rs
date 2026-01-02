@@ -21,8 +21,8 @@ pub enum LightType {
     },
     /// A light that emits light in all directions.
     Point {
-        /// The range or max distance of the light.
-        range: f32,
+        /// The max distance of the light.
+        max_distance: f32,
     },
     /// A light that emits light in a specific direction and shape.
     Spot {
@@ -34,8 +34,8 @@ pub enum LightType {
         inner_cos: f32,
         /// The outer cone angle of the spot light.
         outer_cos: f32,
-        /// The falloff exponent of the spot light.
-        falloff_exponent: f32,
+        // The falloff exponent of the spot light.
+        // falloff_exponent: f32,
     },
     /// A light that emits light in a specific shape.
     Area {
@@ -127,13 +127,13 @@ impl Light {
     /// * `intensity` - The intensity of the light.
     /// * `cast_shadow` - Whether the light casts shadow.
     pub fn new_point_light(
-        range: f32,
+        max_distance: f32,
         color: Color,
         intensity: f32,
         cast_shadow: bool,
     ) -> Self {
         Self::new(
-            LightType::Point { range },
+            LightType::Point { max_distance },
             color,
             intensity,
             cast_shadow,

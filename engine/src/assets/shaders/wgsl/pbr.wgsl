@@ -289,9 +289,14 @@ fn lighting(surface_props: SurfaceProps, camera_props: CameraProps, surface_emis
             // point light
             // 2. color is in linear space
             let to_light = cur_light_data.position.xyz - surface_props.world_pos;
-            let light_dir = normalize(to_light);
             let distance = length(to_light);
-            let attenuation = 1.0 / (distance * distance);
+            let max_distance = cur_light_data.color.a;
+            if distance > max_distance {
+                continue;
+            }
+            let light_dir = normalize(to_light);
+            let fade = saturate(1.0 - distance / max_distance);
+            let attenuation = fade * fade / max(distance * distance, 0.0001);
             let radiance = cur_light_data.color.rgb * attenuation;
             let lighting_props = LightingProps(light_dir, radiance);
             lo += brdf(lighting_props, surface_props, camera_props);

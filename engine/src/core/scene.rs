@@ -6,7 +6,7 @@ use crate::{
     core::{NodeArena, NodeHandle},
     graphics::graphics_context::GraphicsContext,
     math::{Mat4, Vec4, color::Color},
-    prelude::{Camera, Component, GPULightData, Light, LightsGPUData, component_storage::ComponentStorages},
+    prelude::{Camera, Component, GPULightData, Light, LightType, LightsGPUData, component_storage::ComponentStorages},
     time::Time,
 };
 
@@ -353,12 +353,27 @@ impl Scene {
                 light_data.flags[0] = light.light_type.as_u32();
                 let light_color = light.color * light.intensity;
                 light_data.color = light_color.to_array();
-
+                
                 let light_position = light_node.transform.position;
                 light_data.position = [light_position.x, light_position.y, light_position.z, 1.0];
                 let mut light_direction = light_node.transform.model_matrix * Vec4::new(0.0, 0.0, -1.0, 0.0);
                 light_direction = light_direction.normalize();
                 light_data.direction = [light_direction.x, light_direction.y, light_direction.z, 0.0];
+
+                match &light.light_type {
+                    LightType::Directional{} => {}
+                    LightType::Point{max_distance: range} => {
+                        light_data.color[3] = *range;
+                    }
+                    LightType::Spot{range, inner_cos, outer_cos} => {
+                        light_data.color[3] = *range;
+                        light_data.direction[3] = *inner_cos;
+                        light_data.position[3] = *outer_cos;
+                    }
+                    LightType::Area{shape: _, two_sided:_} => {
+                        // TODO: support area light
+                    }
+                }
 
                 lights_gpu_data.lights_info.push(light_data);
             }

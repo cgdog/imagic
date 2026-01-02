@@ -5,9 +5,11 @@ struct GameBehavior {
     point_light_node_handle: NodeHandle,
     enable_skybox: bool,
     enable_point_light: bool,
+    max_distance: f32,
     point_light_intensity: f32,
     point_light_pos_x: f32,
     point_light_pos_z: f32,
+    point_light_pos_y: f32,
 }
 
 impl Behavior for GameBehavior {
@@ -15,27 +17,38 @@ impl Behavior for GameBehavior {
     fn on_gui(&mut self, logic_context: &mut LogicContext, ui_context: &egui::Context) {
         egui::Window::new("Point Light Demo").show(ui_context, |ui|{
             if ui.checkbox(&mut self.enable_skybox, "Enable Skybox").changed() {
-                let node = logic_context.world.current_scene_mut().get_node_mut_forcely(&self.skybox_node_handle);
+                let node = logic_context.get_node_mut_forcely(&self.skybox_node_handle);
                 node.enabled = self.enable_skybox;
             }
             if ui.checkbox(&mut self.enable_point_light, "Enable Point Light").changed() {
-                let node = logic_context.world.current_scene_mut().get_node_mut_forcely(&self.point_light_node_handle);
+                let node = logic_context.get_node_mut_forcely(&self.point_light_node_handle);
                 node.enabled = self.enable_point_light;
             }
 
             if ui.add(egui::Slider::new(&mut self.point_light_intensity, 0.0..=10.0).text("Intensity")).changed() {
-                if let Some(light) = logic_context.world.current_scene_mut().get_component_mut::<Light>(&self.point_light_node_handle) {
+                if let Some(light) = logic_context.get_component_mut::<Light>(&self.point_light_node_handle) {
                     light.intensity = self.point_light_intensity;
+                }
+            }
+            if ui.add(egui::Slider::new(&mut self.max_distance, 0.0..=10.0).text("Max Distance")).changed() {
+                if let Some(light) = logic_context.get_component_mut::<Light>(&self.point_light_node_handle) {
+                    if let LightType::Point { max_distance } = &mut light.light_type {
+                        *max_distance = self.max_distance;
+                    }
                 }
             }
 
             if ui.add(egui::Slider::new(&mut self.point_light_pos_x, -10.0..=10.0).text("X")).changed() {
-                let transform = &mut logic_context.world.current_scene_mut().get_node_mut_forcely(&self.point_light_node_handle).transform;
+                let transform = &mut logic_context.get_transform_mut_forcely(&self.point_light_node_handle);
                 transform.set_position_x(self.point_light_pos_x);
             }
             if ui.add(egui::Slider::new(&mut self.point_light_pos_z, -10.0..=10.0).text("Z")).changed() {
-                let transform = &mut logic_context.world.current_scene_mut().get_node_mut_forcely(&self.point_light_node_handle).transform;
+                let transform = &mut logic_context.get_transform_mut_forcely(&self.point_light_node_handle);
                 transform.set_position_z(self.point_light_pos_z);
+            }
+            if ui.add(egui::Slider::new(&mut self.point_light_pos_y, 0.0..=10.0).text("Y")).changed() {
+                let transform = &mut logic_context.get_transform_mut_forcely(&self.point_light_node_handle);
+                transform.set_position_y(self.point_light_pos_y);
             }
         });
     }
@@ -108,11 +121,10 @@ fn create_sphere(engine: &mut Engine, cur_material: MaterialHandle) -> NodeHandl
 }
 
 fn create_material(engine: &mut Engine) -> MaterialHandle {
-    let (_, shader_handle) = engine.shader_manager.get_builtin_pbr_shader();
-    let pbr_material_handle = engine.material_manager.create_material(*shader_handle, &mut engine.shader_manager);
+    let pbr_material_handle = engine.create_pbr_material();
     {
         let pbr_material_mut_ref = engine.material_manager.get_material_mut_forcely(&pbr_material_handle);
-        pbr_material_mut_ref.set_vec4f(BuiltinShaderUniformNames::_ALBEDO_COLOR, Vec4::new(1.0, 1.0, 1.0, 1.0));
+        pbr_material_mut_ref.set_albedo_color(Color::WHITE);
         pbr_material_mut_ref.set_vec4f(BuiltinShaderUniformNames::_METALLIC_ROUGHNESS_AO, Vec4::new(0.0, 1.0, 1.0, 1.0));
     }
     pbr_material_handle
@@ -158,8 +170,10 @@ fn init(engine: &mut Engine) {
         enable_skybox: true,
         enable_point_light: true,
         point_light_intensity: 5.0,
+        max_distance: 5.0,
         point_light_pos_x: 0.0,
         point_light_pos_z: 0.0,
+        point_light_pos_y: 1.0,
     };
     engine.add_behavior(game_behavior);
 }
