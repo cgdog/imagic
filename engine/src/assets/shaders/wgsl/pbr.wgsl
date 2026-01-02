@@ -32,23 +32,6 @@ fn vs_main(
 }
 
 //////////////// fragment shader ////////////////
-struct DirLightInfo {
-    dir: vec4f,
-    color: vec4f,
-}
-
-struct PointLightInfo {
-    position: vec4f,
-    color: vec4f,
-}
-
-struct SpotLightInfo {
-    position: vec4f,
-    color: vec4f,
-    // x: inner angle, y: outter angle, z: angle decay, w: distance decay
-    angle_decay: vec4f,
-}
-
 struct LightData {
     /// flags.x is light type, 0: directional, 1: point, 2: spot, 3: area.
     flags: vec4<u32>,
@@ -125,6 +108,11 @@ struct SurfaceProps {
 
 struct CameraProps {
     view_dir: vec3f,
+}
+
+struct LightingProps {
+    light_dir: vec3f,
+    radiance: vec3f,
 }
 
 struct FSIn {
@@ -226,21 +214,15 @@ fn fresnel_schlick_roughness(cos_theta: f32, F0: vec3f, roughness: f32) -> vec3f
     return F0 + (max(vec3f(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cos_theta, 0.0, 1.0), 5.0);
 }
 
-fn lighting_point(light_pos: vec3f, light_color: vec3f, surface_props: SurfaceProps, camera_props: CameraProps) -> vec3f {
-    let light_dir = normalize(light_pos - surface_props.world_pos);
-    let half_dir = normalize(light_dir + camera_props.view_dir);
-
-    let distance = length(light_pos - surface_props.world_pos);
-    let attenuation = 1.0 / (distance * distance);
-    let radiance = light_color * attenuation;
-
+fn lighting(lighting_props: LightingProps, surface_props: SurfaceProps, camera_props: CameraProps) -> vec3f {
+    let half_dir = normalize(lighting_props.light_dir + camera_props.view_dir);
     // Cook-Torrance BRDF
     let NDF = distribution_ggx(surface_props.world_normal, half_dir, surface_props.roughness);
-    let G   = geometry_smith(surface_props.world_normal, camera_props.view_dir, light_dir, surface_props.roughness);
+    let G   = geometry_smith(surface_props.world_normal, camera_props.view_dir, lighting_props.light_dir, surface_props.roughness);
     let F   = fresnel_schlick(clamp(dot(half_dir, camera_props.view_dir), 0.0, 1.0), surface_props.f0);
 
     let numerator    = NDF * G * F;
-    let denominator = 4.0 * max(dot(surface_props.world_normal, camera_props.view_dir), 0.0) * max(dot(surface_props.world_normal, light_dir), 0.0) + 0.0001;
+    let denominator = 4.0 * max(dot(surface_props.world_normal, camera_props.view_dir), 0.0) * max(dot(surface_props.world_normal, lighting_props.light_dir), 0.0) + 0.0001;
     let specular = numerator / denominator;
 
     // kS is equal to Fresnel
@@ -255,10 +237,10 @@ fn lighting_point(light_pos: vec3f, light_color: vec3f, surface_props: SurfacePr
     kD = kD * (1.0 - surface_props.metallic);
 
     // scale light by NdotL
-    let NdotL = max(dot(surface_props.world_normal, light_dir), 0.0);
+    let NdotL = max(dot(surface_props.world_normal, lighting_props.light_dir), 0.0);
 
     // add to outgoing radiance Lo
-    return (kD * surface_props.albedo / PI + specular) * radiance * NdotL;
+    return (kD * surface_props.albedo / PI + specular) * lighting_props.radiance * NdotL;
 }
 
 fn compute_environment_irradiance(normal: vec3f) -> vec3f {
@@ -349,27 +331,20 @@ fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
     );
 
     var lo = vec3f(0.0);
-    // var light_info_index: u32 = 0u;
-    // // compute dir lighting
-    // compute point lighting
-    // let point_light_data_item_count = _lighting_infos.light_count.y * 2u;
-    // for (; light_info_index < point_light_data_item_count; light_info_index = light_info_index + 2u) {
-    //     // 1. position is in world space
-    //     let cur_point_light_pos = _lighting_infos.lights_info[light_info_index];
-    //     // 2. color is in linear space
-    //     let cur_point_light_color = _lighting_infos.lights_info[light_info_index+1u];
-    //     lo += lighting_point(cur_point_light_pos.xyz, cur_point_light_color.rgb, surface_props, camera_props);
-    // }
     for (var i = 0u; i < _lighting_infos.light_count.x; i = i + 1u) {
         let cur_light_data = _lighting_infos.lights_info[i];
         if cur_light_data.flags.x == 0u {
             // directional light
         } else if cur_light_data.flags.x == 1u {
             // point light
-            let cur_point_light_pos = cur_light_data.position.xyz;
             // 2. color is in linear space
-            let cur_point_light_color = cur_light_data.color.rgb;
-            lo += lighting_point(cur_point_light_pos.xyz, cur_point_light_color.rgb, surface_props, camera_props);
+            let to_light = cur_light_data.position.xyz - surface_props.world_pos;
+            let light_dir = normalize(to_light);
+            let distance = length(to_light);
+            let attenuation = 1.0 / (distance * distance);
+            let radiance = cur_light_data.color.rgb * attenuation;
+            let lighting_props = LightingProps(light_dir, radiance);
+            lo += lighting(lighting_props, surface_props, camera_props);
         } else if cur_light_data.flags.x == 2u {
             // spot light
         } else if cur_light_data.flags.x == 3u {
