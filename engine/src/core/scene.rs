@@ -311,25 +311,28 @@ impl Scene {
     /// * `time` - The time delta since the last update.
     pub(crate) fn on_update(&mut self, _time: &mut Time) {
         for root_node in &self.root_nodes {
-            Self::update_node_hierarchy(&mut self.node_arena, root_node, None);
+            Self::update_node_hierarchy(&mut self.node_arena, root_node, None, true);
         }
     }
 
-    fn update_node_hierarchy(node_arena: &mut NodeArena, node_id: &NodeHandle, parent_model_matrix: Option<Mat4>) {
+    fn update_node_hierarchy(node_arena: &mut NodeArena, node_id: &NodeHandle, parent_model_matrix: Option<Mat4>, is_parent_enabled: bool) {
         let mut model_matrix = None;
         let mut children = None;
         let mut node_is_valid = false;
+        let mut is_enabled_in_hierarchy = is_parent_enabled;
         if let Some(node) = node_arena.get_mut(node_id) {
             node_is_valid = true;
             node.on_update(parent_model_matrix);
             model_matrix = Some(node.transform.model_matrix);
             children = node.children.clone();
+            is_enabled_in_hierarchy = node.enabled && is_parent_enabled;
+            node.enabled_in_hierarchy = is_enabled_in_hierarchy;
         }
 
         if node_is_valid {
             if let Some(children) = &mut children {
                 for child in children {
-                    Self::update_node_hierarchy(node_arena, &child, model_matrix);
+                    Self::update_node_hierarchy(node_arena, &child, model_matrix, is_enabled_in_hierarchy);
                 }
             }
         }
@@ -344,7 +347,7 @@ impl Scene {
         let mut light_count = 0u32;
         for light_handle in &self.cached_lights {
             let light_node = self.get_node_forcely(light_handle);
-            if light_node.enabled && let Some(light) = self.get_component::<Light>(light_handle) {
+            if light_node.enabled_in_hierarchy && let Some(light) = self.get_component::<Light>(light_handle) {
                 light_count += 1;
                 let mut light_data = GPULightData::default();
                 light_data.flags[0] = light.light_type.as_u32();

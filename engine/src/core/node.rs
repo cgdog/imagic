@@ -26,7 +26,7 @@ pub struct Node {
     /// Whether the node is enabled.
     pub enabled: bool,
     /// Whether the node is enabled in hierarchy.
-    pub enabled_in_hierarchy: bool,
+    pub(crate) enabled_in_hierarchy: bool,
 
     /// The layer of the node.
     pub layer: Layer,
@@ -91,5 +91,13 @@ impl Node {
     /// * `parent_model_matrix` - The model matrix of the parent node, if any.
     pub(crate) fn on_update(&mut self, parent_model_matrix: Option<Mat4>) {
         self.transform.update_model_matrix(parent_model_matrix);
+    }
+
+    /// Check if the node is enabled in hierarchy.
+    /// # Returns
+    /// 
+    /// * `bool` - Returns true if the node is enabled in hierarchy, otherwise false.
+    pub fn is_enabled_in_hierarchy(&self) -> bool {
+        self.enabled_in_hierarchy
     }
 }
