@@ -362,13 +362,13 @@ impl Scene {
 
                 match &light.light_type {
                     LightType::Directional{} => {}
-                    LightType::Point{max_distance: range} => {
-                        light_data.color[3] = *range;
+                    LightType::Point{max_distance} => {
+                        light_data.color[3] = *max_distance;
                     }
-                    LightType::Spot{range, inner_cos, outer_cos} => {
-                        light_data.color[3] = *range;
-                        light_data.direction[3] = *inner_cos;
-                        light_data.position[3] = *outer_cos;
+                    LightType::Spot{max_distance, inner_angle: _, outer_angle: _} => {
+                        light_data.color[3] = *max_distance;
+                        light_data.direction[3] = light.cached_inner_cos;
+                        light_data.position[3] = light.cached_outer_cos;
                     }
                     LightType::Area{shape: _, two_sided:_} => {
                         // TODO: support area light

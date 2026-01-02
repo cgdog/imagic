@@ -12,11 +12,9 @@ pub enum AreaLightShape {
 
 /// The type of light.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum LightType {
+pub(crate) enum LightType {
     /// A light that emits light in a specific direction.
     Directional {
-        // The direction of the light. provided by transform.
-        // direction: Vec3,
         // angular_radius: f32,
     },
     /// A light that emits light in all directions.
@@ -26,18 +24,17 @@ pub enum LightType {
     },
     /// A light that emits light in a specific direction and shape.
     Spot {
-        // The direction of the light. provided by transform.
-        // direction: Vec3,
-        /// The range or max distance of the light.
-        range: f32,
-        /// The inner cone angle of the spot light.
-        inner_cos: f32,
-        /// The outer cone angle of the spot light.
-        outer_cos: f32,
+        /// The max distance of the spot light.
+        max_distance: f32,
+        /// The inner angle in radians of the spot light.
+        inner_angle: f32,
+        /// The outer angle in radians of the spot light.
+        outer_angle: f32,
         // The falloff exponent of the spot light.
         // falloff_exponent: f32,
     },
     /// A light that emits light in a specific shape.
+    #[allow(unused)]
     Area {
         /// The shape of the area light.
         shape: AreaLightShape,
@@ -68,7 +65,11 @@ pub struct Light {
     /// Whether the light casts shadow.
     pub cast_shadow: bool,
     /// The type of the light.
-    pub light_type: LightType,
+    pub(crate) light_type: LightType,
+    /// The cached spot light outer cos.
+    pub(crate) cached_outer_cos: f32,
+    /// The cached spot light inner cos.
+    pub(crate) cached_inner_cos: f32,
 }
 
 impl_component!(Light);
@@ -82,7 +83,7 @@ impl Light {
     /// * `color` - The color of the light.
     /// * `intensity` - The intensity of the light.
     /// * `cast_shadow` - Whether the light casts shadow.
-    pub fn new(
+    pub(crate) fn new(
         light_type: LightType,
         color: Color,
         intensity: f32,
@@ -94,6 +95,8 @@ impl Light {
             intensity,
             cast_shadow,
             light_type,
+            cached_outer_cos: 0.0,
+            cached_inner_cos: 0.0,
         }
     }
 
@@ -138,6 +141,148 @@ impl Light {
             intensity,
             cast_shadow,
         )
+    }
+
+    /// Creates a new spot light with the given parameters.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `max_distance` - The max distance of the light.
+    /// * `inner_angle` - The inner angle in radians of the spot light.
+    /// * `outer_angle` - The outer angle in radians of the spot light.
+    /// * `color` - The color of the light.
+    /// * `intensity` - The intensity of the light.
+    /// * `cast_shadow` - Whether the light casts shadow.
+    pub fn new_spot_light(
+        max_distance: f32,
+        inner_angle: f32,
+        outer_angle: f32,
+        color: Color,
+        intensity: f32,
+        cast_shadow: bool,
+    ) -> Self {
+        let mut light = Self::new(
+            LightType::Spot {
+                max_distance,
+                inner_angle,
+                outer_angle,
+            },
+            color,
+            intensity,
+            cast_shadow,
+        );
+        light.cached_outer_cos = outer_angle.cos();
+        light.cached_inner_cos = inner_angle.cos();
+        light
+    }
+
+    /// Sets the max distance of the point or spot light.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `max_distance` - The max distance of the point or spot light.
+    pub fn set_max_distance(&mut self, max_distance: f32) {
+        match &mut self.light_type {
+            LightType::Point { max_distance: point_max_distance } => {
+                *point_max_distance = max_distance;
+            }
+            LightType::Spot { max_distance: spot_range, .. } => {
+                *spot_range = max_distance;
+            }
+            _ => {
+                log::warn!("Light type {:?} does not support max distance", self.light_type);
+            }
+        }
+    }
+
+    /// Gets the max distance of the point or spot light.
+    /// 
+    /// # Returns
+    /// 
+    /// The max distance of the point or spot light.
+    pub fn get_max_distance(&self) -> f32 {
+        match &self.light_type {
+            LightType::Point { max_distance } => *max_distance,
+            LightType::Spot { max_distance: range, .. } => *range,
+            _ => {
+                log::warn!("Light type {:?} does not support max distance", self.light_type);
+                0.0
+            }
+        }
+    }
+
+    /// Sets the outer angle in radians of the spot light.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `outer_angle` - The outer angle in radians of the spot light.
+    pub fn set_outer_angle(&mut self, outer_angle: f32) {
+        match &mut self.light_type {
+            LightType::Spot { outer_angle: spot_outer_angle, .. } => {
+                *spot_outer_angle = outer_angle;
+                self.cached_outer_cos = outer_angle.cos();
+            }
+            _ => {
+                log::warn!("Light type {:?} does not support outer angle", self.light_type);
+            }
+        }
+    }
+
+    /// Gets the outer angle in radians of the spot light.
+    /// 
+    /// # Returns
+    /// 
+    /// The outer angle in radians of the spot light.
+    pub fn get_outer_angle(&self) -> f32 {
+        match &self.light_type {
+            LightType::Spot { outer_angle, .. } => *outer_angle,
+            _ => {
+                log::warn!("Light type {:?} does not support outer angle", self.light_type);
+                0.0
+            }
+        }
+    }
+    /// Sets the inner angle in radians of the spot light.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `inner_angle` - The inner angle in radians of the spot light.
+    pub fn set_inner_angle(&mut self, inner_angle: f32) {
+        match &mut self.light_type {
+            LightType::Spot { inner_angle: spot_inner_angle, .. } => {
+                *spot_inner_angle = inner_angle;
+                self.cached_inner_cos = inner_angle.cos();
+            }
+            _ => {
+                log::warn!("Light type {:?} does not support inner angle", self.light_type);
+            }
+        }
+    }
+
+    /// Gets the inner angle in radians of the spot light.
+    /// 
+    /// # Returns
+    /// 
+    /// The inner angle in radians of the spot light.
+    pub fn get_inner_angle(&self) -> f32 {
+        match &self.light_type {
+            LightType::Spot { inner_angle, .. } => *inner_angle,
+            _ => {
+                log::warn!("Light type {:?} does not support inner angle", self.light_type);
+                0.0
+            }
+        }
+    }
+
+    /// Sets the outer and inner angle in radians of the spot light.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `outer_angle` - The outer angle in radians of the spot light.
+    /// * `inner_angle` - The inner angle in radians of the spot light.
+    pub fn set_outter_inner_angle(&mut self, outer_angle: f32, inner_angle: f32) {
+        self.set_outer_angle(outer_angle);
+        self.set_inner_angle(inner_angle);
     }
 }
 

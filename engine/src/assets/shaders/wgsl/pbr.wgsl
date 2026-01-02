@@ -287,7 +287,7 @@ fn lighting(surface_props: SurfaceProps, camera_props: CameraProps, surface_emis
             lo += brdf(lighting_props, surface_props, camera_props);
         } else if cur_light_data.flags.x == 1u {
             // point light
-            // 2. color is in linear space
+            // color is in linear space
             let to_light = cur_light_data.position.xyz - surface_props.world_pos;
             let distance = length(to_light);
             let max_distance = cur_light_data.color.a;
@@ -302,10 +302,30 @@ fn lighting(surface_props: SurfaceProps, camera_props: CameraProps, surface_emis
             lo += brdf(lighting_props, surface_props, camera_props);
         } else if cur_light_data.flags.x == 2u {
             // spot light
+            let to_light = cur_light_data.position.xyz - surface_props.world_pos;
+            let distance = length(to_light);
+            let max_distance = cur_light_data.color.a;
+            if distance > max_distance {
+                continue;
+            }
+            // from fragment to spot light.
+            let light_dir = normalize(to_light);
+            // spot light direction.
+            let spotlight_dir = normalize(cur_light_data.direction.xyz);
+            let spotlight_cos = dot(-light_dir, spotlight_dir);
+            let spotlight_cos_outer = cur_light_data.position.w;
+            let spotlight_cos_inner = cur_light_data.direction.w;
+            let spotlight_effect = smoothstep(spotlight_cos_outer, spotlight_cos_inner, spotlight_cos);
+            let fade = saturate(1.0 - distance / max_distance);
+            let spotlight_attenuation = spotlight_effect * fade;
+            let attenuation = spotlight_attenuation * fade * fade / max(distance * distance, 0.0001);
+            let radiance = cur_light_data.color.rgb * attenuation;
+            let lighting_props = LightingProps(light_dir, radiance);
+            lo += brdf(lighting_props, surface_props, camera_props);
         } else if cur_light_data.flags.x == 3u {
             // area light
+            // TODO: support area light.
         }
-        // 1. position is in world space
     }
 
     var color = lo;

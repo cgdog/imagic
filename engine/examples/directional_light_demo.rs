@@ -14,7 +14,8 @@ struct GameBehavior {
 impl Behavior for GameBehavior {
     impl_as_any!();
     fn on_gui(&mut self, logic_context: &mut LogicContext, ui_context: &egui::Context) {
-       egui::Window::new("Point Light Demo").show(ui_context, |ui|{
+       egui::Window::new("Directional Light Demo").show(ui_context, |ui|{
+            ui.label(format!("FPS:{}", logic_context.performance_tracker.fps_counter.fps));
             if ui.checkbox(&mut self.enable_skybox, "Enable Skybox").changed() {
                 let node = logic_context.world.current_scene_mut().get_node_mut_forcely(&self.skybox_node_handle);
                 node.enabled = self.enable_skybox;
