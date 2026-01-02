@@ -1,6 +1,6 @@
 use bytemuck::{Pod, Zeroable};
 
-use crate::{impl_component, math::{Color, Vec3}};
+use crate::{impl_component, math::Color};
 
 /// The shape of the area light.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -15,8 +15,8 @@ pub enum AreaLightShape {
 pub enum LightType {
     /// A light that emits light in a specific direction.
     Directional {
-        /// The direction of the light.
-        direction: Vec3,
+        // The direction of the light. provided by transform.
+        // direction: Vec3,
         // angular_radius: f32,
     },
     /// A light that emits light in all directions.
@@ -26,8 +26,8 @@ pub enum LightType {
     },
     /// A light that emits light in a specific direction and shape.
     Spot {
-        /// The direction of the light.
-        direction: Vec3,
+        // The direction of the light. provided by transform.
+        // direction: Vec3,
         /// The range or max distance of the light.
         range: f32,
         /// The inner cone angle of the spot light.
@@ -101,18 +101,17 @@ impl Light {
     /// 
     /// # Arguments
     /// 
-    /// * `direction` - The direction of the light.
     /// * `color` - The color of the light.
     /// * `intensity` - The intensity of the light.
     /// * `cast_shadow` - Whether the light casts shadow.
     pub fn new_directional_light(
-        direction: Vec3,
+        // direction: Vec3,
         color: Color,
         intensity: f32,
         cast_shadow: bool,
     ) -> Self {
         Self::new(
-            LightType::Directional { direction },
+            LightType::Directional {},
             color,
             intensity,
             cast_shadow,

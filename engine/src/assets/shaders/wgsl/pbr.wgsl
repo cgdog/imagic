@@ -335,6 +335,9 @@ fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
         let cur_light_data = _lighting_infos.lights_info[i];
         if cur_light_data.flags.x == 0u {
             // directional light
+            let light_dir = cur_light_data.direction.xyz;
+            let lighting_props = LightingProps(light_dir, cur_light_data.color.rgb);
+            lo += lighting(lighting_props, surface_props, camera_props);
         } else if cur_light_data.flags.x == 1u {
             // point light
             // 2. color is in linear space

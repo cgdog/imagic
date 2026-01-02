@@ -356,13 +356,18 @@ impl Scene {
 
                 let light_position = light_node.transform.position;
                 light_data.position = [light_position.x, light_position.y, light_position.z, 1.0];
-                let light_direction = light_node.transform.model_matrix * Vec4::new(0.0, 0.0, -1.0, 0.0);
+                let mut light_direction = light_node.transform.model_matrix * Vec4::new(0.0, 0.0, -1.0, 0.0);
+                light_direction = light_direction.normalize();
                 light_data.direction = [light_direction.x, light_direction.y, light_direction.z, 0.0];
 
                 lights_gpu_data.lights_info.push(light_data);
             }
         }
         lights_gpu_data.lights_count[0] = light_count;
+        if light_count == 0 {
+            // dummy light which is not used in shader. Just to avoid validation error.
+            lights_gpu_data.lights_info.push(GPULightData::default());
+        }
         lights_gpu_data
     }
 }
