@@ -214,7 +214,7 @@ fn fresnel_schlick_roughness(cos_theta: f32, F0: vec3f, roughness: f32) -> vec3f
     return F0 + (max(vec3f(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cos_theta, 0.0, 1.0), 5.0);
 }
 
-fn lighting(lighting_props: LightingProps, surface_props: SurfaceProps, camera_props: CameraProps) -> vec3f {
+fn brdf(lighting_props: LightingProps, surface_props: SurfaceProps, camera_props: CameraProps) -> vec3f {
     let half_dir = normalize(lighting_props.light_dir + camera_props.view_dir);
     // Cook-Torrance BRDF
     let NDF = distribution_ggx(surface_props.world_normal, half_dir, surface_props.roughness);
@@ -276,6 +276,42 @@ fn ambient_lighting(surface_props: SurfaceProps, camera_props: CameraProps) -> v
     return ambient;
 }
 
+fn lighting(surface_props: SurfaceProps, camera_props: CameraProps, surface_emissive: vec3f) -> vec3f {
+    var lo = vec3f(0.0);
+    for (var i = 0u; i < _lighting_infos.light_count.x; i = i + 1u) {
+        let cur_light_data = _lighting_infos.lights_info[i];
+        if cur_light_data.flags.x == 0u {
+            // directional light
+            let light_dir = cur_light_data.direction.xyz;
+            let lighting_props = LightingProps(light_dir, cur_light_data.color.rgb);
+            lo += brdf(lighting_props, surface_props, camera_props);
+        } else if cur_light_data.flags.x == 1u {
+            // point light
+            // 2. color is in linear space
+            let to_light = cur_light_data.position.xyz - surface_props.world_pos;
+            let light_dir = normalize(to_light);
+            let distance = length(to_light);
+            let attenuation = 1.0 / (distance * distance);
+            let radiance = cur_light_data.color.rgb * attenuation;
+            let lighting_props = LightingProps(light_dir, radiance);
+            lo += brdf(lighting_props, surface_props, camera_props);
+        } else if cur_light_data.flags.x == 2u {
+            // spot light
+        } else if cur_light_data.flags.x == 3u {
+            // area light
+        }
+        // 1. position is in world space
+    }
+
+    var color = lo;
+    if is_ibl_enabled() {
+        let ambient = ambient_lighting(surface_props, camera_props);
+        color += ambient;
+    }
+    color += surface_emissive;
+    return color;
+}
+
 @fragment
 fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
 
@@ -330,39 +366,7 @@ fn fs_main(fs_in: FSIn) -> @location(0) vec4f {
         surface_ao,
     );
 
-    var lo = vec3f(0.0);
-    for (var i = 0u; i < _lighting_infos.light_count.x; i = i + 1u) {
-        let cur_light_data = _lighting_infos.lights_info[i];
-        if cur_light_data.flags.x == 0u {
-            // directional light
-            let light_dir = cur_light_data.direction.xyz;
-            let lighting_props = LightingProps(light_dir, cur_light_data.color.rgb);
-            lo += lighting(lighting_props, surface_props, camera_props);
-        } else if cur_light_data.flags.x == 1u {
-            // point light
-            // 2. color is in linear space
-            let to_light = cur_light_data.position.xyz - surface_props.world_pos;
-            let light_dir = normalize(to_light);
-            let distance = length(to_light);
-            let attenuation = 1.0 / (distance * distance);
-            let radiance = cur_light_data.color.rgb * attenuation;
-            let lighting_props = LightingProps(light_dir, radiance);
-            lo += lighting(lighting_props, surface_props, camera_props);
-        } else if cur_light_data.flags.x == 2u {
-            // spot light
-        } else if cur_light_data.flags.x == 3u {
-            // area light
-        }
-        // 1. position is in world space
-    }
-    // compute spot lighting
-
-    var color = lo;
-    if is_ibl_enabled() {
-        let ambient = ambient_lighting(surface_props, camera_props);
-        color += ambient;
-    }
-    color += surface_emissive;
+    var color = lighting(surface_props, camera_props, surface_emissive);
 
     // HDR tonemapping
     color = color / (color + vec3f(1.0));
