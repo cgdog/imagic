@@ -66,7 +66,7 @@ impl Behavior for GameBehavior {
 
             if is_rot_changed {
                 let transform = &mut logic_context.get_transform_mut_forcely(&self.spot_light_node_handle);
-                transform.set_rotation_euler(Vec3::new(
+                transform.set_rotation_euler_by_xyz(Vec3::new(
                     self.spot_light_rot_x.to_radians(),
                     self.spot_light_rot_y.to_radians(),
                     0.0,
