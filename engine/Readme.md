@@ -16,12 +16,17 @@ At the moment, Imagic only supports a few features:
 - Render textures, both 2D and Cube
 - Integrated UI framework powered by EGUI
 - Support gltf 2.0 partially
-- Perspective camera and orbit camera controller.
+- Perspective camera and orbit camera controller
+- Orthographic camera
+- Lights (without shadows)
+    - Directional Light
+    - Point Light
+    - Spot Light
 
 # To do list
+- Implement shadows for directional light, point light and spot light. After that, I would like to write a real game with Imagic and publish it on Steam or itch.io.
 - Add more doc comments.
 - Add primitives (icosphere, capsule, cylinder, etc.)
-- Implement lights and shadows.
 - Support transparent materials.
 - Implement more kinds of cameras and controller.
 - Physics.
@@ -33,9 +38,19 @@ At the moment, Imagic only supports a few features:
 # Examples
 There are some examples in folder [examples](https://github.com/cgdog/imagic/tree/main/engine/examples) on Github.
 
-For example, you can run `cargo run --example gltf_demo` to see the `gltf_demo.rs` example:
+## GLTF demo
+
+You can run `cargo run --example gltf_demo` to see the `gltf_demo.rs` example:
 > - hold left mouse button down and move mouse to rotate camera.
 > - hold right mouse button down and move mouse to zoom in and out.
+
+## Spot light demo
+You can run `cargo run --example spot_light_demo` to see the `spot_light_demo.rs` example:
+> - hold left mouse button down and move mouse to rotate camera.
+> - hold right mouse button down and move mouse to zoom in and out.
+> - Shadows will be implemented later
+
+There are also `directional_light_demo.rs` and `point_light_demo.rs` examples without shadows now.
 
 
 # How to use Imagic

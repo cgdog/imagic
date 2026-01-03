@@ -40,7 +40,7 @@ There are some examples in folder `engine\examples\`.
 
 ## GLTF demo
 
-you can run `cargo run --example gltf_demo` to see the `gltf_demo.rs` example:
+You can run `cargo run --example gltf_demo` to see the `gltf_demo.rs` example:
 > - hold left mouse button down and move mouse to rotate camera.
 > - hold right mouse button down and move mouse to zoom in and out.
 
