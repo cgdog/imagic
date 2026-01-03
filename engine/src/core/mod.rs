@@ -1,3 +1,5 @@
+/// Core modules of the engine.
+
 pub mod engine;
 pub mod scene;
 pub mod node;

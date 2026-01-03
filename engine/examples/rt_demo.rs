@@ -108,7 +108,7 @@ pub fn main() {
     );
     let material = engine.material_manager.create_material(shader, &mut engine.shader_manager);
     let mesh: Mesh = Quad::default().into();
-    let mesh = RR_new!(mesh);
+    let mesh_handle = engine.mesh_manager.add_mesh(mesh);
     // material.borrow_mut().set_color("color", Color::BLUE);
     let quad_node_for_rt = engine.world.current_scene_mut().create_node("quad_for_rt");
     {
@@ -116,7 +116,7 @@ pub fn main() {
         node.layer = Layer::RenderTarget;
         node.transform.set_uniform_scale(2.0);
 
-        let mesh_renderer = MeshRenderer::new(mesh.clone(), vec![material]);
+        let mesh_renderer = MeshRenderer::new(mesh_handle, vec![material]);
         engine.world.current_scene_mut().add_component(&quad_node_for_rt, mesh_renderer);
     }
     let custom_behavior = CustomShaderBehavior::new(quad_node_for_rt);
@@ -169,7 +169,8 @@ pub fn main() {
         unlit_material_mute_ref.set_albedo_map(color_attachment);
         unlit_material_mute_ref.set_albedo_map_sampler(color_map_sampler);
     }
-    let mesh_renderer = MeshRenderer::new(mesh, vec![unlit_material]);
+    // let mesh_handle = engine.mesh_manager.add_mesh(mesh);
+    let mesh_renderer = MeshRenderer::new(mesh_handle, vec![unlit_material]);
     engine.world.current_scene_mut().add_component(&quad_node, mesh_renderer);
 
     let main_camera_node = engine.world.current_scene_mut().create_node("Main Camera");

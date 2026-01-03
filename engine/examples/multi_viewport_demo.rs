@@ -29,7 +29,6 @@ fn main() {
 
     let quad_node = engine.world.current_scene_mut().create_node("quad");
     let mesh: Mesh = Quad::default().into();
-    let mesh = RR_new!(mesh);
 
     let unlit_material = engine.material_manager.create_material(*shader, &mut engine.shader_manager);
     {
@@ -39,7 +38,8 @@ fn main() {
         unlit_material_mut_ref.set_albedo_map_sampler(color_map_sampler);
         // unlit_material_mut_ref.render_state.polygon_mode = imagic::graphics::render_states::PolygonMode::Line;
     }
-    let mesh_renderer = MeshRenderer::new(mesh, vec![unlit_material]);
+    let mesh_handle = engine.mesh_manager.add_mesh(mesh);
+    let mesh_renderer = MeshRenderer::new(mesh_handle, vec![unlit_material]);
     engine.world.current_scene_mut().add_component(&quad_node, mesh_renderer);
 
     let camera_node = engine.world.current_scene_mut().create_node("Main Camera");

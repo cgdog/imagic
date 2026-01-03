@@ -1,6 +1,6 @@
 use std::{hash::{Hash, Hasher}, num::NonZero};
 
-use wgpu::ShaderStages;
+use wgpu::{ShaderStages, naga::AddressSpace};
 
 use crate::assets::shaders::shader::BuilinUniformFlags;
 
@@ -60,23 +60,27 @@ impl From<ShaderPropertyBinding> for wgpu::naga::ResourceBinding {
 
 /// A property of a shader, such as a uniform, storage buffer, texture, or sampler.
 #[derive(PartialEq, Clone, Hash)]
-pub struct ShaderProperty {
+pub(crate) struct ShaderProperty {
+    /// The name of the property, i.e. the variable name in the shader.
     pub name: String,
+    /// The binding of the property, i.e. the group and binding number in the shader.
     pub binding: ShaderPropertyBinding,
     /// Visible in which shader stages
     pub(crate) visibility: ShaderStages,
+    /// The data type of the property.
     pub data_type: ShaderPropertyType,
-    // pub min_binding_size: Option<NonZero<u64>>,
+    /// The address space of the property, i.e. uniform, storage, or function.
+    pub(crate) space: AddressSpace,
 }
 
 impl ShaderProperty {
-    pub fn new(name: String, binding: ShaderPropertyBinding, data_type: ShaderPropertyType, stages: ShaderStages) -> Self {
+    pub fn new(name: String, binding: ShaderPropertyBinding, data_type: ShaderPropertyType, stages: ShaderStages, space: AddressSpace) -> Self {
         Self {
             name,
             binding,
             data_type,
             visibility: stages,
-            // min_binding_size: core::num::NonZeroU64::new(min_binding_size),
+            space,
         }
     }
 }
@@ -117,23 +121,41 @@ impl BuiltinShaderUniformNames {
     // {{begin per scene uniforms
     /// x: time since started, y: delta time, z: scaled delta time, w: sin(time)
     pub const _TIME: &'static str = "_time";
+    /// The uniform name of the irradiance cube map. Deprecated. Use _SH instead.
     pub const _IRRADIANCE_CUBE_MAP: &'static str = "_irradiance_cube_map";
+    /// The uniform name of the prefiltered reflection cube map.
     pub const _REFLECTION_CUBE_MAP: &'static str = "_prefiltered_reflection_map";
+    /// The uniform name of the sampler of the prefiltered reflection cube map.
     pub const _REFLECTION_CUBE_SAMPLER: &'static str = "_reflection_cube_sampler";
+    /// The uniform name of the BRDF lookup texture.
     pub const _BRDF_LUT: &'static str = "_brdf_lut";
+    /// The uniform name of the SH coefficients of the scene.
     pub const _SH: &'static str = "_sh";
+    /// The uniform name of the lighting infos.
+    pub const _LIGHTING_INFOS: &'static str = "_lighting_infos";
     // end per scene uniforms}}
 
+    /// The uniform name of the albedo color.
     pub const _ALBEDO_COLOR: &'static str = "_albedo_color";
+    /// The uniform name of the albedo map.
     pub const _ALBEDO_MAP: &'static str = "_albedo_map";
+    /// The uniform name of the sampler of the albedo map.
     pub const _ALBEDO_MAP_SAMPLER: &'static str = "_albedo_map_sampler";
+    /// The uniform name of the metallic factor.
     pub const _METALLIC: &'static str = "_metallic";
+    /// The uniform name of the roughness factor.
     pub const _ROUGHNESS: &'static str = "_roughness";
+    /// The uniform name of the metallic roughness ao.
     pub const _METALLIC_ROUGHNESS_AO: &'static str = "_metallic_roughness_ao";
+    /// The uniform name of the metallic roughness map.
     pub const _METALLIC_ROUGHNESS_MAP: &'static str = "_metallic_roughness_map";
+    /// The uniform name of the ao map.
     pub const _AO_MAP: &'static str = "_ao_map";
+    /// The uniform name of normal map.
     pub const _NORMAL_MAP: &'static str = "_normal_map";
+    /// The uniform name of emissive map.
     pub const _EMISSIVE_MAP: &'static str = "_emissive_map";
+    /// The uniform name of emissive color.
     pub const _EMISSIVE_COLOR: &'static str = "_emissive_color";
 
     /// The per-material features uniform, which is a uvec4 to support 128 features (one feature one bit).
@@ -225,6 +247,10 @@ impl BuiltinShaderUniformNames {
                 true
             }
             Self::_GLOBAL_FEATURES => {
+                true
+            }
+            Self::_LIGHTING_INFOS => {
+                builtin_uniform_flags.has_lights = true;
                 true
             }
             _ => false,

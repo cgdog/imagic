@@ -4,6 +4,9 @@ use crate::{
     }, renderer::{frame_data::FrameRenderData, ui_renderer::UIRenderer}
 };
 
+/// The frame renderer of the engine.
+/// 
+/// It is responsible for rendering the frame.
 pub struct FrameRenderer {
     pub(crate) frame_render_data: FrameRenderData,
     pub(crate) ui_renderer: Option<UIRenderer>,

@@ -13,22 +13,29 @@ pub type NodeHandle = crate::types::Handle<NodeTag>;
 
 /// Scene node
 pub struct Node {
+    /// The name of the node.
     pub name: String,
+    /// The unique identifier of the node.
     pub id: NodeHandle,
 
+    /// The parent node handle.
     pub parent: Option<NodeHandle>,
+    /// The child node handles.
     pub children: Option<Vec<NodeHandle>>,
 
+    /// Whether the node is enabled.
     pub enabled: bool,
-    pub enabled_in_hierarchy: bool,
+    /// Whether the node is enabled in hierarchy.
+    pub(crate) enabled_in_hierarchy: bool,
 
+    /// The layer of the node.
     pub layer: Layer,
 
     // built in components
     /// A node always has a Transform component.
     pub transform: Transform,
 
-    // custom components
+    /// Other components attached to the node.
     pub(crate) components: AHashMap<ComponentTypeId, ComponentId>,
 }
 
@@ -62,6 +69,14 @@ impl std::fmt::Display for Node {
 
 impl Node {
 
+    /// Check if the node has a specific child node.
+    /// # Arguments
+    /// 
+    /// * `child` - The child node handle to check.
+    /// 
+    /// # Returns
+    /// 
+    /// * `bool` - Returns true if the node has the child node, otherwise false.
     pub fn has_child(&self, child: &NodeHandle) -> bool {
         if let Some(children) = &self.children {
             children.iter().any(|node_id| node_id == child)
@@ -70,7 +85,19 @@ impl Node {
         }
     }
 
+    /// Lifecycle method called when the node is updated.
+    /// # Arguments
+    /// 
+    /// * `parent_model_matrix` - The model matrix of the parent node, if any.
     pub(crate) fn on_update(&mut self, parent_model_matrix: Option<Mat4>) {
         self.transform.update_model_matrix(parent_model_matrix);
+    }
+
+    /// Check if the node is enabled in hierarchy.
+    /// # Returns
+    /// 
+    /// * `bool` - Returns true if the node is enabled in hierarchy, otherwise false.
+    pub fn is_enabled_in_hierarchy(&self) -> bool {
+        self.enabled_in_hierarchy
     }
 }

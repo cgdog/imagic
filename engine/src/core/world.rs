@@ -2,28 +2,47 @@ use std::cell::RefCell;
 
 use crate::{
     assets::{
-        BuiltinGlobalShaderFeatures, MaterialManager, Sampler, ShaderManager, Texture, TextureFormat,
-        TextureHandle, TextureSamplerManager, shaders::shader_property::BuiltinShaderUniformNames
-    }, components::{camera::Camera, mesh_renderer::MeshRenderer},
-    core::{LayerMask, NodeHandle, SH, scene::Scene}, graphics::{
+        BuiltinGlobalShaderFeatures, MaterialManager, MeshManager, Sampler, ShaderManager, Texture, TextureFormat, TextureHandle,
+        TextureSamplerManager, shaders::shader_property::BuiltinShaderUniformNames
+    }, components::{camera::Camera, mesh_renderer::MeshRenderer}, core::{LayerMask, NodeHandle, SH, scene::Scene}, graphics::{
         bind_group::BindGroupID, graphics_context::GraphicsContext, render_states::RenderQueue,
         uniform::{BuiltinUniforms, CameraUniformSyncFlags, GlobalUniformSyncFlags}
-    }, math::Vec4, renderer::{
+    }, math::Vec4, prelude::LightsGPUData, renderer::{
         frame_data::{CameraRenderData, ItemRenderData}, frame_renderer::FrameRenderer,
     }, time::Time
 };
 
+/// A world in the scene. It is a container for scenes.
 pub struct World {
+    /// The scenes in the world. At least one scene is required.
+    /// 
+    /// (Now only one scene is supported. Two or more scenes are not tested.)
     pub scenes: Vec<Scene>,
+    /// The index of the current scene.
     pub current_scene_index: usize,
 }
 
 impl World {
+    
+    /// Creates a new world with a default scene.
+    /// 
+    /// # Returns
+    /// 
+    /// * `World` - The created world.
     pub(crate) fn new() -> World {
         let current_scene = Scene::new();
         Self::new_with_current_scene(current_scene)
     }
 
+    /// Creates a new world with the given scene.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `current_scene` - The scene to add to the world.
+    /// 
+    /// # Returns
+    /// 
+    /// * `World` - The created world.
     pub(crate) fn new_with_current_scene(current_scene: Scene) -> World {
         let world: World = World {
             scenes: vec![current_scene],
@@ -32,18 +51,42 @@ impl World {
         world
     }
 
+    /// Returns a mutable reference to the current scene.
+    /// 
+    /// # Returns
+    /// 
+    /// * `&mut Scene` - The current scene.
     pub fn current_scene_mut(&mut self) -> &mut Scene {
         &mut self.scenes[self.current_scene_index]
     }
 
+    /// Returns a reference to the current scene.
+    /// 
+    /// # Returns
+    /// 
+    /// * `&Scene` - The current scene.
     pub fn current_scene(&mut self) -> & Scene {
         &self.scenes[self.current_scene_index]
     }
 
+    /// Stops the world.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `time` - The time object.
     pub(crate) fn stop(&mut self, time: &mut Time) {
         self.scenes[self.current_scene_index].on_stop(time);
     }
 
+    /// Initializes the world.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `graphics_context` - The graphics context.
+    /// * `texture_sampler_manager` - The texture sampler manager.
+    /// * `shader_manager` - The shader manager.
+    /// * `material_manager` - The material manager.
+    /// * `time` - The time object.
     pub(crate) fn on_init(&mut self, graphics_context: &mut GraphicsContext, texture_sampler_manager: &mut TextureSamplerManager,
         shader_manager: &mut ShaderManager, material_manager: &mut MaterialManager, time: &mut Time) {
         log::info!("world on_init");
@@ -52,6 +95,12 @@ impl World {
         self.scenes[self.current_scene_index].on_init(time);
     }
 
+    /// Resizes the world.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `graphics_context` - The graphics context.
+    /// * `texture_sampler_manager` - The texture sampler manager.
     pub(crate) fn on_resize(&mut self, graphics_context: &GraphicsContext, texture_sampler_manager: &mut TextureSamplerManager,) {
         let physical_size = graphics_context.main_window().get_physical_size();
         let logical_size = graphics_context.main_window().get_logical_size();
@@ -70,15 +119,29 @@ impl World {
         current_scene.cached_cameras = cached_cameras;
     }
 
+    /// Updates the world.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `time` - The time object.
     pub(crate) fn updpate(&mut self, time: &mut Time) {
         self.current_scene_mut().on_update(time);
     }
 
-    // fn get_camera_render_data
-
+    /// Generates a render frame.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `graphics_context` - The graphics context.
+    /// * `texture_sampler_manager` - The texture sampler manager.
+    /// * `shader_manager` - The shader manager.
+    /// * `material_manager` - The material manager.
+    /// * `time` - The time object.
+    /// * `frame_renderer` - The frame renderer which contains the render data.
+    /// * `global_uniforms` - The global uniforms.
     pub(crate) fn generate_render_frame(&mut self, graphics_context: &mut GraphicsContext,
         texture_sampler_manager: &mut TextureSamplerManager, shader_manager: &mut ShaderManager,
-        material_manager: &mut MaterialManager, time: &mut Time,
+        material_manager: &mut MaterialManager, mesh_manager: &mut MeshManager, time: &mut Time,
         frame_renderer: &mut FrameRenderer, global_uniforms: &mut BuiltinUniforms) {
         frame_renderer.frame_render_data.reset();
         let cur_scene = &mut self.scenes[self.current_scene_index];
@@ -88,6 +151,8 @@ impl World {
         let mut global_uniform_sync_flags = GlobalUniformSyncFlags::new();
         let cached_cameras = std::mem::take(&mut cur_scene.cached_cameras);
         let cached_renderables = std::mem::take(&mut cur_scene.cached_renderables);
+        let lights_gpu_data = cur_scene.collect_lights_data();
+        // let cached_lights = std::mem::take(&mut cur_scene.cached_lights);
         for camera_node_id in &cached_cameras {
             let camera_node_ref = cur_scene.node_arena.get_forcely(camera_node_id);
             let camera_position = camera_node_ref.transform.position;
@@ -129,9 +194,11 @@ impl World {
                         texture_sampler_manager,
                         shader_manager,
                         material_manager,
+                        mesh_manager,
                         time,
                         &mut camera_render_data,
                         &cached_renderables,
+                        &lights_gpu_data,
                         &mut global_uniform_sync_flags,
                         reflection_map,
                         brdf_lut,
@@ -157,9 +224,11 @@ impl World {
         texture_sampler_manager: &mut TextureSamplerManager,
         shader_manager: &mut ShaderManager,
         material_manager: &mut MaterialManager,
+        mesh_manager: &mut MeshManager,
         time: &mut Time,
         camera_render_data: &mut CameraRenderData,
         cached_renderables: &Vec<NodeHandle>,
+        lights_gpu_data: &LightsGPUData,
         global_uniform_sync_flags: &mut GlobalUniformSyncFlags,
         reflection_map: TextureHandle,
         brdf_lut: TextureHandle,
@@ -169,13 +238,13 @@ impl World {
         // let current_scene = self.current_scene_mut();
         for renderable_node in cached_renderables {
             let node_mut_ref = current_scene.node_arena.get_mut_forcely(renderable_node);
-            if !visible_layers.contains(node_mut_ref.layer) {
+            if !node_mut_ref.enabled_in_hierarchy || !visible_layers.contains(node_mut_ref.layer) {
                 continue;
             }
             let model_matrix = node_mut_ref.transform.model_matrix;
             let normal_matrix = node_mut_ref.transform.normal_matrix;
-            if let Some(mesh_renderer) = &mut current_scene.get_component_mut::<MeshRenderer>(renderable_node) {
-                let mut mesh_mut_ref = mesh_renderer.mesh.borrow_mut();
+            if let Some(mesh_renderer) = current_scene.get_component_mut::<MeshRenderer>(renderable_node) 
+                && let Some(mesh_mut_ref) = mesh_manager.get_mesh_mut(&mesh_renderer.mesh){
                 if mesh_mut_ref.is_dirty {
                     mesh_mut_ref.upload(graphics_context);
                 }
@@ -380,6 +449,11 @@ impl World {
                                         !global_uniform_sync_flags.has_reflection_maps_synced);
                                 }
                                 global_uniform_sync_flags.has_reflection_maps_synced = true;
+                                need_sync_global_uniforms = true;
+                            }
+                            if builtin_uniform_flags.has_lights && !global_uniform_sync_flags.has_lights_synced {
+                                global_uniforms.set_storage(BuiltinShaderUniformNames::_LIGHTING_INFOS, lights_gpu_data.to_vec_u8());
+                                global_uniform_sync_flags.has_lights_synced = true;
                                 need_sync_global_uniforms = true;
                             }
                             if need_sync_global_uniforms {

@@ -1,7 +1,6 @@
 use gltf::mesh::Mode;
 
 use crate::{
-    RR_new,
     assets::{
         AddressMode, BuiltinShaderUniformNames, FilterMode, Material, MaterialHandle, Mesh, SamplerHandle, TextureDimension,
         TextureFormat, TextureHandle, model_loader::ModelLoaderTrait, sub_mesh::SubMesh, vertex_attribute::VertexAttributes,
@@ -24,7 +23,7 @@ impl ModelLoaderTrait for GLTFLoader {
     /// Returns an error if the GLTF file cannot be opened or processed.
     fn load(
         &self,
-        engine: &mut LogicContext<'_>,
+        logic_context: &mut LogicContext<'_>,
         path: &str,
     ) -> Result<NodeHandle, Box<dyn std::error::Error>> {
         let (document, buffers, images) = gltf::import(path)?;
@@ -36,11 +35,11 @@ impl ModelLoaderTrait for GLTFLoader {
             };
             log::info!("gltf scene name: {:?}", gltf_scene.name());
             if gltf_scene.nodes().len() > 0 {
-                let root_node = engine.world.current_scene_mut().create_node(scene_name);
-                engine
+                let root_node = logic_context.world.current_scene_mut().create_node(scene_name);
+                logic_context
                     .world.current_scene_mut().add(root_node.clone());
                 for node in gltf_scene.nodes() {
-                    self.process_node(engine, &document, &node, &root_node, &buffers, &images);
+                    self.process_node(logic_context, &document, &node, &root_node, &buffers, &images);
                 }
                 return Ok(root_node);
             }
@@ -57,7 +56,7 @@ impl GLTFLoader {
 
     fn process_node(
         &self,
-        engine: &mut LogicContext<'_>,
+        logic_context: &mut LogicContext<'_>,
         document: &gltf::Document,
         gltf_node: &gltf::Node,
         parent: &NodeHandle,
@@ -72,25 +71,25 @@ impl GLTFLoader {
             "UnknownName"
         };
         log::info!("  node name: {:?}", node_name);
-        let node = engine.world.current_scene_mut().create_node(node_name);
-        engine.world.current_scene_mut().attach_to_parent(&node, *parent);
-        engine.world.current_scene_mut().get_node_mut_forcely(&node)
+        let node = logic_context.world.current_scene_mut().create_node(node_name);
+        logic_context.world.current_scene_mut().attach_to_parent(&node, *parent);
+        logic_context.world.current_scene_mut().get_node_mut_forcely(&node)
             .transform
             .set_position_rotation_scale_from_arrays(translation, rotation, scale);
 
         if let Some(mesh) = gltf_node.mesh() {
-            self.process_mesh(engine, document, &node, mesh, &buffers, &images);
+            self.process_mesh(logic_context, document, &node, mesh, &buffers, &images);
         } else if let Some(camera) = gltf_node.camera() {
             self.process_camera(&node, camera);
         }
         for child_node in gltf_node.children() {
-            self.process_node(engine, document, &child_node, &node, buffers, images);
+            self.process_node(logic_context, document, &child_node, &node, buffers, images);
         }
     }
 
     fn process_mesh(
         &self,
-        engine: &mut LogicContext<'_>,
+        logic_context: &mut LogicContext<'_>,
         document: &gltf::Document,
         node: &NodeHandle,
         gltf_mesh: gltf::Mesh,
@@ -124,14 +123,14 @@ impl GLTFLoader {
             let roughness_factor = pbr_metallic_roughness.roughness_factor();
             let base_color_factor = pbr_metallic_roughness.base_color_factor();
             let (base_color_texture, albdeo_sampler) = self.get_pbr_texture_and_sampler(
-                engine,
+                logic_context,
                 document,
                 pbr_metallic_roughness.base_color_texture(),
                 images,
                 false,
             );
             let metallic_roughness_texture = self.get_pbr_texture(
-                engine,
+                logic_context,
                 pbr_metallic_roughness.metallic_roughness_texture(),
                 images,
                 true,
@@ -139,13 +138,13 @@ impl GLTFLoader {
             let occlusion_texture =
                 if let Some(occlusion_texture) = gltf_material.occlusion_texture() {
                     let texture_index = occlusion_texture.texture().index();
-                    self.get_texture_by_index(engine, texture_index, images, true)
+                    self.get_texture_by_index(logic_context, texture_index, images, true)
                 } else {
                     TextureHandle::INVALID
                 };
             let normal_texture = if let Some(normal_texture) = gltf_material.normal_texture() {
                 let texture_index = normal_texture.texture().index();
-                self.get_texture_by_index(engine, texture_index, images, true)
+                self.get_texture_by_index(logic_context, texture_index, images, true)
             } else {
                 TextureHandle::INVALID
             };
@@ -153,14 +152,14 @@ impl GLTFLoader {
             let emissive_texture = if let Some(emissive_texture) = gltf_material.emissive_texture()
             {
                 let texture_index = emissive_texture.texture().index();
-                self.get_texture_by_index(engine, texture_index, images, false)
+                self.get_texture_by_index(logic_context, texture_index, images, false)
             } else {
                 TextureHandle::INVALID
             };
 
             let mode = primitive.mode();
-            let (_, pbr_shader_handle) = engine.shader_manager.get_builtin_pbr_shader();
-            let mut material = Material::new(*pbr_shader_handle, &mut engine.shader_manager);
+            let (_, pbr_shader_handle) = logic_context.shader_manager.get_builtin_pbr_shader();
+            let mut material = Material::new(*pbr_shader_handle, &mut logic_context.shader_manager);
             {
                 material.set_albedo_color(Color::from_array(base_color_factor));
                 material.set_vec4f(
@@ -205,7 +204,7 @@ impl GLTFLoader {
                     material.set_emissive_map(emissive_texture);
                 }
             }
-            let material_handle = engine.material_manager.add_material(material);
+            let material_handle = logic_context.material_manager.add_material(material);
             materials.push(material_handle);
 
             if primitive_index == 0 {
@@ -224,8 +223,9 @@ impl GLTFLoader {
         let index_data = IndexData::new_u32(indices);
 
         let mesh = Mesh::new(vertex_attributes, index_data, sub_meshes);
-        let mesh_render = MeshRenderer::new(RR_new!(mesh), materials);
-        engine.world.current_scene_mut().add_component::<MeshRenderer>(node, mesh_render);
+        let mesh_handle = logic_context.mesh_manager.add_mesh(mesh);
+        let mesh_render = MeshRenderer::new(mesh_handle, materials);
+        logic_context.world.current_scene_mut().add_component::<MeshRenderer>(node, mesh_render);
     }
 
     fn process_primitive_geometry(

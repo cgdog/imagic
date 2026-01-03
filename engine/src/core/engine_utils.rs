@@ -1,4 +1,23 @@
-use crate::{assets::{Material, MaterialHandle, ModelLoader, ModelLoaderTrait, ShaderHandle}, core::{Engine, LogicContext, NodeHandle}, math::Vec3, prelude::{CameraController, CameraTarget}};
+//! Engine utils. Add some useful shortcut methods to the [`Engine`] and [`LogicContext`].
+//! 
+//! # Examples
+//! 
+//! ```
+//! use imagic::core::Engine;
+//! 
+//! let mut engine = Engine::new();
+//! let pbr_material_handle = engine.create_pbr_material();
+//! // It is equal to:
+//! // Sometimes you have to use code below to avoid the compiler error.
+//! let (_, pbr_shader_handle) = engine.shader_manager.get_builtin_pbr_shader();
+//! let pbr_material_handle = engine.material_mangaer.create_material();
+//! ```
+
+use crate::{
+    assets::{Material, MaterialHandle, ModelLoader, ModelLoaderTrait, ShaderHandle},
+    core::{Engine, LogicContext, Node, NodeHandle}, math::Vec3,
+    prelude::{CameraController, CameraTarget, Component, Light, Transform}
+};
 
 
 impl Engine {
@@ -125,6 +144,206 @@ impl Engine {
         let mut logic_context = self.get_logic_context();
         let model_loader = ModelLoader::new();
         model_loader.load(&mut logic_context, path)
+    }
+
+    /// Get a light component by node handle.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `Option<&Light>` - The light component if it exists.
+    pub fn get_light(&mut self, handle: &NodeHandle) -> Option<&Light> {
+        self.world.current_scene().get_component(handle)
+    }
+
+    /// Get a light component by node handle forcely.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `&Light` - The light component.
+    /// # Panics
+    /// 
+    /// * If the light component does not exist.
+    pub fn get_light_forcely(&mut self, handle: &NodeHandle) -> &Light {
+        self.world.current_scene().get_component(handle).expect("Engine failed to get Light component forcely.")
+    }
+
+    /// Get a light component by node handle mutably.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `Option<&mut Light>` - The light component if it exists.
+    pub fn get_light_mut(&mut self, handle: &NodeHandle) -> Option<&mut Light> {
+        self.world.current_scene_mut().get_component_mut(handle)
+    }
+
+    /// Get a light component by node handle mutably forcely.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `&mut Light` - The light component.
+    /// # Panics
+    /// 
+    /// * If the light component does not exist.
+    pub fn get_light_mut_forcely(&mut self, handle: &NodeHandle) -> &mut Light {
+        self.world.current_scene_mut().get_component_mut(handle).expect("LogicContext failed to get Light component mutably forcely.")
+    }
+
+    /// Get a node by handle.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `Option<&Node>` - The node if it exists.
+    pub fn get_node(&mut self, handle: &NodeHandle) -> Option<&Node> {
+        self.world.current_scene().get_node(handle)
+    }
+
+    /// Get a node by handle forcely.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `&Node` - The node.
+    /// # Panics
+    /// 
+    /// * If the node does not exist.
+    pub fn get_node_forcely(&mut self, handle: &NodeHandle) -> &Node {
+        self.world.current_scene().get_node(handle).expect("Engine failed to get Node forcely.")
+    }
+
+    /// Get a node by handle mutably.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `Option<&mut Node>` - The node if it exists.
+    pub fn get_node_mut(&mut self, handle: &NodeHandle) -> Option<&mut Node> {
+        self.world.current_scene_mut().get_node_mut(handle)
+    }
+
+    /// Get a node by handle mutably forcely.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `&mut Node` - The node.
+    /// # Panics
+    /// 
+    /// * If the node does not exist.
+    pub fn get_node_mut_forcely(&mut self, handle: &NodeHandle) -> &mut Node {
+        self.world.current_scene_mut().get_node_mut(handle).expect("Engine failed to get Node mutably forcely.")
+    }
+
+    /// Get a transform component by node handle.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `Option<&Transform>` - The transform component if it exists.
+    pub fn get_transform(&mut self, handle: &NodeHandle) -> Option<&Transform> {
+        self.get_node(handle).map(|node| &node.transform)
+    }
+
+    /// Get a transform component by node handle forcely.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `&Transform` - The transform component.
+    /// # Panics
+    /// 
+    /// * If the transform component does not exist.
+    pub fn get_transform_forcely(&mut self, handle: &NodeHandle) -> &Transform {
+        &self.get_node_forcely(handle).transform
+    }
+
+    /// Get a transform component by node handle mutably.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `Option<&mut Transform>` - The transform component if it exists.
+    pub fn get_transform_mut(&mut self, handle: &NodeHandle) -> Option<&mut Transform> {
+        self.get_node_mut(handle).map(|node| &mut node.transform)
+    }
+
+    /// Get a transform component by node handle mutably forcely.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `&mut Transform` - The transform component.
+    /// # Panics
+    /// 
+    /// * If the transform component does not exist.
+    pub fn get_transform_mut_forcely(&mut self, handle: &NodeHandle) -> &mut Transform {
+        &mut self.get_node_mut_forcely(handle).transform
+    }
+
+    /// Get a component by node handle.
+    /// # Arguments
+    /// 
+    /// * `node_handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `Option<&T>` - The component if it exists.
+    pub fn get_component<T: Component>(&mut self, node_handle: &NodeHandle) -> Option<&T> {
+        self.world.current_scene().get_component::<T>(node_handle)
+    }
+
+    /// Get a component by node handle forcely.
+    /// # Arguments
+    /// 
+    /// * `node_handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `&T` - The component.
+    /// # Panics
+    /// 
+    /// * If the component does not exist.
+    pub fn get_component_forcely<T: Component>(&mut self, node_handle: &NodeHandle) -> &T {
+        self.world.current_scene().get_component::<T>(node_handle).expect("Engine failed to get Component forcely.")
+    }
+
+    /// Get a component by node handle mutably.
+    /// # Arguments
+    /// 
+    /// * `node_handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `Option<&mut T>` - The component if it exists.
+    pub fn get_component_mut<T: Component>(&mut self, node_handle: &NodeHandle) -> Option<&mut T> {
+        self.world.current_scene_mut().get_component_mut::<T>(node_handle)
+    }
+
+    /// Get a component by node handle mutably forcely.
+    /// # Arguments
+    /// 
+    /// * `node_handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `&mut T` - The component.
+    /// # Panics
+    /// 
+    /// * If the component does not exist.
+    pub fn get_component_mut_forcely<T: Component>(&mut self, node_handle: &NodeHandle) -> &mut T {
+        self.world.current_scene_mut().get_component_mut::<T>(node_handle).expect("Engine failed to get Component mutably forcely.")
     }
 
     /// Create a camera controller with target.
@@ -273,6 +492,206 @@ impl<'a> LogicContext<'a> {
     pub fn load_model(&mut self, path: &str) -> Result<NodeHandle, Box<dyn std::error::Error>> {
         let model_loader = ModelLoader::new();
         model_loader.load(self, path)
+    }
+
+    /// Get a light component by node handle.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `Option<&Light>` - The light component if it exists.
+    pub fn get_light(&mut self, handle: &NodeHandle) -> Option<&Light> {
+        self.world.current_scene().get_component(handle)
+    }
+
+    /// Get a light component by node handle forcely.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `&Light` - The light component.
+    /// # Panics
+    /// 
+    /// * If the light component does not exist.
+    pub fn get_light_forcely(&mut self, handle: &NodeHandle) -> &Light {
+        self.world.current_scene().get_component(handle).expect("LogicContext failed to get Light component forcely.")
+    }
+
+    /// Get a light component by node handle mutably.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `Option<&mut Light>` - The light component if it exists.
+    pub fn get_light_mut(&mut self, handle: &NodeHandle) -> Option<&mut Light> {
+        self.world.current_scene_mut().get_component_mut(handle)
+    }
+
+    /// Get a light component by node handle mutably forcely.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `&mut Light` - The light component.
+    /// # Panics
+    /// 
+    /// * If the light component does not exist.
+    pub fn get_light_mut_forcely(&mut self, handle: &NodeHandle) -> &mut Light {
+        self.world.current_scene_mut().get_component_mut(handle).expect("LogicContext failed to get Light component mutably forcely.")
+    }
+
+    /// Get a node by handle.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `Option<&Node>` - The node if it exists.
+    pub fn get_node(&mut self, handle: &NodeHandle) -> Option<&Node> {
+        self.world.current_scene().get_node(handle)
+    }
+
+    /// Get a node by handle forcely.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `&Node` - The node.
+    /// # Panics
+    /// 
+    /// * If the node does not exist.
+    pub fn get_node_forcely(&mut self, handle: &NodeHandle) -> &Node {
+        self.world.current_scene().get_node(handle).expect("LogicContext failed to get Node forcely.")
+    }
+
+    /// Get a node by handle mutably.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `Option<&mut Node>` - The node if it exists.
+    pub fn get_node_mut(&mut self, handle: &NodeHandle) -> Option<&mut Node> {
+        self.world.current_scene_mut().get_node_mut(handle)
+    }
+
+    /// Get a node by handle mutably forcely.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `&mut Node` - The node.
+    /// # Panics
+    /// 
+    /// * If the node does not exist.
+    pub fn get_node_mut_forcely(&mut self, handle: &NodeHandle) -> &mut Node {
+        self.world.current_scene_mut().get_node_mut(handle).expect("LogicContext failed to get Node mutably forcely.")
+    }
+
+    /// Get a transform component by node handle.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `Option<&Transform>` - The transform component if it exists.
+    pub fn get_transform(&mut self, handle: &NodeHandle) -> Option<&Transform> {
+        self.get_node(handle).map(|node| &node.transform)
+    }
+
+    /// Get a transform component by node handle forcely.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `&Transform` - The transform component.
+    /// # Panics
+    /// 
+    /// * If the transform component does not exist.
+    pub fn get_transform_forcely(&mut self, handle: &NodeHandle) -> &Transform {
+        &self.get_node_forcely(handle).transform
+    }
+
+    /// Get a transform component by node handle mutably.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `Option<&mut Transform>` - The transform component if it exists.
+    pub fn get_transform_mut(&mut self, handle: &NodeHandle) -> Option<&mut Transform> {
+        self.get_node_mut(handle).map(|node| &mut node.transform)
+    }
+
+    /// Get a transform component by node handle mutably forcely.
+    /// # Arguments
+    /// 
+    /// * `handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `&mut Transform` - The transform component.
+    /// # Panics
+    /// 
+    /// * If the transform component does not exist.
+    pub fn get_transform_mut_forcely(&mut self, handle: &NodeHandle) -> &mut Transform {
+        &mut self.get_node_mut_forcely(handle).transform
+    }
+
+    /// Get a component by node handle.
+    /// # Arguments
+    /// 
+    /// * `node_handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `Option<&T>` - The component if it exists.
+    pub fn get_component<T: Component>(&mut self, node_handle: &NodeHandle) -> Option<&T> {
+        self.world.current_scene().get_component::<T>(node_handle)
+    }
+
+    /// Get a component by node handle forcely.
+    /// # Arguments
+    /// 
+    /// * `node_handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `&T` - The component.
+    /// # Panics
+    /// 
+    /// * If the component does not exist.
+    pub fn get_component_forcely<T: Component>(&mut self, node_handle: &NodeHandle) -> &T {
+        self.world.current_scene().get_component::<T>(node_handle).expect("LogicContext failed to get Component forcely.")
+    }
+
+    /// Get a component by node handle mutably.
+    /// # Arguments
+    /// 
+    /// * `node_handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `Option<&mut T>` - The component if it exists.
+    pub fn get_component_mut<T: Component>(&mut self, node_handle: &NodeHandle) -> Option<&mut T> {
+        self.world.current_scene_mut().get_component_mut::<T>(node_handle)
+    }
+
+    /// Get a component by node handle mutably forcely.
+    /// # Arguments
+    /// 
+    /// * `node_handle` - The handle of the node.
+    /// # Returns
+    /// 
+    /// * `&mut T` - The component.
+    /// # Panics
+    /// 
+    /// * If the component does not exist.
+    pub fn get_component_mut_forcely<T: Component>(&mut self, node_handle: &NodeHandle) -> &mut T {
+        self.world.current_scene_mut().get_component_mut::<T>(node_handle).expect("LogicContext failed to get Component mutably forcely.")
     }
 
 }

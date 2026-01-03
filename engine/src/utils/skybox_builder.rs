@@ -1,5 +1,4 @@
 use crate::{
-    RR_new,
     assets::{
         TextureDimension, TextureFormat, TextureHandle, TextureUsages,
         environment::skybox::Skybox, materials::material::Material,
@@ -84,8 +83,8 @@ impl SkyboxBuilder {
         let cuboid_node = scene.create_node("Skybox");
         {
             let mesh: Mesh = Cuboid::default().into();
-            let mesh = RR_new!(mesh);
-            let mesh_renderer = MeshRenderer::new(mesh, vec![material_skybox_handle]);
+            let mesh_handle = engine.mesh_manager.add_mesh(mesh);
+            let mesh_renderer = MeshRenderer::new(mesh_handle, vec![material_skybox_handle]);
             scene.add_component(&cuboid_node, mesh_renderer);
             let skybox_component = Skybox::new(input_texture_handle, is_inpunt_cube_map);
             scene.add_component(&cuboid_node, skybox_component);

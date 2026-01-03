@@ -2,9 +2,9 @@ use std::{hash::Hash, num::NonZero};
 
 use ahash::AHasher;
 use wgpu::{
-    naga::{
-        self, Expression, ImageClass, ImageDimension, Module, ResourceBinding, ScalarKind, ShaderStage, Type, TypeInner, UniqueArena, VectorSize
-    }, ShaderStages, TextureViewDimension
+    ShaderStages, TextureViewDimension, naga::{
+        self, AddressSpace, Expression, ImageClass, ImageDimension, Module, ResourceBinding, ScalarKind, ShaderStage, Type, TypeInner, UniqueArena, VectorSize
+    }
 };
 
 use crate::assets::shaders::{shader::{BuilinUniformFlags, ShaderProperties}, shader_property::{
@@ -74,7 +74,7 @@ fn get_binding_stages(
         }
     }
     if stages.is_empty() {
-        // At preset, a uniform (e.g., _features) which is used in shader stage indirectly (for example, used in a function called by shader entry),
+        // At preset, a uniform (e.g., _material_features) which is used in shader stage indirectly (for example, used in a function called by shader entry),
         // can not be recongized as used by this shader stage, so we manually set its stages to VERTEX_FRAGMENT.
         // Hopefully, this can be fixed in future naga version.
         if name == BuiltinShaderUniformNames::_MATERIAL_FEATURES{
@@ -115,11 +115,12 @@ pub(crate) fn parse_shader_module(
         let resouce_binding = global_var.binding.unwrap();
         let type_inner = &module.types.get_handle(global_var.ty).unwrap().inner;
         let stages = get_binding_stages(&name, &entries_info, &resouce_binding, type_inner);
+        let space = global_var.space;
         if cfg!(debug_assertions) {
             log::debug!(
                 "global_var name: {}, space: {:?}, binding: {:?}, type inner: {:?}, init: {:?}, stages: {:?}",
                 name,
-                global_var.space,
+                global_var.space, // AddressSpace: Storage, Uniform, Private, Function, PushConstant, or Workgroup.
                 resouce_binding,
                 // global_var.ty,
                 type_inner,
@@ -138,6 +139,7 @@ pub(crate) fn parse_shader_module(
                     ShaderPropertyType::Float(NonZero::new(4)),
                     stages,
                     // 4,
+                    space,
                 );
                 insert_shader_properties(name, shader_property, &mut shader_properties, hasher, &mut builtin_uniform_flags);
             }
@@ -152,6 +154,7 @@ pub(crate) fn parse_shader_module(
                             resouce_binding.into(),
                             ShaderPropertyType::Vec4(NonZero::new(16)),
                             stages,
+                            space,
                         );
                         insert_shader_properties(name, shader_property, &mut shader_properties, hasher, &mut builtin_uniform_flags);
                     }
@@ -162,6 +165,7 @@ pub(crate) fn parse_shader_module(
                             resouce_binding.into(),
                             ShaderPropertyType::UVec4(NonZero::new(16)),
                             stages,
+                            space,
                         );
                         insert_shader_properties(name, shader_property, &mut shader_properties, hasher, &mut builtin_uniform_flags);
                     }
@@ -172,6 +176,7 @@ pub(crate) fn parse_shader_module(
                             resouce_binding.into(),
                             ShaderPropertyType::IVec4(NonZero::new(16)),
                             stages,
+                            space,
                         );
                         insert_shader_properties(name, shader_property, &mut shader_properties, hasher, &mut builtin_uniform_flags);
                     }
@@ -193,6 +198,7 @@ pub(crate) fn parse_shader_module(
                             resouce_binding.into(),
                             ShaderPropertyType::Matrix4x4(NonZero::new(64)),
                             stages,
+                            space,
                         );
                         insert_shader_properties(name, shader_property, &mut shader_properties, hasher, &mut builtin_uniform_flags);
                     }
@@ -205,20 +211,29 @@ pub(crate) fn parse_shader_module(
                 members: _,
                 span: _,
             } => {
-                let struct_size = _calculate_type_size(&module.types, type_inner);
-                if cfg!(debug_assertions) {
-                    log::debug!("size of struct {}: {}", name, struct_size);
-                }
+                let min_binding_size = match space {
+                    AddressSpace::Storage{access: _} => None,
+                    AddressSpace::Uniform => {
+                        let struct_size = _calculate_type_size(&module.types, type_inner);
+                        if cfg!(debug_assertions) {
+                            log::debug!("size of struct {}: {}", name, struct_size);
+                        }
+                        NonZero::new(struct_size as u64)
+                    }
+                    _ => None,
+                };
+                
                 let shader_property = ShaderProperty::new(
                     name.clone(),
                     resouce_binding.into(),
-                    ShaderPropertyType::Struct(NonZero::new(struct_size as u64)),
+                    ShaderPropertyType::Struct(min_binding_size),
                     stages,
+                    space,
                 );
                 insert_shader_properties(name, shader_property, &mut shader_properties, hasher, &mut builtin_uniform_flags);
             }
             TypeInner::Image { dim, arrayed, class } => {
-                let shader_property = construct_image_shader_property(dim, name.clone(), resouce_binding, stages, class, arrayed);
+                let shader_property = construct_image_shader_property(dim, name.clone(), resouce_binding, stages, class, arrayed, space);
                 insert_shader_properties(name, shader_property, &mut shader_properties, hasher, &mut builtin_uniform_flags);
             }
             TypeInner::Sampler { comparison } => {
@@ -227,6 +242,7 @@ pub(crate) fn parse_shader_module(
                     resouce_binding.into(),
                     ShaderPropertyType::Sampler(*comparison),
                     stages,
+                    space,
                 );
                 insert_shader_properties(name, shader_property, &mut shader_properties, hasher, &mut builtin_uniform_flags);
             }
@@ -300,6 +316,7 @@ fn construct_image_shader_property(
     stages: ShaderStages,
     image_class: &ImageClass,
     arrayed: &bool,
+    space: AddressSpace,
 ) -> ShaderProperty {
     let view_dimension = get_view_dimension(dim, *arrayed);
     match image_class {
@@ -310,6 +327,7 @@ fn construct_image_shader_property(
                 resouce_binding.into(),
                 ShaderPropertyType::Image(view_dimension, sample_type, *multi),
                 stages,
+                space,
             );
             shader_property
         }

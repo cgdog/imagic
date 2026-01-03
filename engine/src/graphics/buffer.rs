@@ -171,6 +171,10 @@ impl BufferManager {
         self.allocates(aligned_size, BufferUsages::UNIFORM | BufferUsages::COPY_DST, Some("A Uniform Buffer"))
     }
 
+    pub fn allocate_storage_buffer(&mut self, size: u64) -> BufferView {
+        self.allocates(size, BufferUsages::STORAGE | BufferUsages::COPY_DST, Some("A Storage Buffer"))
+    }
+
     pub fn allocate_uniform_buffer_init(&mut self, size: u64, data: &[u8]) -> BufferView {
         self.allocates_init(size, BufferUsages::UNIFORM | BufferUsages::COPY_DST, data, Some("A Uniform Buffer With Init Data"))
     }

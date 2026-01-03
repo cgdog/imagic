@@ -41,13 +41,19 @@ pub(crate) type VertexAttribute = wgpu::VertexAttribute;
 /// }
 /// 
 pub struct VertexAttributes {
+    /// The position of each vertex.
     pub position: Vec<Vec3>,
+    /// The normal of each vertex.
     pub normal: Vec<Vec3>,
+    /// The tangent of each vertex.
     pub tangent: Vec<Vec4>,
+    /// The color of each vertex.
     pub color: Vec<Color>,
+    /// The uv of each vertex.
     pub uv: Vec<Vec2>,
+    /// The uv1 of each vertex.
     pub uv1: Vec<Vec2>,
-    // bone, etc.
+    
     pub(crate) attributes: Vec<VertexAttribute>,
     pub(crate) array_stride: u64,
     pub(crate) is_dirty: bool,
@@ -159,6 +165,10 @@ impl VertexAttributes {
         self.array_stride = cur_offset;
     }
 
+    /// Get the vertex data in a flat vector.
+    /// 
+    /// # Returns
+    /// * `Vec<f32>` - The vertex data in a flat vector.
     pub fn content(&self) -> Vec<f32> {
         let mut data: Vec<f32> = vec![];
         let vertex_num = self.position.len();

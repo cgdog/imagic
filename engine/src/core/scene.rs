@@ -5,8 +5,8 @@ use crate::{
     components::mesh_renderer::MeshRenderer,
     core::{NodeArena, NodeHandle},
     graphics::graphics_context::GraphicsContext,
-    math::{Mat4, color::Color},
-    prelude::{Camera, Component, component_storage::ComponentStorages},
+    math::{Mat4, Vec4, color::Color},
+    prelude::{Camera, Component, GPULightData, Light, LightType, LightsGPUData, component_storage::ComponentStorages},
     time::Time,
 };
 
@@ -18,19 +18,31 @@ pub(crate) struct SH {
     sh: [Color; 9],
 }
 
+/// A scene contains nodes and components, and manages their lifecycle.
 pub struct Scene {
     /// Root nodes which have no parent.
     pub root_nodes: Vec<NodeHandle>,
+    /// The arena for node allocation.
     pub(crate) node_arena: NodeArena,
+    /// The clear color of the scene.
     pub clear_color: Color,
+    /// Whether the scene has fog enabled.
     pub fog_enabled: bool,
+    /// The color of the fog.
     pub fog_color: Color,
+    /// The IBL data of the scene.
     pub ibl_data: Option<IBLData>,
+    /// Cached camera nodes in the scene used to render the scene.
     pub(crate) cached_cameras: Vec<NodeHandle>,
+    /// Cached renderable nodes in the scene used to render the scene.
     pub(crate) cached_renderables: Vec<NodeHandle>,
+    /// Cached skybox node in the scene used to render the scene.
     pub(crate) cached_skybox_: NodeHandle,
+    pub(crate) cached_lights: Vec<NodeHandle>,
+    /// The SH coefficients of the scene.
     pub(crate) sh: SH,
 
+    /// Component storages for the scene.
     pub(crate) component_storages: ComponentStorages,
 }
 
@@ -47,6 +59,7 @@ impl Scene {
             cached_cameras: vec![],
             cached_renderables: vec![],
             cached_skybox_: NodeHandle::INVALID,
+            cached_lights: vec![],
             sh: Default::default(),
             component_storages: ComponentStorages::new(),
         };
@@ -90,14 +103,27 @@ impl Scene {
         self.node_arena.attach_to_parent(parent_id, node_id)
     }
 
+    /// Detach a node from its parent in the scene.
     pub fn detach_from_parent(&mut self, node_id: &NodeHandle) -> bool {
         self.node_arena.detach_from_parent(node_id)
     }
 
+    /// Create a new node with the given name.
+    /// # Arguments
+    /// 
+    /// * `name` - The name of the node.
+    /// 
+    /// # Returns
+    /// 
+    /// * `NodeHandle` - The ID of the created node.
     pub fn create_node(&mut self, name: impl Into<String>) -> NodeHandle {
         self.node_arena.create_node(name)
     }
 
+    /// Destroy a node in the scene.
+    /// # Arguments
+    /// 
+    /// * `node_id` - The ID of the node to destroy.
     pub fn destroy_node(&mut self, node_id: &NodeHandle) {
         if let Some(node) = self.node_arena.get_mut(node_id) {
             for (component_type_id, component_id) in &node.components {
@@ -107,6 +133,15 @@ impl Scene {
         }
     }
 
+    /// Add a component to a node in the scene.
+    /// # Arguments
+    /// 
+    /// * `node_id` - The ID of the node to add the component to.
+    /// * `component` - The component to add.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Option<T>` - Returns the old component if it exists, `None` otherwise.
     pub fn add_component<T: Component>(&mut self, node_id: &NodeHandle, component: T) -> Option<T>  {
         if let Some(node) = self.node_arena.get_mut(node_id) {
             let component_type_id = std::any::TypeId::of::<T>();
@@ -125,6 +160,8 @@ impl Scene {
                     self.cached_renderables.push(*node_id);
                 } else if  component_type_id == std::any::TypeId::of::<Skybox>() {
                     self.cached_skybox_ = *node_id;
+                } else if component_type_id == std::any::TypeId::of::<Light>() {
+                    self.cached_lights.push(*node_id);
                 }
                 None
             }
@@ -137,6 +174,14 @@ impl Scene {
         }
     }
 
+    /// Remove a component from a node in the scene.
+    /// # Arguments
+    /// 
+    /// * `node_id` - The ID of the node to remove the component from.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Option<T>` - Returns the removed component if it exists, `None` otherwise.
     pub fn remove_component<T: Component>(&mut self, node_id: &NodeHandle) -> Option<T> {
         if let Some(node) = self.node_arena.get_mut(node_id) {
             let component_type_id = std::any::TypeId::of::<T>();
@@ -147,6 +192,8 @@ impl Scene {
                     self.cached_renderables.retain(|&id| id != *node_id);
                 } else if  component_type_id == std::any::TypeId::of::<Skybox>() {
                     self.cached_skybox_ = NodeHandle::INVALID;
+                } else if component_type_id == std::any::TypeId::of::<Light>() {
+                    self.cached_lights.retain(|&id| id != *node_id);
                 }
                 self.component_storages.remove_component(&component_id, component_type_id)
             } else {
@@ -157,6 +204,14 @@ impl Scene {
         }
     }
 
+    /// Get a reference to a component of a node in the scene.
+    /// # Arguments
+    /// 
+    /// * `node_id` - The ID of the node to get the component from.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Option<&T>` - Returns a reference to the component if it exists, `None` otherwise.
     pub fn get_component<T: Component>(&self, node_id: &NodeHandle) -> Option<&T> {
         let component_type_id = std::any::TypeId::of::<T>();
         if let Some(node) = self.node_arena.get(node_id) && let Some(component_id) = node.components.get(&component_type_id) {
@@ -166,6 +221,14 @@ impl Scene {
         }
     }
 
+    /// Get a mutable reference to a component of a node in the scene.
+    /// # Arguments
+    /// 
+    /// * `node_id` - The ID of the node to get the component from.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Option<&mut T>` - Returns a mutable reference to the component if it exists, `None` otherwise.
     pub fn get_component_mut<T: Component>(&mut self, node_id: &NodeHandle) -> Option<&mut T> {
         let component_type_id = std::any::TypeId::of::<T>();
         if let Some(node) = self.node_arena.get(node_id) && let Some(component_id) = node.components.get(&component_type_id) {
@@ -175,13 +238,25 @@ impl Scene {
         }
     }
 
+    /// Set the IBL data of the scene.
+     /// # Arguments
+     /// 
+     /// * `ibl_data` - The IBL data to set.
     pub fn set_ibl_data(&mut self, ibl_data: Option<IBLData>) {
         self.ibl_data = ibl_data
     }
 
+    /// Lifecycle method called when the scene is initialized.
     pub(crate) fn on_init(&mut self, _time: &mut Time) {
     }
 
+    /// Try to initialize the skybox if it exists.
+    /// # Arguments
+    /// 
+    /// * `graphics_context` - The graphics context to use for initialization.
+    /// * `texture_sampler_manager` - The texture sampler manager to use for initialization.
+    /// * `shader_manager` - The shader manager to use for initialization.
+    /// * `material_manager` - The material manager to use for initialization.
     pub(crate) fn try_init_skybox(
         &mut self,
         graphics_context: &mut GraphicsContext,
@@ -212,8 +287,14 @@ impl Scene {
         }
     }
 
+    /// Get the environment reflection information of the scene.
+    /// # Returns
+    /// 
+    /// * `(TextureHandle, TextureHandle)` - Returns the reflection cube map texture handle and the BRDF LUT texture handle.
     pub fn get_environment_reflection_info(&self) -> (TextureHandle, TextureHandle) {
-        if NodeHandle::INVALID != self.cached_skybox_ {
+        if NodeHandle::INVALID != self.cached_skybox_
+            && let Some(skybox_node) = self.get_node(&self.cached_skybox_)
+            && skybox_node.enabled {
             if let Some(skybox_component) = self.get_component::<Skybox>(&self.cached_skybox_) {
                 return (
                     skybox_component.reflection_cube_map,
@@ -224,32 +305,84 @@ impl Scene {
         (Texture::default_cube_texture(), Texture::white())
     }
 
+    /// Lifecycle method called when the scene is updated.
+    /// # Arguments
+    /// 
+    /// * `time` - The time delta since the last update.
     pub(crate) fn on_update(&mut self, _time: &mut Time) {
         for root_node in &self.root_nodes {
-            Self::update_node_hierarchy(&mut self.node_arena, root_node, None);
+            Self::update_node_hierarchy(&mut self.node_arena, root_node, None, true);
         }
     }
 
-    fn update_node_hierarchy(node_arena: &mut NodeArena, node_id: &NodeHandle, parent_model_matrix: Option<Mat4>) {
+    fn update_node_hierarchy(node_arena: &mut NodeArena, node_id: &NodeHandle, parent_model_matrix: Option<Mat4>, is_parent_enabled: bool) {
         let mut model_matrix = None;
         let mut children = None;
         let mut node_is_valid = false;
+        let mut is_enabled_in_hierarchy = is_parent_enabled;
         if let Some(node) = node_arena.get_mut(node_id) {
             node_is_valid = true;
             node.on_update(parent_model_matrix);
             model_matrix = Some(node.transform.model_matrix);
             children = node.children.clone();
+            is_enabled_in_hierarchy = node.enabled && is_parent_enabled;
+            node.enabled_in_hierarchy = is_enabled_in_hierarchy;
         }
 
         if node_is_valid {
             if let Some(children) = &mut children {
                 for child in children {
-                    Self::update_node_hierarchy(node_arena, &child, model_matrix);
+                    Self::update_node_hierarchy(node_arena, &child, model_matrix, is_enabled_in_hierarchy);
                 }
             }
         }
     }
 
+    /// Lifecycle method called when the scene is stopped.
     pub(crate) fn on_stop(&mut self, _time: &mut Time) {
+    }
+
+    pub(crate) fn collect_lights_data(&self) -> LightsGPUData {
+        let mut lights_gpu_data = LightsGPUData::default();
+        let mut light_count = 0u32;
+        for light_handle in &self.cached_lights {
+            let light_node = self.get_node_forcely(light_handle);
+            if light_node.enabled_in_hierarchy && let Some(light) = self.get_component::<Light>(light_handle) {
+                light_count += 1;
+                let mut light_data = GPULightData::default();
+                light_data.flags[0] = light.light_type.as_u32();
+                let light_color = light.color * light.intensity;
+                light_data.color = light_color.to_array();
+                
+                let light_position = light_node.transform.position;
+                light_data.position = [light_position.x, light_position.y, light_position.z, 1.0];
+                let mut light_direction = light_node.transform.model_matrix * Vec4::new(0.0, 0.0, -1.0, 0.0);
+                light_direction = light_direction.normalize();
+                light_data.direction = [light_direction.x, light_direction.y, light_direction.z, 0.0];
+
+                match &light.light_type {
+                    LightType::Directional{} => {}
+                    LightType::Point{max_distance} => {
+                        light_data.color[3] = *max_distance;
+                    }
+                    LightType::Spot{max_distance, inner_angle: _, outer_angle: _} => {
+                        light_data.color[3] = *max_distance;
+                        light_data.direction[3] = light.cached_inner_cos;
+                        light_data.position[3] = light.cached_outer_cos;
+                    }
+                    LightType::Area{shape: _, two_sided:_} => {
+                        // TODO: support area light
+                    }
+                }
+
+                lights_gpu_data.lights_info.push(light_data);
+            }
+        }
+        lights_gpu_data.lights_count[0] = light_count;
+        if light_count == 0 {
+            // dummy light which is not used in shader. Just to avoid validation error.
+            lights_gpu_data.lights_info.push(GPULightData::default());
+        }
+        lights_gpu_data
     }
 }

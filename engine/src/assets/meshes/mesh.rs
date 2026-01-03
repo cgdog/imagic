@@ -3,8 +3,15 @@ use crate::{
         asset::IAsset,
         meshes::{sub_mesh::SubMesh, vertex_attribute::VertexAttributes}, vertex_index::IndexData,
     },
-    graphics::{buffer_view::BufferView, graphics_context::GraphicsContext},
+    graphics::{buffer_view::BufferView, graphics_context::GraphicsContext}, types::Handle,
 };
+
+/// The tag of the mesh used to define MeshHandle.
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+pub enum MeshTag {}
+
+/// The handle of the mesh.
+pub type MeshHandle = Handle<MeshTag>;
 
 /// Mesh is a collection of submeshes.
 pub struct Mesh {
@@ -26,6 +33,15 @@ pub struct Mesh {
 impl IAsset for Mesh {}
 
 impl Mesh {
+    /// Create a new mesh.
+    /// 
+    /// # Arguments
+    /// * `vertex_attributes` - Vertex attributes, e.g., Position, Normal, UV, etc.
+    /// * `index_data` - Index data.
+    /// * `sub_meshes` - Submeshes.
+    /// 
+    /// # Returns
+    /// * `Mesh` - The new mesh.
     pub fn new(mut vertex_attributes: VertexAttributes, index_data: IndexData, sub_meshes: Vec<SubMesh>) -> Mesh {
         vertex_attributes.compute_vertex_attributes();
         Self {

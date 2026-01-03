@@ -6,7 +6,12 @@ pub trait ModelLoaderTrait {
     /// Returns a Result containing the loaded Node or an error message.
     /// # Errors
     /// Returns an error if the model file cannot be opened or processed.
-    fn load(&self, engine: &mut LogicContext<'_>, path: &str) -> Result<NodeHandle, Box<dyn std::error::Error>>;
+    /// # Arguments
+    /// * `logic_context` - The logic context to use for loading the model.
+    /// * `path` - The path to the model file.
+    /// # Returns
+    /// A Result containing the loaded Node or an error message.
+    fn load(&self, logic_context: &mut LogicContext<'_>, path: &str) -> Result<NodeHandle, Box<dyn std::error::Error>>;
 }
 
 /// A model loader that can load models from different formats.
@@ -15,10 +20,10 @@ pub struct ModelLoader {
 }
 
 impl ModelLoaderTrait for ModelLoader {
-    fn load(&self, engine: &mut LogicContext<'_>, path: &str) -> Result<NodeHandle, Box<dyn std::error::Error>> {
+    fn load(&self, logic_context: &mut LogicContext<'_>, path: &str) -> Result<NodeHandle, Box<dyn std::error::Error>> {
         if path.ends_with(".gltf") || path.ends_with(".glb") {
             let gltf_loader = crate::assets::loaders::gltf_loader::GLTFLoader::new();
-            return gltf_loader.load(engine, path);
+            return gltf_loader.load(logic_context, path);
         }
         Err("ModelLoaderTrait not implemented".to_string().into())
     }

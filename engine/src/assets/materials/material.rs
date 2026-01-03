@@ -257,7 +257,23 @@ impl Material {
     ///
     /// - `metallic`: the new metallic property of PBR.
     pub fn set_metallic(&mut self, metallic: f32) {
-        self.set_float(BuiltinShaderUniformNames::_METALLIC, metallic);
+        if let Some(metallic_roughness_ao) = self.get_vec4f(BuiltinShaderUniformNames::_METALLIC_ROUGHNESS_AO) {
+            self.set_vec4f(BuiltinShaderUniformNames::_METALLIC_ROUGHNESS_AO,
+                Vec4::new(metallic, metallic_roughness_ao.y, metallic_roughness_ao.z, metallic_roughness_ao.w));
+        }
+    }
+
+    /// Get metallic property for builtin PBR shader.
+    ///
+    /// # Returns
+    ///
+    /// The metallic property of PBR.
+    pub fn get_metallic(&self) -> f32 {
+        if let Some(metallic_roughness_ao) = self.get_vec4f(BuiltinShaderUniformNames::_METALLIC_ROUGHNESS_AO) {
+            metallic_roughness_ao.x
+        } else {
+            0.0
+        }
     }
 
     /// Set metallic roughness map property for builtin Unlit or PBR shader.
@@ -331,7 +347,48 @@ impl Material {
     ///
     /// - `roughness`: the new roughness property of PBR.
     pub fn set_roughness(&mut self, roughness: f32) {
-        self.set_float(BuiltinShaderUniformNames::_ROUGHNESS, roughness);
+        if let Some(metallic_roughness_ao) = self.get_vec4f(BuiltinShaderUniformNames::_METALLIC_ROUGHNESS_AO) {
+            self.set_vec4f(BuiltinShaderUniformNames::_METALLIC_ROUGHNESS_AO,
+                Vec4::new(metallic_roughness_ao.x, roughness, metallic_roughness_ao.z, metallic_roughness_ao.w));
+        }
+    }
+
+    /// Get roughness property for builtin PBR shader.
+    ///
+    /// # Returns
+    ///
+    /// The roughness property of PBR.
+    pub fn get_roughness(&self) -> f32 {
+        if let Some(metallic_roughness_ao) = self.get_vec4f(BuiltinShaderUniformNames::_METALLIC_ROUGHNESS_AO) {
+            metallic_roughness_ao.y
+        } else {
+            0.0
+        }
+    }
+
+    /// Set ao property for builtin PBR shader.
+    ///
+    /// # Parameters
+    ///
+    /// - `ao`: the new ao property of PBR.
+    pub fn set_ao(&mut self, ao: f32) {
+        if let Some(metallic_roughness_ao) = self.get_vec4f(BuiltinShaderUniformNames::_METALLIC_ROUGHNESS_AO) {
+            self.set_vec4f(BuiltinShaderUniformNames::_METALLIC_ROUGHNESS_AO,
+                Vec4::new(metallic_roughness_ao.x, metallic_roughness_ao.y, ao, metallic_roughness_ao.w));
+        }
+    }
+
+    /// Get ao property for builtin PBR shader.
+    ///
+    /// # Returns
+    ///
+    /// The ao property of PBR.
+    pub fn get_ao(&self) -> f32 {
+        if let Some(metallic_roughness_ao) = self.get_vec4f(BuiltinShaderUniformNames::_METALLIC_ROUGHNESS_AO) {
+            metallic_roughness_ao.z
+        } else {
+            0.0
+        }
     }
 
     /// Enable a feature by its index.

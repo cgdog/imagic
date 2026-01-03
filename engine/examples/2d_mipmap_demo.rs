@@ -69,7 +69,6 @@ fn main() {
     );
     let quad_node = engine.world.current_scene_mut().create_node("quad");
     let mesh: Mesh = Quad::default().into();
-    let mesh = RR_new!(mesh);
 
     let show_mipmap_material_handle = engine.material_manager.create_material(shader_handle, &mut engine.shader_manager);
     
@@ -79,7 +78,8 @@ fn main() {
     show_mipmap_material_mut_ref.set_albedo_map_sampler(color_map_sampler);
     show_mipmap_material_mut_ref.set_float("lod", 0.0);
     
-    let mesh_renderer = MeshRenderer::new(mesh, vec![show_mipmap_material_handle]);
+    let mesh_handle = engine.mesh_manager.add_mesh(mesh);
+    let mesh_renderer = MeshRenderer::new(mesh_handle, vec![show_mipmap_material_handle]);
     engine.world.current_scene_mut().add_component(&quad_node, mesh_renderer);
 
     let camera_node = engine.world.current_scene_mut().create_node("Main Camera");
