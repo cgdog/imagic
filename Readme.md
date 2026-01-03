@@ -18,10 +18,12 @@ At the moment, Imagic only supports a few features:
 - Support gltf 2.0 partially
 - Perspective camera and orbit camera controller
 - Orthographic camera
+- Storage buffer
 - Lights (without shadows)
     - Directional Light
     - Point Light
     - Spot Light
+> Lights are implemented by storage buffer.
 
 # To do list
 - Implement shadows for directional light, point light and spot light. After that, I would like to write a real game with Imagic and publish it on Steam or itch.io.
